@@ -246,6 +246,8 @@ impl Solver {
                 };
                 println!("Var: {:3}\t Value: {}", index, assignment);
             }
+        } else {
+            println!("no model found");
         }
     }
 }
