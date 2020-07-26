@@ -1,7 +1,9 @@
 use crate::Literal;
-use core::iter;
-use core::iter::FromIterator;
-use core::slice;
+use core::{
+    iter,
+    iter::FromIterator,
+    slice,
+};
 use std::collections::HashSet;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,14 +34,14 @@ impl Clause {
     {
         let mut literals = literals.into_iter().collect::<Vec<_>>();
         if literals.is_empty() {
-            return Err(Error::EmptyClause);
+            return Err(Error::EmptyClause)
         }
         literals.sort();
         literals.dedup();
         let mut occurences = HashSet::new();
         for &literal in &literals {
             if occurences.contains(&!literal) {
-                return Err(Error::SelfConflictingClause);
+                return Err(Error::SelfConflictingClause)
             }
             occurences.insert(literal);
         }
@@ -162,7 +164,10 @@ impl ClauseDb {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{VarAssignment, Variable};
+    use crate::{
+        VarAssignment,
+        Variable,
+    };
 
     #[test]
     fn new_empty_clause_fails() {

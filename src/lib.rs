@@ -6,11 +6,25 @@ mod occurrence_map;
 #[cfg(test)]
 mod tests;
 
-use crate::assignment::{Assignment, Literal, VarAssignment, Variable};
-use crate::builder::SolverBuilder;
-use crate::clause_db::{Clause, ClauseDb, ClauseId};
-use crate::occurrence_map::OccurrenceMap;
-use cnf_parser::{Error as CnfError, Input};
+use crate::{
+    assignment::{
+        Assignment,
+        Literal,
+        VarAssignment,
+        Variable,
+    },
+    builder::SolverBuilder,
+    clause_db::{
+        Clause,
+        ClauseDb,
+        ClauseId,
+    },
+    occurrence_map::OccurrenceMap,
+};
+use cnf_parser::{
+    Error as CnfError,
+    Input,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
@@ -82,9 +96,7 @@ impl Solver {
         let mut last_indeterminate_lit = None;
         for lit in self.clauses.resolve(id)? {
             match self.assignments.is_satisfied(lit) {
-                Some(true) => {
-                    return Some(ClauseStatus::NoConflictNorForcedAssignment)
-                }
+                Some(true) => return Some(ClauseStatus::NoConflictNorForcedAssignment),
                 Some(false) => {}
                 None => {
                     last_indeterminate_lit = Some(lit);
@@ -94,9 +106,12 @@ impl Solver {
         }
         match num_indeterminate_lits {
             0 => Some(ClauseStatus::Conflicting),
-            1 => Some(ClauseStatus::UndeterminedLiteral(
-                last_indeterminate_lit.expect("encountered missing expected undetermined literal"),
-            )),
+            1 => {
+                Some(ClauseStatus::UndeterminedLiteral(
+                    last_indeterminate_lit
+                        .expect("encountered missing expected undetermined literal"),
+                ))
+            }
             _ => Some(ClauseStatus::NoConflictNorForcedAssignment),
         }
     }
@@ -116,11 +131,12 @@ impl Solver {
                     ClauseStatus::Conflicting => {
                         return PropagationResult::Conflict {
                             assigned: level_assignments,
-                        };
+                        }
                     }
                     ClauseStatus::UndeterminedLiteral(propagation_lit) => {
                         level_assignments.push(propagation_lit);
-                        let (variable, var_assignment) = propagation_lit.into_var_and_assignment();
+                        let (variable, var_assignment) =
+                            propagation_lit.into_var_and_assignment();
                         self.assignments.assign(variable, var_assignment);
                         propagation_queue.push(propagation_lit);
                     }
@@ -142,7 +158,11 @@ impl Solver {
         }
     }
 
-    fn solve_for(&mut self, current_var: Variable, assignment: VarAssignment) -> SolveResult {
+    fn solve_for(
+        &mut self,
+        current_var: Variable,
+        assignment: VarAssignment,
+    ) -> SolveResult {
         self.assignments.assign(current_var, assignment);
         let current_lit = current_var.into_literal(assignment);
         match self.propagate(current_lit) {
@@ -183,24 +203,29 @@ impl Solver {
     {
         // If the set of clauses contain the empty clause: UNSAT
         if self.assignments.len_variables() == 0 {
-            return true;
+            return true
         }
         for assumption in assumptions {
             let (variable, assignment) = assumption.into_var_and_assignment();
             self.assignments.assign(variable, assignment);
-            if let PropagationResult::Conflict { assigned: _ } = self.propagate(assumption) {
-                return false;
+            if let PropagationResult::Conflict { assigned: _ } =
+                self.propagate(assumption)
+            {
+                return false
             }
         }
         let initial_var = self.assignments.next_unassigned(None);
         match initial_var {
             None => return true,
             Some(initial_var) => {
-                if let SolveResult::Sat = self.solve_for(initial_var, VarAssignment::True) {
-                    return true;
+                if let SolveResult::Sat = self.solve_for(initial_var, VarAssignment::True)
+                {
+                    return true
                 }
-                if let SolveResult::Sat = self.solve_for(initial_var, VarAssignment::False) {
-                    return true;
+                if let SolveResult::Sat =
+                    self.solve_for(initial_var, VarAssignment::False)
+                {
+                    return true
                 }
                 false
             }

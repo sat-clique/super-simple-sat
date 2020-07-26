@@ -1,8 +1,12 @@
 use crate::ClauseDb;
-use core::convert::TryFrom;
-use core::num::NonZeroI32;
-use core::num::NonZeroU32;
-use core::ops::Not;
+use core::{
+    convert::TryFrom,
+    num::{
+        NonZeroI32,
+        NonZeroU32,
+    },
+    ops::Not,
+};
 use std::collections::HashMap;
 
 /// A literal of a variable with its polarity.
@@ -83,8 +87,10 @@ impl Variable {
     /// Any index that is out of this range is invalid for this operation.
     pub fn from_index(index: usize) -> Option<Self> {
         let index = i32::try_from(index).ok()?;
-        NonZeroU32::new((index as u32).wrapping_add(1)).map(|shifted_index| Self {
-            value: shifted_index,
+        NonZeroU32::new((index as u32).wrapping_add(1)).map(|shifted_index| {
+            Self {
+                value: shifted_index,
+            }
         })
     }
 
@@ -151,7 +157,8 @@ impl Assignment {
 
     pub fn is_satisfied(&self, literal: Literal) -> Option<bool> {
         let assignment = self.resolve(literal.variable())?.to_bool();
-        let result = literal.is_positive() && assignment || literal.is_negative() && !assignment;
+        let result =
+            literal.is_positive() && assignment || literal.is_negative() && !assignment;
         Some(result)
     }
 
@@ -162,7 +169,10 @@ impl Assignment {
         new_var
     }
 
-    pub fn new_chunk_of_variables(&mut self, len: usize) -> Result<usize, OutOfVariables> {
+    pub fn new_chunk_of_variables(
+        &mut self,
+        len: usize,
+    ) -> Result<usize, OutOfVariables> {
         if len == 0 {
             return Ok(self.len_variables)
         }
@@ -174,7 +184,7 @@ impl Assignment {
 
     pub fn next_variable(&self, current_variable: Variable) -> Option<Variable> {
         if self.len_variables == 0 {
-            return None;
+            return None
         }
         let next_index = current_variable
             .into_index()
@@ -188,7 +198,7 @@ impl Assignment {
 
     pub fn next_unassigned(&self, pivot: Option<Variable>) -> Option<Variable> {
         if self.len_variables == self.len_assigned {
-            return None;
+            return None
         }
         let mut pivot = match pivot {
             Some(pivot) => pivot,
@@ -204,7 +214,7 @@ impl Assignment {
                 .next_variable(pivot)
                 .expect("unexpected missing next variable");
             if self.resolve(next_var).is_none() {
-                return Some(next_var);
+                return Some(next_var)
             }
             pivot = next_var;
         }
@@ -239,7 +249,7 @@ impl<'a> Iterator for Iter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.current == self.assignment.len_variables() {
-            return None;
+            return None
         }
         let index = self.current;
         let variable =

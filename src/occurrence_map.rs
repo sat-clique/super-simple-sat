@@ -1,6 +1,11 @@
-use crate::clause_db::ClauseId;
-use crate::Literal;
-use std::collections::{HashMap, HashSet};
+use crate::{
+    clause_db::ClauseId,
+    Literal,
+};
+use std::collections::{
+    HashMap,
+    HashSet,
+};
 
 #[derive(Debug, Default)]
 pub struct OccurrenceMap {

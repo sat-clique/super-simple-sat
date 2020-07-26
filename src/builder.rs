@@ -1,6 +1,10 @@
-use crate::clause_db::Clause;
-use crate::Error;
-use crate::{Literal, Solver, Variable};
+use crate::{
+    clause_db::Clause,
+    Error,
+    Literal,
+    Solver,
+    Variable,
+};
 use cnf_parser::Output;
 
 const MAX_VARIABLES: usize = 100;
@@ -31,18 +35,22 @@ impl SolverBuilder {
 impl Output for SolverBuilder {
     type Error = Error;
 
-    fn problem(&mut self, num_variables: u32, num_clauses: u32) -> Result<(), Self::Error> {
+    fn problem(
+        &mut self,
+        num_variables: u32,
+        num_clauses: u32,
+    ) -> Result<(), Self::Error> {
         let num_variables = num_variables as usize;
         let num_clauses = num_clauses as usize;
         if num_variables > MAX_VARIABLES {
             return Err(Error::from(
                 "problem specified more variables than are supported",
-            ));
+            ))
         }
         if num_clauses > MAX_CLAUSES {
             return Err(Error::from(
                 "problem specified more clauses than are supported",
-            ));
+            ))
         }
         self.num_variables = Some(num_variables);
         self.solver

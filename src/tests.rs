@@ -1,4 +1,10 @@
-use crate::{Clause, Literal, Solver, VarAssignment, Variable};
+use crate::{
+    Clause,
+    Literal,
+    Solver,
+    VarAssignment,
+    Variable,
+};
 
 #[test]
 #[ignore]
