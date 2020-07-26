@@ -7,7 +7,7 @@ use std::collections::{
     HashSet,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct OccurrenceMap {
     empty_dummy: HashSet<ClauseId>,
     occurrences: HashMap<Literal, HashSet<ClauseId>>,

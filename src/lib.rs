@@ -56,7 +56,7 @@ enum SolveResult {
     Sat,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Solver {
     clauses: ClauseDb,
     occurrence_map: OccurrenceMap,

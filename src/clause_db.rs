@@ -78,7 +78,7 @@ impl ClauseId {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ClauseDb {
     clauses: Vec<Clause>,
 }
