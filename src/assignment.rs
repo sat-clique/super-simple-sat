@@ -171,14 +171,14 @@ impl Assignment {
 
     pub fn new_chunk_of_variables(
         &mut self,
-        len: usize,
+        amount: usize,
     ) -> Result<usize, OutOfVariables> {
-        if len == 0 {
+        if amount == 0 {
             return Ok(self.len_variables)
         }
-        let last_index = self.len_variables + len;
+        let last_index = self.len_variables + amount;
         Variable::from_index(last_index).ok_or_else(|| OutOfVariables)?;
-        self.len_variables += len;
+        self.len_variables += amount;
         Ok(self.len_variables)
     }
 
