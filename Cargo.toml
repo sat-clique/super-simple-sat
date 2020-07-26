@@ -13,3 +13,10 @@ categories = ["algorithms", "science"]
 
 [dependencies]
 cnf-parser = "0.1"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "bench"
+harness = false
