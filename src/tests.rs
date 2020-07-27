@@ -5,6 +5,10 @@ use crate::{
     VarAssignment,
     Variable,
 };
+use std::{
+    fs,
+    path::Path,
+};
 
 #[test]
 fn simple_works() {
@@ -152,4 +156,65 @@ fn test_cnf_input() {
         .into_literal(VarAssignment::True);
     let result = solver.solve(vec![assumption_1, assumption_2, assumption_3]);
     assert!(result);
+}
+
+/// Returns the byte representation of all benchmarks found under the given path.
+///
+/// # Note
+///
+/// The benchmarks are returned alphabetically sorted by their file names.
+fn collect_tests_in_path<P>(path: P) -> Vec<Vec<u8>>
+where
+    P: AsRef<Path>,
+{
+    let mut dir_entries = fs::read_dir(path)
+        .unwrap()
+        .filter_map(|dir_entry| {
+            match dir_entry {
+                Ok(dir_entry) => {
+                    let path = dir_entry.path();
+                    if dir_entry.file_type().unwrap().is_file()
+                        && path
+                            .extension()
+                            .map(|ext| ext == "cnf")
+                            .unwrap_or_else(|| false)
+                    {
+                        let bytes = fs::read(dir_entry.path()).unwrap();
+                        Some((path, bytes))
+                    } else {
+                        None
+                    }
+                }
+                Err(_) => None,
+            }
+        })
+        .collect::<Vec<_>>();
+    dir_entries
+        .sort_by(|(l_path, _), (r_path, _)| l_path.file_name().cmp(&r_path.file_name()));
+    dir_entries
+        .into_iter()
+        .map(|(_path, bytes)| bytes)
+        .collect::<Vec<_>>()
+}
+
+#[test]
+fn test_uf100_430_sat() {
+    for (n, input) in collect_tests_in_path("cnf/uf100-430/sat/")
+        .into_iter()
+        .enumerate()
+    {
+        let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
+        assert!(solver.solve(vec![]), "failed at unsat uf100-430/{}", n);
+    }
+}
+
+#[test]
+fn test_uf100_430_unsat() {
+    for (n, input) in collect_tests_in_path("cnf/uf100-430/unsat/")
+        .into_iter()
+        .enumerate()
+    {
+        let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
+        assert!(!solver.solve(vec![]), "failed at unsat uf100-430/{}", n);
+    }
 }
