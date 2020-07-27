@@ -72,6 +72,16 @@ impl Output for SolverBuilder {
         if !self.current_clause.is_empty() {
             self.finalize_current_clause()?;
         }
+        if self.num_variables.is_none() {
+            let amount = self
+                .max_seen_variable
+                .map(|variable| variable.into_index() + 1)
+                .unwrap_or_else(|| 0);
+            self.solver
+                .assignments
+                .new_chunk_of_variables(amount)
+                .map_err(|_| Error::Other("allocated too many variables"))?;
+        }
         Ok(())
     }
 }
