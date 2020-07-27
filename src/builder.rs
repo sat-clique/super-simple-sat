@@ -35,7 +35,7 @@ impl Output for SolverBuilder {
     fn problem(
         &mut self,
         num_variables: u32,
-        num_clauses: u32,
+        _num_clauses: u32,
     ) -> Result<(), Self::Error> {
         let num_variables = num_variables as usize;
         self.num_variables = Some(num_variables);
