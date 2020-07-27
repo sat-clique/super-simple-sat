@@ -7,11 +7,9 @@ use crate::{
 };
 
 #[test]
-#[ignore]
 fn simple_works() {
     let mut solver = Solver::from_cnf(&mut &b"1 2"[..]).unwrap();
     assert_eq!(solver.solve(vec![]), true);
-    solver.print_last_model();
 }
 
 #[test]
