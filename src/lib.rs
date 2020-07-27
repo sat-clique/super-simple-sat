@@ -29,6 +29,13 @@ use cnf_parser::{
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     Other(&'static str),
+    Assignment(assignment::Error),
+}
+
+impl From<assignment::Error> for Error {
+    fn from(err: assignment::Error) -> Self {
+        Self::Assignment(err)
+    }
 }
 
 impl From<&'static str> for Error {
@@ -95,7 +102,11 @@ impl Solver {
         let mut num_indeterminate_lits = 0;
         let mut last_indeterminate_lit = None;
         for lit in self.clauses.resolve(id)? {
-            match self.assignments.is_satisfied(lit) {
+            match self
+                .assignments
+                .is_satisfied(lit)
+                .expect("encountered unexpected invalid literal")
+            {
                 Some(true) => return Some(ClauseStatus::NoConflictNorForcedAssignment),
                 Some(false) => {}
                 None => {
@@ -116,7 +127,7 @@ impl Solver {
         }
     }
 
-    fn propagate(&mut self, root_literal: Literal) -> PropagationResult {
+    fn propagate(&mut self, root_literal: Literal) -> Result<PropagationResult, Error> {
         let mut propagation_queue = vec![root_literal];
         let mut level_assignments = vec![root_literal];
         while let Some(lit_to_propagate) = propagation_queue.pop() {
@@ -129,49 +140,56 @@ impl Solver {
                     .expect("encountered invalid clause identifier")
                 {
                     ClauseStatus::Conflicting => {
-                        return PropagationResult::Conflict {
+                        return Ok(PropagationResult::Conflict {
                             assigned: level_assignments,
-                        }
+                        })
                     }
                     ClauseStatus::UndeterminedLiteral(propagation_lit) => {
                         level_assignments.push(propagation_lit);
                         let (variable, var_assignment) =
                             propagation_lit.into_var_and_assignment();
-                        self.assignments.assign(variable, var_assignment);
+                        self.assignments.assign(variable, var_assignment)?;
                         propagation_queue.push(propagation_lit);
                     }
                     _ => (),
                 }
             }
         }
-        PropagationResult::Consistent {
+        Ok(PropagationResult::Consistent {
             assigned: level_assignments,
-        }
+        })
     }
 
-    fn undo_current_level_assignments<L>(&mut self, conflicting_lits: L)
+    fn undo_current_level_assignments<L>(
+        &mut self,
+        conflicting_lits: L,
+    ) -> Result<(), Error>
     where
         L: IntoIterator<Item = Literal>,
     {
         for conflicting_lit in conflicting_lits {
-            self.assignments.unassign(conflicting_lit.variable());
+            self.assignments.unassign(conflicting_lit.variable())?;
         }
+        Ok(())
     }
 
     fn solve_for(
         &mut self,
         current_var: Variable,
         assignment: VarAssignment,
-    ) -> SolveResult {
-        self.assignments.assign(current_var, assignment);
+    ) -> Result<SolveResult, Error> {
+        self.assignments.assign(current_var, assignment)?;
         let current_lit = current_var.into_literal(assignment);
-        match self.propagate(current_lit) {
+        match self.propagate(current_lit)? {
             PropagationResult::Conflict { assigned } => {
-                self.undo_current_level_assignments(assigned);
-                SolveResult::Conflict
+                self.undo_current_level_assignments(assigned)?;
+                Ok(SolveResult::Conflict)
             }
             PropagationResult::Consistent { assigned } => {
-                let next_var = self.assignments.next_unassigned(Some(current_var));
+                let next_var = self
+                    .assignments
+                    .next_unassigned(Some(current_var))
+                    .expect("encountered unexpected invalid variable");
                 let result = match next_var {
                     None => {
                         self.last_model = Some(self.assignments.clone());
@@ -179,11 +197,11 @@ impl Solver {
                     }
                     Some(unassigned_var) => {
                         if let SolveResult::Sat =
-                            self.solve_for(unassigned_var, VarAssignment::True)
+                            self.solve_for(unassigned_var, VarAssignment::True)?
                         {
                             SolveResult::Sat
                         } else if let SolveResult::Sat =
-                            self.solve_for(unassigned_var, VarAssignment::False)
+                            self.solve_for(unassigned_var, VarAssignment::False)?
                         {
                             SolveResult::Sat
                         } else {
@@ -191,43 +209,47 @@ impl Solver {
                         }
                     }
                 };
-                self.undo_current_level_assignments(assigned);
-                result
+                self.undo_current_level_assignments(assigned)?;
+                Ok(result)
             }
         }
     }
 
-    pub fn solve<L>(&mut self, assumptions: L) -> bool
+    pub fn solve<L>(&mut self, assumptions: L) -> Result<bool, Error>
     where
         L: IntoIterator<Item = Literal>,
     {
         // If the set of clauses contain the empty clause: UNSAT
         if self.assignments.len_variables() == 0 {
-            return true
+            return Ok(true)
         }
         for assumption in assumptions {
             let (variable, assignment) = assumption.into_var_and_assignment();
-            self.assignments.assign(variable, assignment);
+            self.assignments.assign(variable, assignment)?;
             if let PropagationResult::Conflict { assigned: _ } =
-                self.propagate(assumption)
+                self.propagate(assumption)?
             {
-                return false
+                return Ok(false)
             }
         }
-        let initial_var = self.assignments.next_unassigned(None);
+        let initial_var = self
+            .assignments
+            .next_unassigned(None)
+            .expect("encountered unexpected invalid initial variable");
         match initial_var {
-            None => return true,
+            None => return Ok(true),
             Some(initial_var) => {
-                if let SolveResult::Sat = self.solve_for(initial_var, VarAssignment::True)
+                if let SolveResult::Sat =
+                    self.solve_for(initial_var, VarAssignment::True)?
                 {
-                    return true
+                    return Ok(true)
                 }
                 if let SolveResult::Sat =
-                    self.solve_for(initial_var, VarAssignment::False)
+                    self.solve_for(initial_var, VarAssignment::False)?
                 {
-                    return true
+                    return Ok(true)
                 }
-                false
+                Ok(false)
             }
         }
     }

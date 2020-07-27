@@ -70,7 +70,7 @@ fn bench_3sat_v100_c430_sat(c: &mut Criterion) {
                 || solver.clone(),
                 |solver| {
                     let result = black_box(solver.solve(vec![]));
-                    assert!(result);
+                    assert_eq!(result, Ok(true));
                 },
                 BatchSize::SmallInput,
             )
@@ -91,7 +91,7 @@ fn bench_3sat_v100_c430_unsat(c: &mut Criterion) {
                 || solver.clone(),
                 |solver| {
                     let result = black_box(solver.solve(vec![]));
-                    assert!(!result);
+                    assert_eq!(result, Ok(false));
                 },
                 BatchSize::SmallInput,
             )
