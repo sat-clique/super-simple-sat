@@ -11,7 +11,11 @@ use std::{
 };
 use super_simple_sat::Solver;
 
-criterion_group!(bench_solve, bench_uf100_430_sat, bench_uf100_430_unsat,);
+criterion_group!(
+    bench_solve,
+    bench_3sat_v100_c430_sat,
+    bench_3sat_v100_c430_unsat
+);
 criterion_main!(bench_solve);
 
 /// Returns the byte representation of all benchmarks found under the given path.
@@ -87,7 +91,7 @@ fn bench_3sat_v100_c430_unsat(c: &mut Criterion) {
                 || solver.clone(),
                 |solver| {
                     let result = black_box(solver.solve(vec![]));
-                    assert!(result);
+                    assert!(!result);
                 },
                 BatchSize::SmallInput,
             )
