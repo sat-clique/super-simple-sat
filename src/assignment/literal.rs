@@ -78,6 +78,7 @@ impl From<cnf_parser::Literal> for Literal {
 
 /// A unique variable.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[repr(transparent)]
 pub struct Variable {
     value: NonZeroU32,
 }
