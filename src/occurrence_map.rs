@@ -1,56 +1,94 @@
 use crate::{
     clause_db::ClauseId,
     Literal,
+    Variable,
 };
-use std::collections::{
-    HashMap,
-    HashSet,
-};
+use core::slice;
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum Error {
+    UsedTooManyVariables,
+    VariableIndexOutOfRange,
+}
 
 #[derive(Debug, Default, Clone)]
 pub struct OccurrenceMap {
-    empty_dummy: HashSet<ClauseId>,
-    occurrences: HashMap<Literal, HashSet<ClauseId>>,
+    occurences: Vec<Occurrences>,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct Occurrences {
+    pos: Vec<ClauseId>,
+    neg: Vec<ClauseId>,
+}
+
+impl Occurrences {
+    pub fn register_for_lit(&mut self, literal: Literal, id: ClauseId) {
+        match literal.is_positive() {
+            true => self.pos.push(id),
+            false => self.neg.push(id),
+        }
+    }
+
+    pub fn get(&self, literal: Literal) -> ClauseIdIter {
+        match literal.is_positive() {
+            true => ClauseIdIter::new(&self.pos[..]),
+            false => ClauseIdIter::new(&self.neg[..]),
+        }
+    }
 }
 
 impl OccurrenceMap {
+    /// Returns the number of currently registered variables.
+    fn len_variables(&self) -> usize {
+        self.occurences.len()
+    }
+
+    /// Registers the given amount of additional variables.
+    pub fn register_variables(&mut self, amount: usize) -> Result<(), Error> {
+        let new_len = self.len_variables() + amount;
+        if !Variable::is_valid_index(new_len - 1) {
+            return Err(Error::UsedTooManyVariables)
+        }
+        self.occurences.resize_with(new_len, Default::default);
+        Ok(())
+    }
+
     /// Registers the given clause identifier for the literal.
     ///
     /// # Note
     ///
     /// This means that the clause associated with the given identifier contains
     /// the literal with the given polarity.
-    pub fn register_for_lit(&mut self, literal: Literal, id: ClauseId) {
-        self.occurrences
-            .entry(literal)
-            .and_modify(|clauses| {
-                clauses.insert(id);
-            })
-            .or_insert_with(|| {
-                let mut clauses = HashSet::default();
-                clauses.insert(id);
-                clauses
-            });
+    pub fn register_for_lit(
+        &mut self,
+        literal: Literal,
+        id: ClauseId,
+    ) -> Result<(), Error> {
+        self.occurences
+            .get_mut(literal.variable().into_index())
+            .map(|occurrences| occurrences.register_for_lit(literal, id))
+            .ok_or_else(|| Error::VariableIndexOutOfRange)
     }
 
     /// Returns an iterator over all clauses that contain the given literal.
     pub fn iter_potentially_conflicting_clauses(&self, literal: Literal) -> ClauseIdIter {
-        self.occurrences
-            .get(&!literal)
-            .map(|clauses| ClauseIdIter::new(clauses))
-            .unwrap_or_else(move || ClauseIdIter::new(&self.empty_dummy))
+        self.occurences
+            .get(literal.variable().into_index())
+            .map(|occurrences| occurrences.get(!literal))
+            .unwrap_or_else(|| ClauseIdIter::new(&[]))
     }
 }
 
 #[derive(Debug)]
 pub struct ClauseIdIter<'a> {
-    iter: std::collections::hash_set::Iter<'a, ClauseId>,
+    iter: slice::Iter<'a, ClauseId>,
 }
 
 impl<'a> ClauseIdIter<'a> {
-    pub fn new(literals: &'a HashSet<ClauseId>) -> Self {
+    pub fn new(clause_ids: &'a [ClauseId]) -> Self {
         Self {
-            iter: literals.iter(),
+            iter: clause_ids.iter(),
         }
     }
 }

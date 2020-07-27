@@ -21,7 +21,7 @@ impl SolverBuilder {
         let accumulated_lits = core::mem::take(&mut self.current_clause);
         let clause = Clause::new(accumulated_lits)
             .map_err(|_| "encountered empty or self conflicting clause")?;
-        self.solver.consume_clause(clause);
+        self.solver.consume_clause(clause)?;
         Ok(())
     }
 
@@ -43,6 +43,10 @@ impl Output for SolverBuilder {
         self.solver
             .assignments
             .new_chunk_of_variables(num_variables as usize)
+            .map_err(|_| Error::Other("allocated too many variables"))?;
+        self.solver
+            .occurrence_map
+            .register_variables(num_variables as usize)
             .map_err(|_| Error::Other("allocated too many variables"))?;
         Ok(())
     }

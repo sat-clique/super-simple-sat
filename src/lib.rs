@@ -29,7 +29,14 @@ use cnf_parser::{
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     Other(&'static str),
+    Occurrences(occurrence_map::Error),
     Assignment(assignment::Error),
+}
+
+impl From<occurrence_map::Error> for Error {
+    fn from(err: occurrence_map::Error) -> Self {
+        Self::Occurrences(err)
+    }
 }
 
 impl From<assignment::Error> for Error {
@@ -81,21 +88,25 @@ impl Solver {
         Ok(builder.finalize())
     }
 
-    pub fn consume_clause(&mut self, clause: Clause) {
+    pub fn consume_clause(&mut self, clause: Clause) -> Result<(), Error> {
         let id = self.clauses.push(clause);
         for literal in self
             .clauses
             .resolve(id)
             .expect("unexpected missing clause that has just been inserted")
         {
-            self.occurrence_map.register_for_lit(literal, id)
+            self.occurrence_map.register_for_lit(literal, id)?
         }
+        Ok(())
     }
 
-    pub fn new_literal(&mut self) -> Literal {
-        self.assignments
+    pub fn new_literal(&mut self) -> Result<Literal, Error> {
+        self.occurrence_map.register_variables(1)?;
+        let literal = self
+            .assignments
             .new_variable()
-            .into_literal(VarAssignment::True)
+            .into_literal(VarAssignment::True);
+        Ok(literal)
     }
 
     fn get_clause_status(&self, id: ClauseId) -> Option<ClauseStatus> {

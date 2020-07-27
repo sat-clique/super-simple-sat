@@ -93,6 +93,11 @@ impl From<Literal> for Variable {
 }
 
 impl Variable {
+    /// Returns `true` if the given index is a valid variable index.
+    pub fn is_valid_index(index: usize) -> bool {
+        i32::try_from(index).is_ok()
+    }
+
     /// Returns the variable for the given index if valid.
     ///
     /// # Note
