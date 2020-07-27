@@ -20,7 +20,7 @@ pub struct Assignment {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     UsedTooManyVariables,
-    VariableOutOfRange,
+    VariableIndexOutOfRange,
 }
 
 impl Assignment {
@@ -36,7 +36,7 @@ impl Assignment {
         let assignment = self
             .assignments
             .get_mut(variable.into_index())
-            .ok_or_else(|| Error::VariableOutOfRange)?;
+            .ok_or_else(|| Error::VariableIndexOutOfRange)?;
         let old_assignment = mem::replace(assignment, new_assignment);
         if new_assignment.is_some() && old_assignment.is_none() {
             self.len_assigned += 1;
@@ -66,7 +66,7 @@ impl Assignment {
         self.assignments
             .get(variable.into_index())
             .copied()
-            .ok_or_else(|| Error::VariableOutOfRange)
+            .ok_or_else(|| Error::VariableIndexOutOfRange)
     }
 
     pub fn is_satisfied(&self, literal: Literal) -> Result<Option<bool>, Error> {
