@@ -4,8 +4,8 @@ use super::{
 };
 use crate::Literal;
 use core::{
-    mem,
     iter::FromIterator,
+    mem,
     ops::Range,
     slice,
 };

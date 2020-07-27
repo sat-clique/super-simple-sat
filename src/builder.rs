@@ -16,7 +16,7 @@ pub struct SolverBuilder {
 impl SolverBuilder {
     fn finalize_current_clause(&mut self) -> Result<(), <Self as Output>::Error> {
         if self.num_variables.is_none() {
-            return Err("missing problem line before clause inputs")?
+            return Err("missing problem line before clause inputs".into())
         }
         let accumulated_lits = core::mem::take(&mut self.current_clause);
         let clause = Clause::new(accumulated_lits)

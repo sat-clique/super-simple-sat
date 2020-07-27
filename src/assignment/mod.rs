@@ -74,13 +74,10 @@ impl Assignment {
             .resolve(literal.variable())?
             .map(VarAssignment::to_bool)
             .map(|assignment| {
-                literal.is_positive() && assignment || literal.is_negative() && !assignment
+                literal.is_positive() && assignment
+                    || literal.is_negative() && !assignment
             });
         Ok(result)
-            // .unwrap_or_else(|| false);
-        // let result =
-        //     literal.is_positive() && assignment || literal.is_negative() && !assignment;
-        // Ok(Some(result))
     }
 
     pub fn new_variable(&mut self) -> Variable {
