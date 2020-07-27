@@ -237,7 +237,7 @@ impl Solver {
             .next_unassigned(None)
             .expect("encountered unexpected invalid initial variable");
         match initial_var {
-            None => return Ok(true),
+            None => Ok(true),
             Some(initial_var) => {
                 if let SolveResult::Sat =
                     self.solve_for(initial_var, VarAssignment::True)?

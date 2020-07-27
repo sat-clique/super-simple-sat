@@ -112,7 +112,7 @@ impl Variable {
     pub fn into_literal(self, assignment: VarAssignment) -> Literal {
         let value = match assignment {
             VarAssignment::True => self.value.get() as i32,
-            VarAssignment::False => -1 * self.value.get() as i32,
+            VarAssignment::False => -(self.value.get() as i32),
         };
         Literal {
             value: NonZeroI32::new(value).expect("encountered unexpected zero i32"),
