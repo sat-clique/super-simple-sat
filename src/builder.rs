@@ -7,9 +7,6 @@ use crate::{
 };
 use cnf_parser::Output;
 
-const MAX_VARIABLES: usize = 100;
-const MAX_CLAUSES: usize = 1_000;
-
 #[derive(Debug, Default)]
 pub struct SolverBuilder {
     solver: Solver,
@@ -41,17 +38,6 @@ impl Output for SolverBuilder {
         num_clauses: u32,
     ) -> Result<(), Self::Error> {
         let num_variables = num_variables as usize;
-        let num_clauses = num_clauses as usize;
-        if num_variables > MAX_VARIABLES {
-            return Err(Error::from(
-                "problem specified more variables than are supported",
-            ))
-        }
-        if num_clauses > MAX_CLAUSES {
-            return Err(Error::from(
-                "problem specified more clauses than are supported",
-            ))
-        }
         self.num_variables = Some(num_variables);
         self.solver
             .assignments
