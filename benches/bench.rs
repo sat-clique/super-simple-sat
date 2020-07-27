@@ -53,8 +53,8 @@ where
         .collect::<Vec<_>>()
 }
 
-fn bench_uf100_430_sat(c: &mut Criterion) {
-    let mut g = c.benchmark_group("uf100-430 (sat)");
+fn bench_3sat_v100_c430_sat(c: &mut Criterion) {
+    let mut g = c.benchmark_group("3sat_v100_c430 (sat)");
     g.sample_size(10);
     for (n, input) in collect_benchmarks_in_path("cnf/uf100-430/sat/")
         .into_iter()
@@ -74,8 +74,8 @@ fn bench_uf100_430_sat(c: &mut Criterion) {
     }
 }
 
-fn bench_uf100_430_unsat(c: &mut Criterion) {
-    let mut g = c.benchmark_group("uf100-430 (unsat)");
+fn bench_3sat_v100_c430_unsat(c: &mut Criterion) {
+    let mut g = c.benchmark_group("3sat_v100_c430 (unsat)");
     g.sample_size(10);
     for (n, input) in collect_benchmarks_in_path("cnf/uf100-430/unsat/")
         .into_iter()
