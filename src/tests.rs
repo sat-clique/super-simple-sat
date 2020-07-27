@@ -14,6 +14,7 @@ use std::{
 fn simple_sat_works() {
     let mut solver = Solver::from_cnf(
         &mut &br"
+        p cnf 2 1
         1 2 0
     "[..],
     )
@@ -25,6 +26,7 @@ fn simple_sat_works() {
 fn simple_unsat_works() {
     let mut solver = Solver::from_cnf(
         &mut &br"
+        p cnf 2 4
         1 2 0
         -1 -2 0
         1 -2 0
