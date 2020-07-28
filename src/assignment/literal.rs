@@ -113,7 +113,7 @@ impl Variable {
     ///
     /// This solver only supports up to 2^31-1 unique variables.
     /// Any index that is out of this range is invalid for this operation.
-    pub fn from_index(index: usize) -> Option<Self> {
+    pub(crate) fn from_index(index: usize) -> Option<Self> {
         let index = i32::try_from(index).ok()?;
         NonZeroU32::new((index as u32).wrapping_add(1)).map(|shifted_index| {
             Self {
@@ -135,7 +135,7 @@ impl Variable {
 
     /// Returns the index of the variable.
     #[inline]
-    pub fn into_index(self) -> usize {
+    pub(crate) fn into_index(self) -> usize {
         self.value.get() as usize - 1
     }
 }
