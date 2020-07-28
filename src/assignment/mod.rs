@@ -12,6 +12,86 @@ use core::{
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct Model {
+    assignment: Vec<Option<VarAssignment>>,
+}
+
+impl Model {
+    pub(crate) fn new(assignment: &Assignment) -> Result<Self, Error> {
+        if !assignment.is_assignment_complete() {
+            return Err(Error::IndeterminateAssignment)
+        }
+        Ok(Self { assignment: assignment.assignments.clone() })
+    }
+
+    pub(crate) fn from_reuse(&mut self, assignment: &Assignment) -> Result<(), Error> {
+        if !assignment.is_assignment_complete() {
+            return Err(Error::IndeterminateAssignment)
+        }
+        self.assignment.resize_with(assignment.len_variables(), Default::default);
+        self.assignment.clear();
+        self.assignment.extend(assignment.into_iter().map(|(_var, assignment)| assignment));
+        Ok(())
+    }
+
+    fn resolve(&self, variable: Variable) -> Result<Option<VarAssignment>, Error> {
+        self.assignment
+            .get(variable.into_index())
+            .copied()
+            .ok_or_else(|| Error::VariableIndexOutOfRange)
+    }
+
+    pub fn is_satisfied(&self, literal: Literal) -> Result<Option<bool>, Error> {
+        let result = self
+            .resolve(literal.variable())?
+            .map(VarAssignment::to_bool)
+            .map(|assignment| {
+                literal.is_positive() && assignment
+                    || literal.is_negative() && !assignment
+            });
+        Ok(result)
+    }
+}
+
+impl<'a> IntoIterator for &'a Model {
+    type Item = (Variable, Option<VarAssignment>);
+    type IntoIter = ModelIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ModelIter::new(self)
+    }
+}
+
+pub struct ModelIter<'a> {
+    iter: iter::Enumerate<slice::Iter<'a, Option<VarAssignment>>>,
+}
+
+impl<'a> ModelIter<'a> {
+    pub fn new(model: &'a Model) -> Self {
+        Self {
+            iter: model.assignment.iter().enumerate(),
+        }
+    }
+}
+
+impl<'a> Iterator for ModelIter<'a> {
+    type Item = (Variable, Option<VarAssignment>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.next() {
+            None => None,
+            Some((index, assignment)) => {
+                Some((
+                    Variable::from_index(index)
+                        .expect("encountered unexpected invalid variable index"),
+                    *assignment,
+                ))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Assignment {
     len_assigned: usize,
     assignments: Vec<Option<VarAssignment>>,
@@ -21,11 +101,16 @@ pub struct Assignment {
 pub enum Error {
     UsedTooManyVariables,
     VariableIndexOutOfRange,
+    IndeterminateAssignment,
 }
 
 impl Assignment {
     fn len_variables(&self) -> usize {
         self.assignments.len()
+    }
+
+    fn is_assignment_complete(&self) -> bool {
+        self.len_variables() == self.len_assigned
     }
 
     fn assign_impl(

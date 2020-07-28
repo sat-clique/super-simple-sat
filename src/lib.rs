@@ -18,6 +18,7 @@ use crate::{
 pub use crate::{
     assignment::{
         Literal,
+        Model,
         VarAssignment,
         Variable,
     },
@@ -82,7 +83,7 @@ pub struct Solver {
     clauses: ClauseDb,
     occurrence_map: OccurrenceMap,
     assignments: Assignment,
-    last_model: Option<Assignment>,
+    last_model: Option<Model>,
 }
 
 /// A chunk of literals.
@@ -327,7 +328,19 @@ impl Solver {
                     .expect("encountered unexpected invalid variable");
                 let result = match next_var {
                     None => {
-                        self.last_model = Some(self.assignments.clone());
+                        // self.last_model = Some(self.assignments.clone());
+                        match &mut self.last_model {
+                            Some(last_model) => {
+                                last_model.from_reuse(&self.assignments).expect(
+                                    "encountered unexpected incomplete assignment",
+                                );
+                            }
+                            none => {
+                                *none = Some(Model::new(&self.assignments).expect(
+                                    "encountered unexpected incomplete assignment",
+                                ));
+                            }
+                        }
                         SolveResult::Sat
                     }
                     Some(unassigned_var) => {
@@ -390,7 +403,7 @@ impl Solver {
     }
 
     #[cfg(test)]
-    pub(crate) fn last_model(&self) -> Option<&Assignment> {
+    pub(crate) fn last_model(&self) -> Option<&Model> {
         self.last_model.as_ref()
     }
 
