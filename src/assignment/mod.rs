@@ -80,22 +80,17 @@ impl Assignment {
         Ok(result)
     }
 
-    pub fn new_variable(&mut self) -> Variable {
-        let new_var = Variable::from_index(self.len_variables())
-            .expect("encountered variable index is out of bounds");
-        self.assignments.push(None);
-        new_var
-    }
-
-    pub fn new_chunk_of_variables(&mut self, amount: usize) -> Result<usize, Error> {
+    /// Registers the given amount of additional variables.
+    pub fn register_variables(&mut self, amount: usize) -> Result<(), Error> {
         if amount == 0 {
-            return Ok(self.len_variables())
+            return Ok(())
         }
-        let last_index = self.len_variables() + amount;
-        Variable::from_index(last_index).ok_or_else(|| Error::UsedTooManyVariables)?;
-        self.assignments
-            .resize_with(self.assignments.len() + amount, || None);
-        Ok(self.assignments.len())
+        let new_len = self.len_variables() + amount;
+        if !Variable::is_valid_index(new_len - 1) {
+            return Err(Error::UsedTooManyVariables)
+        }
+        self.assignments.resize_with(new_len, Default::default);
+        Ok(())
     }
 
     fn next_variable(&self, current_variable: Variable) -> Option<Variable> {

@@ -31,6 +31,10 @@ pub enum Error {
     Other(&'static str),
     Occurrences(occurrence_map::Error),
     Assignment(assignment::Error),
+    InvalidLiteralChunkRange,
+    InvalidLiteralChunkStart,
+    InvalidLiteralChunkEnd,
+    TooManyVariablesInUse,
 }
 
 impl From<occurrence_map::Error> for Error {
@@ -72,13 +76,105 @@ enum SolveResult {
 
 #[derive(Debug, Default, Clone)]
 pub struct Solver {
+    len_variables: usize,
     clauses: ClauseDb,
     occurrence_map: OccurrenceMap,
     assignments: Assignment,
     last_model: Option<Assignment>,
 }
 
+/// A chunk of literals.
+///
+/// Created by the [`Solver::new_literal_chunk`] method.
+#[derive(Debug, Clone)]
+pub struct LiteralChunk {
+    /// The start index of this chunk for the first literal.
+    start_index: usize,
+    /// The number of literals in the chunk.
+    len: usize,
+}
+
+impl LiteralChunk {
+    /// Creates a new literal chunk for the given start index and length.
+    fn new(start_index: usize, end_index: usize) -> Result<Self, Error> {
+        if start_index >= end_index {
+            return Err(Error::InvalidLiteralChunkRange)
+        }
+        if !Variable::is_valid_index(start_index) {
+            return Err(Error::InvalidLiteralChunkStart)
+        }
+        if !Variable::is_valid_index(end_index) {
+            return Err(Error::InvalidLiteralChunkEnd)
+        }
+        Ok(Self {
+            start_index,
+            len: end_index - start_index,
+        })
+    }
+
+    /// Returns the number of literals in this chunk.
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    /// Returns the n-th literal of the chunk if within bounds.
+    pub fn get(&self, n: usize) -> Option<Literal> {
+        if n >= self.len() {
+            return None
+        }
+        Some(
+            Variable::from_index(self.start_index + n)
+                .expect("encountered unexpected out of bounds variable index")
+                .into_literal(VarAssignment::True),
+        )
+    }
+}
+
+impl IntoIterator for LiteralChunk {
+    type Item = Literal;
+    type IntoIter = LiteralChunkIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        LiteralChunkIter::new(self)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct LiteralChunkIter {
+    current: usize,
+    chunk: LiteralChunk,
+}
+
+impl LiteralChunkIter {
+    fn new(chunk: LiteralChunk) -> Self {
+        Self { current: 0, chunk }
+    }
+}
+
+impl Iterator for LiteralChunkIter {
+    type Item = Literal;
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = self.chunk.len() - self.current;
+        (remaining, Some(remaining))
+    }
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.chunk.get(self.current) {
+            None => None,
+            Some(literal) => {
+                self.current += 1;
+                Some(literal)
+            }
+        }
+    }
+}
+
 impl Solver {
+    fn len_variables(&self) -> usize {
+        self.len_variables
+    }
+
     pub fn from_cnf<I>(input: &mut I) -> Result<Self, CnfError<Error>>
     where
         I: Input,
@@ -100,13 +196,39 @@ impl Solver {
         Ok(())
     }
 
+    /// Allocates a new literal for the solver and returns it.
+    ///
+    /// # Errors
+    ///
+    /// If there are too many variables in use after this operation.
     pub fn new_literal(&mut self) -> Result<Literal, Error> {
         self.occurrence_map.register_variables(1)?;
-        let literal = self
-            .assignments
-            .new_variable()
-            .into_literal(VarAssignment::True);
-        Ok(literal)
+        self.assignments.register_variables(1)?;
+        let next_id = self.len_variables();
+        let variable =
+            Variable::from_index(next_id).ok_or_else(|| Error::TooManyVariablesInUse)?;
+        self.len_variables += 1;
+        Ok(variable.into_literal(VarAssignment::True))
+    }
+
+    /// Allocates the given amount of new literals for the solver and returns them.
+    ///
+    /// # Note
+    ///
+    /// The new literals are returned as a chunk which serves the purpose of
+    /// efficiently accessing them.
+    ///
+    /// # Errors
+    ///
+    /// If there are too many variables in use after this operation.
+    pub fn new_literal_chunk(&mut self, amount: usize) -> Result<LiteralChunk, Error> {
+        let old_len = self.len_variables();
+        let new_len = self.len_variables() + amount;
+        let chunk = LiteralChunk::new(old_len, new_len)?;
+        self.occurrence_map.register_variables(amount)?;
+        self.assignments.register_variables(amount)?;
+        self.len_variables += amount;
+        Ok(chunk)
     }
 
     fn get_clause_status(&self, id: ClauseId) -> Option<ClauseStatus> {
@@ -231,7 +353,7 @@ impl Solver {
         L: IntoIterator<Item = Literal>,
     {
         // If the set of clauses contain the empty clause: UNSAT
-        if self.assignments.len_variables() == 0 {
+        if self.len_variables() == 0 {
             return Ok(true)
         }
         for assumption in assumptions {
