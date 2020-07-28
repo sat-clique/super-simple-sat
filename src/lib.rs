@@ -389,6 +389,11 @@ impl Solver {
         }
     }
 
+    #[cfg(test)]
+    pub(crate) fn last_model(&self) -> Option<&Assignment> {
+        self.last_model.as_ref()
+    }
+
     pub fn print_last_model(&self) {
         if let Some(last_model) = &self.last_model {
             for (variable, assignment) in last_model {
