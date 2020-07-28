@@ -7,19 +7,21 @@ mod occurrence_map;
 mod tests;
 
 use crate::{
-    assignment::{
-        Assignment,
-        Literal,
-        VarAssignment,
-        Variable,
-    },
+    assignment::Assignment,
     builder::SolverBuilder,
     clause_db::{
-        Clause,
         ClauseDb,
         ClauseId,
     },
     occurrence_map::OccurrenceMap,
+};
+pub use crate::{
+    assignment::{
+        Literal,
+        VarAssignment,
+        Variable,
+    },
+    clause_db::Clause,
 };
 use cnf_parser::{
     Error as CnfError,
