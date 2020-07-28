@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 mod assignment;
 mod builder;
 mod clause_db;
