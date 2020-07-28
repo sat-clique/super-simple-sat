@@ -1,8 +1,8 @@
 use crate::{
     Error,
     Literal,
-    Variable,
     VarAssignment,
+    Variable,
 };
 
 /// A chunk of literals.

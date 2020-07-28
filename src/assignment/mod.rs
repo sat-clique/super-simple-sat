@@ -1,15 +1,17 @@
 mod literal;
 mod model;
 
-pub use self::model::{
-    Model,
-    ModelIter,
-    LastModel,
-};
-pub use self::literal::{
-    Literal,
-    VarAssignment,
-    Variable,
+pub use self::{
+    literal::{
+        Literal,
+        VarAssignment,
+        Variable,
+    },
+    model::{
+        LastModel,
+        Model,
+        ModelIter,
+    },
 };
 use core::{
     iter,

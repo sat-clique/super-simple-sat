@@ -1,15 +1,15 @@
 pub use super::{
+    Assignment,
+    Error,
     Literal,
     VarAssignment,
     Variable,
-    Assignment,
-    Error,
 };
 use core::{
-    iter,
-    slice,
     fmt,
     fmt::Display,
+    iter,
+    slice,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
