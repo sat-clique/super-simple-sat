@@ -321,19 +321,8 @@ impl Solver {
         }
     }
 
+    #[cfg(test)]
     pub(crate) fn last_model(&self) -> Option<&Model> {
         self.propagator.last_model()
-    }
-
-    pub fn print_last_model(&self) {
-        if let Some(last_model) = self.last_model() {
-            for (variable, assignment) in last_model {
-                let index = variable.into_index();
-                let assignment = assignment.to_bool().to_string();
-                println!("Var: {:3}\t Value: {}", index, assignment);
-            }
-        } else {
-            println!("no model found");
-        }
     }
 }

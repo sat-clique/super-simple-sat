@@ -59,6 +59,7 @@ pub struct Decision {
 }
 
 impl Propagator {
+    #[cfg(test)]
     pub fn last_model(&self) -> Option<&Model> {
         self.last_model.as_ref()
     }
