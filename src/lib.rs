@@ -23,6 +23,7 @@ pub use crate::{
     assignment::{
         Literal,
         Model,
+        LastModel,
         VarAssignment,
         Variable,
     },
@@ -78,6 +79,7 @@ pub struct Solver {
     occurrence_map: OccurrenceMap,
     assignments: Assignment,
     propagator: Propagator,
+    last_model: LastModel,
 }
 
 /// A chunk of literals.
@@ -252,7 +254,7 @@ impl Solver {
                     .expect("encountered unexpected invalid variable");
                 let result = match next_var {
                     None => {
-                        self.propagator.update_last_model(&self.assignments)?;
+                        self.last_model.update(&self.assignments)?;
                         SolveResult::Sat
                     }
                     Some(unassigned_var) => {
@@ -319,7 +321,7 @@ impl Solver {
     }
 
     #[cfg(test)]
-    pub(crate) fn last_model(&self) -> Option<&Model> {
-        self.propagator.last_model()
+    pub fn last_model(&self) -> Option<&Model> {
+        self.last_model.get()
     }
 }

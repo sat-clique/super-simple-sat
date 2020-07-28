@@ -4,6 +4,7 @@ mod model;
 pub use self::model::{
     Model,
     ModelIter,
+    LastModel,
 };
 pub use self::literal::{
     Literal,

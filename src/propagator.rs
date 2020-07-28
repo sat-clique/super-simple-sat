@@ -32,7 +32,6 @@ pub enum PropagationResult {
 
 #[derive(Debug, Default, Clone)]
 pub struct Propagator {
-    last_model: Option<Model>,
     propagation_queue: Vec<Literal>,
     decisions: Vec<Decision>,
     level_assignments: Vec<Literal>,
@@ -59,28 +58,6 @@ pub struct Decision {
 }
 
 impl Propagator {
-    #[cfg(test)]
-    pub fn last_model(&self) -> Option<&Model> {
-        self.last_model.as_ref()
-    }
-
-    pub fn update_last_model(&mut self, assignment: &Assignment) -> Result<(), Error> {
-        match &mut self.last_model {
-            Some(last_model) => {
-                last_model
-                    .from_reuse(&assignment)
-                    .expect("encountered unexpected incomplete assignment");
-            }
-            none => {
-                *none = Some(
-                    Model::new(&assignment)
-                        .expect("encountered unexpected incomplete assignment"),
-                );
-            }
-        }
-        Ok(())
-    }
-
     fn get_clause_status(
         &self,
         id: ClauseId,
