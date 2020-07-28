@@ -175,14 +175,5 @@ impl<'a> Iterator for Iter<'a> {
                 ))
             }
         }
-        // if self.current == self.assignment.len_variables() {
-        //     return None
-        // }
-        // let index = self.current;
-        // let variable =
-        //     Variable::from_index(index).expect("encountered unexpected invalid variable");
-        // let assignment = self.assignment.resolve(variable);
-        // self.current += 1;
-        // Some((variable, assignment))
     }
 }
