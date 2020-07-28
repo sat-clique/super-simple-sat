@@ -21,16 +21,20 @@ impl Model {
         if !assignment.is_assignment_complete() {
             return Err(Error::IndeterminateAssignment)
         }
-        Ok(Self { assignment: assignment.assignments.clone() })
+        Ok(Self {
+            assignment: assignment.assignments.clone(),
+        })
     }
 
     pub(crate) fn from_reuse(&mut self, assignment: &Assignment) -> Result<(), Error> {
         if !assignment.is_assignment_complete() {
             return Err(Error::IndeterminateAssignment)
         }
-        self.assignment.resize_with(assignment.len_variables(), Default::default);
+        self.assignment
+            .resize_with(assignment.len_variables(), Default::default);
         self.assignment.clear();
-        self.assignment.extend(assignment.into_iter().map(|(_var, assignment)| assignment));
+        self.assignment
+            .extend(assignment.into_iter().map(|(_var, assignment)| assignment));
         Ok(())
     }
 
