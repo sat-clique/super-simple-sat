@@ -327,10 +327,7 @@ impl Solver {
         if let Some(last_model) = self.last_model() {
             for (variable, assignment) in last_model {
                 let index = variable.into_index();
-                let assignment = match assignment {
-                    Some(assigned) => assigned.to_bool().to_string(),
-                    None => "unassigned".to_string(),
-                };
+                let assignment = assignment.to_bool().to_string();
                 println!("Var: {:3}\t Value: {}", index, assignment);
             }
         } else {

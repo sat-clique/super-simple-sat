@@ -13,7 +13,7 @@ use core::{
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Model {
-    assignment: Vec<Option<VarAssignment>>,
+    assignment: Vec<VarAssignment>,
 }
 
 impl Model {
@@ -21,9 +21,13 @@ impl Model {
         if !assignment.is_assignment_complete() {
             return Err(Error::IndeterminateAssignment)
         }
-        Ok(Self {
-            assignment: assignment.assignments.clone(),
-        })
+        let assignment = assignment
+            .assignments
+            .iter()
+            .copied()
+            .map(|assign| assign.ok_or_else(|| Error::IndeterminateAssignment))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(Self { assignment })
     }
 
     pub(crate) fn from_reuse(&mut self, assignment: &Assignment) -> Result<(), Error> {
@@ -31,34 +35,32 @@ impl Model {
             return Err(Error::IndeterminateAssignment)
         }
         self.assignment
-            .resize_with(assignment.len_variables(), Default::default);
+            .resize_with(assignment.len_variables(), || VarAssignment::False);
         self.assignment.clear();
         self.assignment
-            .extend(assignment.into_iter().map(|(_var, assignment)| assignment));
+            .extend(assignment.assignments.iter().copied().map(|assign| {
+                assign.expect("encountered unexpected indeterminate assignment")
+            }));
         Ok(())
     }
 
-    fn resolve(&self, variable: Variable) -> Result<Option<VarAssignment>, Error> {
+    fn resolve(&self, variable: Variable) -> Result<VarAssignment, Error> {
         self.assignment
             .get(variable.into_index())
             .copied()
             .ok_or_else(|| Error::VariableIndexOutOfRange)
     }
 
-    pub fn is_satisfied(&self, literal: Literal) -> Result<Option<bool>, Error> {
-        let result = self
-            .resolve(literal.variable())?
-            .map(VarAssignment::to_bool)
-            .map(|assignment| {
-                literal.is_positive() && assignment
-                    || literal.is_negative() && !assignment
-            });
+    pub fn is_satisfied(&self, literal: Literal) -> Result<bool, Error> {
+        let assignment = self.resolve(literal.variable())?.to_bool();
+        let result =
+            literal.is_positive() && assignment || literal.is_negative() && !assignment;
         Ok(result)
     }
 }
 
 impl<'a> IntoIterator for &'a Model {
-    type Item = (Variable, Option<VarAssignment>);
+    type Item = (Variable, VarAssignment);
     type IntoIter = ModelIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -67,7 +69,7 @@ impl<'a> IntoIterator for &'a Model {
 }
 
 pub struct ModelIter<'a> {
-    iter: iter::Enumerate<slice::Iter<'a, Option<VarAssignment>>>,
+    iter: iter::Enumerate<slice::Iter<'a, VarAssignment>>,
 }
 
 impl<'a> ModelIter<'a> {
@@ -79,7 +81,7 @@ impl<'a> ModelIter<'a> {
 }
 
 impl<'a> Iterator for ModelIter<'a> {
-    type Item = (Variable, Option<VarAssignment>);
+    type Item = (Variable, VarAssignment);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {

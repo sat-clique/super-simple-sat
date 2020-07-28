@@ -143,16 +143,16 @@ fn test_get_forced_assignment() {
     let result = solver.solve(vec![vars[1], vars[7], vars[6]]);
     assert_eq!(result, Ok(true));
     let model = solver.last_model().unwrap();
-    assert_eq!(model.is_satisfied( vars[1]), Ok(Some(true)));
-    assert_eq!(model.is_satisfied(!vars[1]), Ok(Some(false)));
-    assert_eq!(model.is_satisfied( vars[7]), Ok(Some(true)));
-    assert_eq!(model.is_satisfied(!vars[7]), Ok(Some(false)));
-    assert_eq!(model.is_satisfied( vars[6]), Ok(Some(true)));
-    assert_eq!(model.is_satisfied(!vars[6]), Ok(Some(false)));
-    assert_eq!(model.is_satisfied( vars[5]), Ok(Some(true)));
-    assert_eq!(model.is_satisfied(!vars[5]), Ok(Some(false)));
-    assert_eq!(model.is_satisfied( vars[9]), Ok(Some(false)));
-    assert_eq!(model.is_satisfied(!vars[9]), Ok(Some(true)));
+    assert_eq!(model.is_satisfied( vars[1]), Ok(true));
+    assert_eq!(model.is_satisfied(!vars[1]), Ok(false));
+    assert_eq!(model.is_satisfied( vars[7]), Ok(true));
+    assert_eq!(model.is_satisfied(!vars[7]), Ok(false));
+    assert_eq!(model.is_satisfied( vars[6]), Ok(true));
+    assert_eq!(model.is_satisfied(!vars[6]), Ok(false));
+    assert_eq!(model.is_satisfied( vars[5]), Ok(true));
+    assert_eq!(model.is_satisfied(!vars[5]), Ok(false));
+    assert_eq!(model.is_satisfied( vars[9]), Ok(false));
+    assert_eq!(model.is_satisfied(!vars[9]), Ok(true));
 }
 
 #[test]
