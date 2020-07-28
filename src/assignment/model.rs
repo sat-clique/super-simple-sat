@@ -8,6 +8,8 @@ pub use super::{
 use core::{
     iter,
     slice,
+    fmt,
+    fmt::Display,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -15,7 +17,24 @@ pub struct Model {
     assignment: Vec<VarAssignment>,
 }
 
+impl Display for Model {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Model (#vars = {})", self.len())?;
+        for (variable, assignment) in self {
+            let index = variable.into_index();
+            let assignment = assignment.to_bool().to_string();
+            writeln!(f, " - var({:3}) = {}", index, assignment)?;
+        }
+        Ok(())
+    }
+}
+
 impl Model {
+    /// Returns the number of assigned variables in the model.
+    fn len(&self) -> usize {
+        self.assignment.len()
+    }
+
     pub(crate) fn new(assignment: &Assignment) -> Result<Self, Error> {
         if !assignment.is_assignment_complete() {
             return Err(Error::IndeterminateAssignment)
