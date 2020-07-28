@@ -14,6 +14,7 @@ pub enum VarAssignment {
 }
 
 impl VarAssignment {
+    #[inline]
     pub fn to_bool(self) -> bool {
         match self {
             Self::True => true,
@@ -31,21 +32,25 @@ pub struct Literal {
 
 impl Literal {
     /// Returns the variable of the literal.
+    #[inline]
     pub fn variable(self) -> Variable {
         Variable::from(self)
     }
 
     /// Returns `true` if the literal has negative polarity.
+    #[inline]
     pub fn is_negative(self) -> bool {
         self.value.get().is_negative()
     }
 
     /// Returns `true` if the literal has positive polarity.
+    #[inline]
     pub fn is_positive(self) -> bool {
         self.value.get().is_positive()
     }
 
     /// Returns the literal's variable and polarity.
+    #[inline]
     pub fn into_var_and_assignment(self) -> (Variable, VarAssignment) {
         (
             self.variable(),
@@ -60,6 +65,7 @@ impl Literal {
 impl Not for Literal {
     type Output = Self;
 
+    #[inline]
     fn not(self) -> Self::Output {
         Self {
             value: NonZeroI32::new(-self.value.get())
@@ -69,6 +75,7 @@ impl Not for Literal {
 }
 
 impl From<cnf_parser::Literal> for Literal {
+    #[inline]
     fn from(literal: cnf_parser::Literal) -> Self {
         Self {
             value: literal.into_value(),
@@ -84,6 +91,7 @@ pub struct Variable {
 }
 
 impl From<Literal> for Variable {
+    #[inline]
     fn from(literal: Literal) -> Self {
         Self {
             value: NonZeroU32::new(literal.value.get().abs() as u32)
@@ -94,7 +102,8 @@ impl From<Literal> for Variable {
 
 impl Variable {
     /// Returns `true` if the given index is a valid variable index.
-    pub fn is_valid_index(index: usize) -> bool {
+    #[inline]
+    pub(crate) fn is_valid_index(index: usize) -> bool {
         i32::try_from(index).is_ok()
     }
 
@@ -125,6 +134,7 @@ impl Variable {
     }
 
     /// Returns the index of the variable.
+    #[inline]
     pub fn into_index(self) -> usize {
         self.value.get() as usize - 1
     }
