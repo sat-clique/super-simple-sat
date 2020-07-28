@@ -121,6 +121,8 @@ impl Propagator {
         occurrence_map: &OccurrenceMap,
         assignment: &mut Assignment,
     ) -> Result<PropagationResult, Error> {
+        let (root_variable, var_assignment) = root_literal.into_var_and_assignment();
+        assignment.assign(root_variable, var_assignment)?;
         let start = self.level_assignments.len();
         self.propagation_queue.clear();
         self.propagation_queue.push(root_literal);

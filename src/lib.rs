@@ -233,7 +233,6 @@ impl Solver {
         current_var: Variable,
         assignment: VarAssignment,
     ) -> Result<SolveResult, Error> {
-        self.assignments.assign(current_var, assignment)?;
         let current_lit = current_var.into_literal(assignment);
         match self.propagator.propagate(
             current_lit,
@@ -286,8 +285,6 @@ impl Solver {
             return Ok(true)
         }
         for assumption in assumptions {
-            let (variable, assignment) = assumption.into_var_and_assignment();
-            self.assignments.assign(variable, assignment)?;
             if let PropagationResult::Conflict { decision: _ } =
                 self.propagator.propagate(
                     assumption,
