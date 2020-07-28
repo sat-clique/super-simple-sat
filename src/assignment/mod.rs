@@ -24,11 +24,11 @@ pub enum Error {
 }
 
 impl Assignment {
-    pub fn len_variables(&self) -> usize {
+    fn len_variables(&self) -> usize {
         self.assignments.len()
     }
 
-    pub fn assign_impl(
+    fn assign_impl(
         &mut self,
         variable: Variable,
         new_assignment: Option<VarAssignment>,
@@ -98,7 +98,7 @@ impl Assignment {
         Ok(self.assignments.len())
     }
 
-    pub fn next_variable(&self, current_variable: Variable) -> Option<Variable> {
+    fn next_variable(&self, current_variable: Variable) -> Option<Variable> {
         if self.len_variables() == 0 {
             return None
         }
