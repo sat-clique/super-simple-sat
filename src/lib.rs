@@ -243,7 +243,7 @@ impl Solver {
         )? {
             PropagationResult::Conflict { decision } => {
                 self.propagator
-                    .unassign_decision(decision, &mut self.assignments)?;
+                    .backtrack_decision(decision, &mut self.assignments)?;
                 Ok(SolveResult::Conflict)
             }
             PropagationResult::Consistent { decision } => {
@@ -271,7 +271,7 @@ impl Solver {
                     }
                 };
                 self.propagator
-                    .unassign_decision(decision, &mut self.assignments)?;
+                    .backtrack_decision(decision, &mut self.assignments)?;
                 Ok(result)
             }
         }

@@ -168,7 +168,7 @@ impl Propagator {
         })
     }
 
-    pub fn unassign_decision(
+    pub fn backtrack_decision(
         &mut self,
         decision: DecisionId,
         assignment: &mut Assignment,
