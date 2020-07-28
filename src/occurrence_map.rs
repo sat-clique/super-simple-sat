@@ -16,13 +16,17 @@ pub struct OccurrenceMap {
     occurences: Vec<Occurrences>,
 }
 
+/// Occurrences of a single variable.
 #[derive(Debug, Default, Clone)]
-pub struct Occurrences {
+struct Occurrences {
+    /// Occurrences with the literal of positive polarity.
     pos: Vec<ClauseId>,
+    /// Occurrences with the literal of negative polarity.
     neg: Vec<ClauseId>,
 }
 
 impl Occurrences {
+    /// Registers the clause identifier for the given literal.
     pub fn register_for_lit(&mut self, literal: Literal, id: ClauseId) {
         match literal.is_positive() {
             true => self.pos.push(id),
@@ -30,6 +34,7 @@ impl Occurrences {
         }
     }
 
+    /// Returns all clauses containing the given literal.
     pub fn get(&self, literal: Literal) -> ClauseIdIter {
         match literal.is_positive() {
             true => ClauseIdIter::new(&self.pos[..]),
