@@ -2,6 +2,7 @@ mod assignment;
 mod builder;
 mod clause_db;
 mod occurrence_map;
+mod propagator;
 
 #[cfg(test)]
 mod tests;
@@ -9,11 +10,12 @@ mod tests;
 use crate::{
     assignment::Assignment,
     builder::SolverBuilder,
-    clause_db::{
-        ClauseDb,
-        ClauseId,
-    },
+    clause_db::ClauseDb,
     occurrence_map::OccurrenceMap,
+    propagator::{
+        PropagationResult,
+        Propagator,
+    },
 };
 pub use crate::{
     assignment::{
@@ -38,6 +40,9 @@ pub enum Error {
     InvalidLiteralChunkStart,
     InvalidLiteralChunkEnd,
     TooManyVariablesInUse,
+    InvalidDecisionId,
+    InvalidDecisionStart,
+    InvalidDecisionEnd,
 }
 
 impl From<occurrence_map::Error> for Error {
@@ -58,19 +63,6 @@ impl From<&'static str> for Error {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-enum ClauseStatus {
-    Conflicting,
-    UndeterminedLiteral(Literal),
-    NoConflictNorForcedAssignment,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-enum PropagationResult {
-    Conflict { assigned: Vec<Literal> },
-    Consistent { assigned: Vec<Literal> },
-}
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum SolveResult {
     Conflict,
@@ -83,7 +75,7 @@ pub struct Solver {
     clauses: ClauseDb,
     occurrence_map: OccurrenceMap,
     assignments: Assignment,
-    last_model: Option<Model>,
+    propagator: Propagator,
 }
 
 /// A chunk of literals.
@@ -234,81 +226,6 @@ impl Solver {
         Ok(chunk)
     }
 
-    fn get_clause_status(&self, id: ClauseId) -> Option<ClauseStatus> {
-        let mut num_indeterminate_lits = 0;
-        let mut last_indeterminate_lit = None;
-        for lit in self.clauses.resolve(id)? {
-            match self
-                .assignments
-                .is_satisfied(lit)
-                .expect("encountered unexpected invalid literal")
-            {
-                Some(true) => return Some(ClauseStatus::NoConflictNorForcedAssignment),
-                Some(false) => {}
-                None => {
-                    last_indeterminate_lit = Some(lit);
-                    num_indeterminate_lits += 1;
-                }
-            }
-        }
-        match num_indeterminate_lits {
-            0 => Some(ClauseStatus::Conflicting),
-            1 => {
-                Some(ClauseStatus::UndeterminedLiteral(
-                    last_indeterminate_lit
-                        .expect("encountered missing expected undetermined literal"),
-                ))
-            }
-            _ => Some(ClauseStatus::NoConflictNorForcedAssignment),
-        }
-    }
-
-    fn propagate(&mut self, root_literal: Literal) -> Result<PropagationResult, Error> {
-        let mut propagation_queue = vec![root_literal];
-        let mut level_assignments = vec![root_literal];
-        while let Some(lit_to_propagate) = propagation_queue.pop() {
-            for possibly_false_clause_id in self
-                .occurrence_map
-                .iter_potentially_conflicting_clauses(lit_to_propagate)
-            {
-                match self
-                    .get_clause_status(possibly_false_clause_id)
-                    .expect("encountered invalid clause identifier")
-                {
-                    ClauseStatus::Conflicting => {
-                        return Ok(PropagationResult::Conflict {
-                            assigned: level_assignments,
-                        })
-                    }
-                    ClauseStatus::UndeterminedLiteral(propagation_lit) => {
-                        level_assignments.push(propagation_lit);
-                        let (variable, var_assignment) =
-                            propagation_lit.into_var_and_assignment();
-                        self.assignments.assign(variable, var_assignment)?;
-                        propagation_queue.push(propagation_lit);
-                    }
-                    _ => (),
-                }
-            }
-        }
-        Ok(PropagationResult::Consistent {
-            assigned: level_assignments,
-        })
-    }
-
-    fn undo_current_level_assignments<L>(
-        &mut self,
-        conflicting_lits: L,
-    ) -> Result<(), Error>
-    where
-        L: IntoIterator<Item = Literal>,
-    {
-        for conflicting_lit in conflicting_lits {
-            self.assignments.unassign(conflicting_lit.variable())?;
-        }
-        Ok(())
-    }
-
     fn solve_for(
         &mut self,
         current_var: Variable,
@@ -316,31 +233,25 @@ impl Solver {
     ) -> Result<SolveResult, Error> {
         self.assignments.assign(current_var, assignment)?;
         let current_lit = current_var.into_literal(assignment);
-        match self.propagate(current_lit)? {
-            PropagationResult::Conflict { assigned } => {
-                self.undo_current_level_assignments(assigned)?;
+        match self.propagator.propagate(
+            current_lit,
+            &self.clauses,
+            &self.occurrence_map,
+            &mut self.assignments,
+        )? {
+            PropagationResult::Conflict { decision } => {
+                self.propagator
+                    .unassign_decision(decision, &mut self.assignments)?;
                 Ok(SolveResult::Conflict)
             }
-            PropagationResult::Consistent { assigned } => {
+            PropagationResult::Consistent { decision } => {
                 let next_var = self
                     .assignments
                     .next_unassigned(Some(current_var))
                     .expect("encountered unexpected invalid variable");
                 let result = match next_var {
                     None => {
-                        // self.last_model = Some(self.assignments.clone());
-                        match &mut self.last_model {
-                            Some(last_model) => {
-                                last_model.from_reuse(&self.assignments).expect(
-                                    "encountered unexpected incomplete assignment",
-                                );
-                            }
-                            none => {
-                                *none = Some(Model::new(&self.assignments).expect(
-                                    "encountered unexpected incomplete assignment",
-                                ));
-                            }
-                        }
+                        self.propagator.update_last_model(&self.assignments)?;
                         SolveResult::Sat
                     }
                     Some(unassigned_var) => {
@@ -357,7 +268,8 @@ impl Solver {
                         }
                     }
                 };
-                self.undo_current_level_assignments(assigned)?;
+                self.propagator
+                    .unassign_decision(decision, &mut self.assignments)?;
                 Ok(result)
             }
         }
@@ -374,8 +286,13 @@ impl Solver {
         for assumption in assumptions {
             let (variable, assignment) = assumption.into_var_and_assignment();
             self.assignments.assign(variable, assignment)?;
-            if let PropagationResult::Conflict { assigned: _ } =
-                self.propagate(assumption)?
+            if let PropagationResult::Conflict { decision: _ } =
+                self.propagator.propagate(
+                    assumption,
+                    &self.clauses,
+                    &self.occurrence_map,
+                    &mut self.assignments,
+                )?
             {
                 return Ok(false)
             }
@@ -402,13 +319,12 @@ impl Solver {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn last_model(&self) -> Option<&Model> {
-        self.last_model.as_ref()
+        self.propagator.last_model()
     }
 
     pub fn print_last_model(&self) {
-        if let Some(last_model) = &self.last_model {
+        if let Some(last_model) = self.last_model() {
             for (variable, assignment) in last_model {
                 let index = variable.into_index();
                 let assignment = match assignment {
