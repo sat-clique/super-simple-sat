@@ -7,6 +7,7 @@ mod clause_db;
 mod literal_chunk;
 mod occurrence_map;
 mod propagator;
+mod utils;
 
 #[cfg(test)]
 mod tests;
