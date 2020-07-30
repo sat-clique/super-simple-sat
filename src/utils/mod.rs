@@ -1,11 +1,14 @@
 pub mod bounded_array;
-pub mod bounded_map;
 pub mod bounded_bitmap;
+pub mod bounded_map;
 
 pub use self::{
     bounded_array::BoundedArray,
+    bounded_bitmap::{
+        Bool,
+        BoundedBitmap,
+    },
     bounded_map::BoundedMap,
-    bounded_bitmap::BoundedBitmap,
 };
 
 /// Errors that may occure when operating on a bounded map.
