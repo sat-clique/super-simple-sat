@@ -56,14 +56,6 @@ impl Model {
         self.assignment.len()
     }
 
-    pub(crate) fn new(assignment: &Assignment) -> Result<Self, Error> {
-        let mut model = Self {
-            assignment: Default::default(),
-        };
-        model.from_reuse(assignment)?;
-        Ok(model)
-    }
-
     pub(crate) fn from_reuse(&mut self, assignment: &Assignment) -> Result<(), Error> {
         if !assignment.is_assignment_complete() {
             return Err(Error::IndeterminateAssignment)
