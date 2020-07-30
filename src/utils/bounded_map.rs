@@ -1,12 +1,10 @@
 use super::{
+    BoundedArray,
     Error,
     Index,
 };
 use core::{
-    iter::{
-        FromIterator,
-        IntoIterator,
-    },
+    iter::IntoIterator,
     marker::PhantomData,
     ops,
 };
@@ -17,10 +15,18 @@ pub struct BoundedMap<K, V> {
     /// The current length of the bounded map.
     len: usize,
     /// The underlying values of the bounded map.
-    slots: Vec<Option<V>>,
+    slots: BoundedArray<Option<V>>,
     marker: PhantomData<fn() -> K>,
 }
 
+impl<K, V> Default for BoundedMap<K, V> {
+    fn default() -> Self {
+        Self {
+            len: 0,
+            slots: BoundedArray::default(),
+            marker: Default::default(),
+        }
+    }
 }
 
 impl<K, V> BoundedMap<K, V> {
@@ -33,7 +39,7 @@ impl<K, V> BoundedMap<K, V> {
     pub fn with_capacity(len: usize) -> Self {
         Self {
             len: 0,
-            slots: Vec::from_iter((0..len).map(|_| None)),
+            slots: BoundedArray::with_len(len),
             marker: Default::default(),
         }
     }
@@ -48,7 +54,7 @@ impl<K, V> BoundedMap<K, V> {
         if new_len < self.capacity() {
             return Err(Error::InvalidSizeIncrement)
         }
-        self.slots.resize_with(new_len, || None);
+        self.slots.increase_to_capacity(new_len)?;
         Ok(())
     }
 
@@ -354,6 +360,9 @@ mod tests {
     #[test]
     fn shrink_size_fails() {
         let mut map = <BoundedMap<usize, u8>>::with_capacity(3);
-        assert_eq!(map.increase_capacity_to(2), Err(Error::InvalidSizeIncrement));
+        assert_eq!(
+            map.increase_capacity_to(2),
+            Err(Error::InvalidSizeIncrement)
+        );
     }
 }
