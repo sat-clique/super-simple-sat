@@ -244,9 +244,4 @@ impl Solver {
             }
         }
     }
-
-    #[cfg(test)]
-    pub fn last_model(&self) -> Option<&Model> {
-        self.last_model.get()
-    }
 }
