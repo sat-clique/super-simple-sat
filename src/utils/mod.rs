@@ -1,5 +1,12 @@
 
 
+/// Errors that may occure when operating on a bounded map.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Error {
+    OutOfBoundsAccess,
+    InvalidSizeIncrement,
+}
+
 mod bounded_map;
 /// Index types that may be used as keys for the bounded map.
 pub trait Index: Copy + Clone {

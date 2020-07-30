@@ -1,4 +1,5 @@
 use super::{
+    Error,
     Index,
 };
 use core::{
@@ -20,11 +21,6 @@ pub struct BoundedMap<K, V> {
     marker: PhantomData<fn() -> K>,
 }
 
-/// Errors that may occure when operating on a bounded map.
-#[derive(Debug, PartialEq, Eq)]
-pub enum Error {
-    OutOfBoundsAccess,
-    InvalidSizeIncrement,
 }
 
 impl<K, V> BoundedMap<K, V> {
