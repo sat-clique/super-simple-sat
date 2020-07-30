@@ -56,11 +56,11 @@ impl Index for BitIndex {
     }
 }
 
-type Bits32 = u32;
-const CHUNK_LEN: usize = core::mem::size_of::<Bits32>() * 8;
+type Chunk = u32;
+const CHUNK_LEN: usize = core::mem::size_of::<Chunk>() * 8;
 
 pub struct BoundedBitmap<Idx, T> {
-    chunks: BoundedArray<ChunkIndex, Bits32>,
+    chunks: BoundedArray<ChunkIndex, Chunk>,
     len: usize,
     marker: PhantomData<fn() -> (Idx, T)>,
 }
@@ -90,7 +90,7 @@ where
                 }
                 bits
             })
-            .collect::<BoundedArray<ChunkIndex, Bits32>>();
+            .collect::<BoundedArray<ChunkIndex, Chunk>>();
         Self {
             len,
             chunks,
