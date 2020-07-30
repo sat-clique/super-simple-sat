@@ -74,7 +74,7 @@ impl From<&'static str> for Error {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-enum SolveResult {
+enum DecisionResult {
     Conflict,
     Sat,
 }
@@ -150,11 +150,11 @@ impl Solver {
         Ok(chunk)
     }
 
-    fn solve_for(
+    fn solve_for_decision(
         &mut self,
         current_var: Variable,
         assignment: VarAssignment,
-    ) -> Result<SolveResult, Error> {
+    ) -> Result<DecisionResult, Error> {
         let current_lit = current_var.into_literal(assignment);
         match self.propagator.propagate(
             current_lit,
@@ -165,7 +165,7 @@ impl Solver {
             PropagationResult::Conflict { decision } => {
                 self.propagator
                     .backtrack_decision(decision, &mut self.assignments)?;
-                Ok(SolveResult::Conflict)
+                Ok(DecisionResult::Conflict)
             }
             PropagationResult::Consistent { decision } => {
                 let next_var = self
@@ -175,19 +175,19 @@ impl Solver {
                 let result = match next_var {
                     None => {
                         self.last_model.update(&self.assignments)?;
-                        SolveResult::Sat
+                        DecisionResult::Sat
                     }
                     Some(unassigned_var) => {
-                        if let SolveResult::Sat =
-                            self.solve_for(unassigned_var, VarAssignment::True)?
+                        if let DecisionResult::Sat =
+                            self.solve_for_decision(unassigned_var, VarAssignment::True)?
                         {
-                            SolveResult::Sat
-                        } else if let SolveResult::Sat =
-                            self.solve_for(unassigned_var, VarAssignment::False)?
+                            DecisionResult::Sat
+                        } else if let DecisionResult::Sat =
+                            self.solve_for_decision(unassigned_var, VarAssignment::False)?
                         {
-                            SolveResult::Sat
+                            DecisionResult::Sat
                         } else {
-                            SolveResult::Conflict
+                            DecisionResult::Conflict
                         }
                     }
                 };
@@ -225,13 +225,13 @@ impl Solver {
         match initial_var {
             None => Ok(true),
             Some(initial_var) => {
-                if let SolveResult::Sat =
-                    self.solve_for(initial_var, VarAssignment::True)?
+                if let DecisionResult::Sat =
+                    self.solve_for_decision(initial_var, VarAssignment::True)?
                 {
                     return Ok(true)
                 }
-                if let SolveResult::Sat =
-                    self.solve_for(initial_var, VarAssignment::False)?
+                if let DecisionResult::Sat =
+                    self.solve_for_decision(initial_var, VarAssignment::False)?
                 {
                     return Ok(true)
                 }
