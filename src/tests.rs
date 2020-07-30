@@ -4,6 +4,7 @@ use crate::{
     Solver,
     VarAssignment,
     Variable,
+    SolveResult,
 };
 use std::{
     fs,
@@ -19,7 +20,7 @@ fn simple_sat_works() {
     "[..],
     )
     .unwrap();
-    assert_eq!(solver.solve(vec![]), Ok(true));
+    assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(true));
 }
 
 #[test]
@@ -34,13 +35,13 @@ fn simple_unsat_works() {
     "[..],
     )
     .unwrap();
-    assert_eq!(solver.solve(vec![]), Ok(false));
+    assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(false));
 }
 
 #[test]
 fn solve_empty_problem_works() {
     let mut solver = Solver::default();
-    assert_eq!(solver.solve(vec![]), Ok(true));
+    assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(true));
 }
 
 fn clause(lits: &[Literal]) -> Clause {
@@ -52,7 +53,7 @@ fn solve_problem_with_single_unit_clause() {
     let mut solver = Solver::default();
     let a = solver.new_literal().unwrap();
     solver.consume_clause(clause(&[a])).unwrap();
-    assert_eq!(solver.solve(vec![]), Ok(true));
+    assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(true));
 }
 
 #[test]
@@ -63,7 +64,7 @@ fn solve_problem_with_non_contradictory_unit_clauses() {
     solver.consume_clause(clause(&[ vars[2]])).unwrap();
     solver.consume_clause(clause(&[ vars[4]])).unwrap();
     solver.consume_clause(clause(&[!vars[5]])).unwrap();
-    assert_eq!(solver.solve(vec![]), Ok(true));
+    assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(true));
 }
 
 #[test]
@@ -75,7 +76,7 @@ fn solve_problem_with_contradictory_unit_clauses() {
     solver.consume_clause(clause(&[ vars[4]])).unwrap();
     solver.consume_clause(clause(&[!vars[4]])).unwrap();
     let result = solver.solve(vec![]);
-    assert_eq!(result, Ok(false));
+    assert_eq!(result.map(|res| res.is_sat()), Ok(false));
 }
 
 #[test]
@@ -87,7 +88,7 @@ fn test_solve_satisfiable_3sat_problem() {
     solver.consume_clause(clause(&[!vars[3], !vars[7], !vars[0]])).unwrap();
     solver.consume_clause(clause(&[!vars[9], !vars[6], !vars[1]])).unwrap();
     let result = solver.solve(vec![]);
-    assert_eq!(result, Ok(true));
+    assert_eq!(result.map(|res| res.is_sat()), Ok(true));
 }
 
 #[test]
@@ -102,7 +103,7 @@ fn test_unsatisfiable_2sat_problem() {
     solver.consume_clause(clause(&[!vars[4],  vars[7]])).unwrap();
     solver.consume_clause(clause(&[!vars[7], !vars[4]])).unwrap();
     let result = solver.solve(vec![]);
-    assert_eq!(result, Ok(false));
+    assert_eq!(result.map(|res| res.is_sat()), Ok(false));
 }
 
 #[test]
@@ -115,7 +116,7 @@ fn test_solve_3sat_problem_with_satisfiable_assumptions() {
     solver.consume_clause(clause(&[!vars[3], !vars[7], !vars[0]])).unwrap();
     solver.consume_clause(clause(&[!vars[9], !vars[6], !vars[1]])).unwrap();
     let result = solver.solve(vec![vars[1], vars[7], vars[6]]);
-    assert_eq!(result, Ok(true));
+    assert_eq!(result.map(|res| res.is_sat()), Ok(true));
 }
 
 #[test]
@@ -128,7 +129,7 @@ fn test_solve_3sat_problem_with_unsatisfiable_assumptions() {
     solver.consume_clause(clause(&[!vars[3], !vars[7], !vars[0]])).unwrap();
     solver.consume_clause(clause(&[!vars[9], !vars[6],  vars[1]])).unwrap();
     let result = solver.solve(vec![!vars[1], !vars[3], vars[7]]);
-    assert_eq!(result, Ok(false));
+    assert_eq!(result.map(|res| res.is_sat()), Ok(false));
 }
 
 #[test]
@@ -141,8 +142,11 @@ fn test_get_forced_assignment() {
     solver.consume_clause(clause(&[!vars[3], !vars[7], !vars[0]])).unwrap();
     solver.consume_clause(clause(&[!vars[9], !vars[6], !vars[1]])).unwrap();
     let result = solver.solve(vec![vars[1], vars[7], vars[6]]);
-    assert_eq!(result, Ok(true));
-    let model = solver.last_model().unwrap();
+    assert_eq!(result.as_ref().map(|res| res.is_sat()), Ok(true));
+    let model = match result.unwrap() {
+        SolveResult::Sat(sat_result) => sat_result.model(),
+        _ => panic!("expected satisfied solve result"),
+    };
     assert_eq!(model.is_satisfied( vars[1]), Ok(true));
     assert_eq!(model.is_satisfied(!vars[1]), Ok(false));
     assert_eq!(model.is_satisfied( vars[7]), Ok(true));
@@ -175,7 +179,7 @@ fn test_cnf_input() {
         .unwrap()
         .into_literal(VarAssignment::True);
     let result = solver.solve(vec![assumption_1, assumption_2, assumption_3]);
-    assert_eq!(result, Ok(true));
+    assert_eq!(result.map(|res| res.is_sat()), Ok(true));
 }
 
 /// Returns the byte representation of all benchmarks found under the given path.
@@ -225,7 +229,7 @@ fn test_3sat_v100_c430_sat() {
     {
         let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
         assert_eq!(
-            solver.solve(vec![]),
+            solver.solve(vec![]).map(|res| res.is_sat()),
             Ok(true),
             "failed at unsat uf100-430/{}",
             n
@@ -241,7 +245,7 @@ fn test_3sat_v100_c430_unsat() {
     {
         let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
         assert_eq!(
-            solver.solve(vec![]),
+            solver.solve(vec![]).map(|res| res.is_sat()),
             Ok(false),
             "failed at unsat uf100-430/{}",
             n
