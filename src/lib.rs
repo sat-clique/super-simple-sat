@@ -79,6 +79,11 @@ enum DecisionResult {
     Sat,
 }
 
+impl DecisionResult {
+    pub fn is_sat(&self) -> bool {
+        matches!(self, Self::Sat)
+    }
+}
 #[derive(Debug, Default, Clone)]
 pub struct Solver {
     len_variables: usize,
@@ -178,12 +183,12 @@ impl Solver {
                         DecisionResult::Sat
                     }
                     Some(unassigned_var) => {
-                        if let DecisionResult::Sat =
-                            self.solve_for_decision(unassigned_var, VarAssignment::True)?
-                        {
-                            DecisionResult::Sat
-                        } else if let DecisionResult::Sat =
-                            self.solve_for_decision(unassigned_var, VarAssignment::False)?
+                        if self
+                            .solve_for_decision(unassigned_var, VarAssignment::True)?
+                            .is_sat()
+                            || self
+                                .solve_for_decision(unassigned_var, VarAssignment::False)?
+                                .is_sat()
                         {
                             DecisionResult::Sat
                         } else {
