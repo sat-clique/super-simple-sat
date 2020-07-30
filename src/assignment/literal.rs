@@ -159,3 +159,13 @@ impl Variable {
         self.value.get() as usize - 1
     }
 }
+
+impl Index for Variable {
+    fn from_index(index: usize) -> Self {
+        Variable::from_index(index).expect("encountered invalid index")
+    }
+
+    fn into_index(self) -> usize {
+        self.into_index()
+    }
+}
