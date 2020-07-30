@@ -169,6 +169,10 @@ where
         }
         Ok(())
     }
+
+    pub fn iter(&self) -> Iter<Idx, T> {
+        Iter::new(self)
+    }
 }
 
 impl<'a, Idx, T> IntoIterator for &'a BoundedBitmap<Idx, T>
@@ -180,13 +184,22 @@ where
     type IntoIter = Iter<'a, Idx, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        todo!()
+        self.iter()
     }
 }
 
 pub struct Iter<'a, Idx, T> {
     current: usize,
     bits: &'a BoundedBitmap<Idx, T>,
+}
+
+impl<'a, Idx, T> Iter<'a, Idx, T> {
+    fn new(bitmap: &'a BoundedBitmap<Idx, T>) -> Self {
+        Self {
+            current: 0,
+            bits: bitmap,
+        }
+    }
 }
 
 impl<'a, Idx, T> Iterator for Iter<'a, Idx, T>
