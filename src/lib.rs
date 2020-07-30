@@ -84,6 +84,36 @@ impl DecisionResult {
         matches!(self, Self::Sat)
     }
 }
+
+pub enum SolveResult<'a> {
+    Unsat,
+    Sat(SatResult<'a>),
+}
+
+impl<'a> SolveResult<'a> {
+    fn sat(model: &'a Model) -> Self {
+        Self::Sat(SatResult { model })
+    }
+
+    pub fn is_sat(&self) -> bool {
+        matches!(self, SolveResult::Sat(_))
+    }
+
+    pub fn is_unsat(&self) -> bool {
+        !self.is_sat()
+    }
+}
+
+pub struct SatResult<'a> {
+    model: &'a Model,
+}
+
+impl<'a> SatResult<'a> {
+    pub fn model(&self) -> &'a Model {
+        self.model
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Solver {
     len_variables: usize,
@@ -203,13 +233,13 @@ impl Solver {
         }
     }
 
-    pub fn solve<L>(&mut self, assumptions: L) -> Result<bool, Error>
+    pub fn solve<L>(&mut self, assumptions: L) -> Result<SolveResult, Error>
     where
         L: IntoIterator<Item = Literal>,
     {
         // If the set of clauses contain the empty clause: UNSAT
         if self.len_variables() == 0 {
-            return Ok(true)
+            return Ok(SolveResult::sat(self.last_model.get()))
         }
         for assumption in assumptions {
             if let PropagationResult::Conflict { decision: _ } =
@@ -220,7 +250,7 @@ impl Solver {
                     &mut self.assignments,
                 )?
             {
-                return Ok(false)
+                return Ok(SolveResult::Unsat)
             }
         }
         let initial_var = self
@@ -228,19 +258,19 @@ impl Solver {
             .next_unassigned(None)
             .expect("encountered unexpected invalid initial variable");
         match initial_var {
-            None => Ok(true),
+            None => Ok(SolveResult::sat(self.last_model.get())),
             Some(initial_var) => {
                 if let DecisionResult::Sat =
                     self.solve_for_decision(initial_var, VarAssignment::True)?
                 {
-                    return Ok(true)
+                    return Ok(SolveResult::sat(self.last_model.get()))
                 }
                 if let DecisionResult::Sat =
                     self.solve_for_decision(initial_var, VarAssignment::False)?
                 {
-                    return Ok(true)
+                    return Ok(SolveResult::sat(self.last_model.get()))
                 }
-                Ok(false)
+                Ok(SolveResult::Unsat)
             }
         }
     }
