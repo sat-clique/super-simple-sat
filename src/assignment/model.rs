@@ -5,6 +5,10 @@ pub use super::{
     VarAssignment,
     Variable,
 };
+use crate::utils::{
+    bounded_bitmap,
+    BoundedBitmap,
+};
 use core::{
     fmt,
     fmt::Display,
@@ -42,7 +46,7 @@ impl LastModel {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Model {
-    assignment: Vec<VarAssignment>,
+    assignment: BoundedBitmap<Variable, VarAssignment>,
 }
 
 impl Display for Model {
@@ -64,37 +68,32 @@ impl Model {
     }
 
     pub(crate) fn new(assignment: &Assignment) -> Result<Self, Error> {
-        if !assignment.is_assignment_complete() {
-            return Err(Error::IndeterminateAssignment)
-        }
-        let assignment = assignment
-            .assignments
-            .iter()
-            .copied()
-            .map(|assign| assign.ok_or_else(|| Error::IndeterminateAssignment))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(Self { assignment })
+        let mut model = Self {
+            assignment: Default::default(),
+        };
+        model.from_reuse(assignment)?;
+        Ok(model)
     }
 
     pub(crate) fn from_reuse(&mut self, assignment: &Assignment) -> Result<(), Error> {
         if !assignment.is_assignment_complete() {
             return Err(Error::IndeterminateAssignment)
         }
-        self.assignment
-            .resize_with(assignment.len_variables(), || VarAssignment::False);
-        self.assignment.clear();
-        self.assignment
-            .extend(assignment.assignments.iter().copied().map(|assign| {
-                assign.expect("encountered unexpected indeterminate assignment")
-            }));
+        self.assignment.increase_len(assignment.len_variables());
+        for (variable, var_assignment) in assignment {
+            let var_assignment =
+                var_assignment.expect("encountered unexpected indeterminate assignment");
+            self.assignment
+                .set(variable, var_assignment)
+                .map_err(|_| Error::VariableIndexOutOfRange);
+        }
         Ok(())
     }
 
     fn resolve(&self, variable: Variable) -> Result<VarAssignment, Error> {
         self.assignment
-            .get(variable.into_index())
-            .copied()
-            .ok_or_else(|| Error::VariableIndexOutOfRange)
+            .get(variable)
+            .map_err(|_| Error::VariableIndexOutOfRange)
     }
 
     pub fn is_satisfied(&self, literal: Literal) -> Result<bool, Error> {
@@ -115,7 +114,7 @@ impl<'a> IntoIterator for &'a Model {
 }
 
 pub struct ModelIter<'a> {
-    iter: iter::Enumerate<slice::Iter<'a, VarAssignment>>,
+    iter: iter::Enumerate<bounded_bitmap::Iter<'a, Variable, VarAssignment>>,
 }
 
 impl<'a> ModelIter<'a> {
@@ -136,7 +135,7 @@ impl<'a> Iterator for ModelIter<'a> {
                 Some((
                     Variable::from_index(index)
                         .expect("encountered unexpected invalid variable index"),
-                    *assignment,
+                    assignment,
                 ))
             }
         }
