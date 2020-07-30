@@ -7,7 +7,9 @@ use crate::{
 
 /// A chunk of literals.
 ///
-/// Created by the [`Solver::new_literal_chunk`] method.
+/// Created by the
+/// [`Solver::new_literal_chunk`](`crate::Solver::new_literal_chunk)
+/// method.
 #[derive(Debug, Clone)]
 pub struct LiteralChunk {
     /// The start index of this chunk for the first literal.
