@@ -78,6 +78,7 @@ impl<Idx, T> Default for BoundedBitmap<Idx, T> {
 
 impl<Idx, T> BoundedBitmap<Idx, T>
 where
+    Idx: Index,
     T: Bool + Copy,
 {
     pub fn from_slice(slice: &[T]) -> Self {
@@ -87,7 +88,7 @@ where
             .map(|chunk| {
                 let mut bits = 0;
                 for (n, &bit) in chunk.iter().enumerate() {
-                    bits |= (bit.into_bool() as u32) << (31 - n);
+                    bits |= Self::bit_index_to_mask_iff(BitIndex::from_index(n), bit)
                 }
                 bits
             })
@@ -110,13 +111,26 @@ impl<Idx, T> BoundedBitmap<Idx, T> {
     }
 
     pub fn increase_len(&mut self, new_len: usize) -> Result<(), Error> {
-        self.chunks.increase_to_capacity((new_len / 32) + 1)?;
+        self.chunks.increase_to_capacity((new_len / CHUNK_LEN) + 1)?;
         self.len = new_len;
         Ok(())
     }
 
+    fn bit_index_to_mask(index: BitIndex) -> Chunk {
+        0x01 << ((CHUNK_LEN - 1) - index.into_index())
+    }
+
     pub fn len(&self) -> usize {
         self.len
+    }
+}
+
+impl<Idx, T> BoundedBitmap<Idx, T>
+where
+    T: Bool,
+{
+    fn bit_index_to_mask_iff(index: BitIndex, flag: T) -> Chunk {
+        (flag.into_bool() as Chunk) << ((CHUNK_LEN - 1) - index.into_index())
     }
 }
 
@@ -136,22 +150,20 @@ where
     pub fn get(&self, index: Idx) -> Result<T, Error> {
         let (chunk_idx, bit_idx) = Self::split_index(index);
         let chunk = self.chunks.get(chunk_idx)?;
-        let bit_idx = bit_idx.into_index();
-        let value = (chunk >> (31 - bit_idx)) & 0x01 != 0;
-        Ok(T::from_bool(value))
+        let value = chunk & Self::bit_index_to_mask(bit_idx);
+        Ok(T::from_bool(value != 0))
     }
 
     pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), Error> {
         let new_value = new_value.into_bool();
         let (chunk_idx, bit_idx) = Self::split_index(index);
         let chunk = self.chunks.get_mut(chunk_idx)?;
-        let bit_idx = bit_idx.into_index();
         match new_value {
             true => {
-                *chunk |= 0x01 << (31 - bit_idx);
+                *chunk |= Self::bit_index_to_mask(bit_idx);
             }
             false => {
-                *chunk &= !(0x01 << (31 - bit_idx));
+                *chunk &= !Self::bit_index_to_mask(bit_idx);
             }
         }
         Ok(())
