@@ -20,7 +20,7 @@ impl Bool for bool {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 struct ChunkIndex {
     value: usize,
@@ -59,6 +59,7 @@ impl Index for BitIndex {
 type Chunk = u32;
 const CHUNK_LEN: usize = core::mem::size_of::<Chunk>() * 8;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoundedBitmap<Idx, T> {
     chunks: BoundedArray<ChunkIndex, Chunk>,
     len: usize,
