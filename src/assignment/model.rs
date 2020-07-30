@@ -17,29 +17,19 @@ use core::{
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct LastModel {
-    last_model: Option<Model>,
+    last_model: Model,
 }
 
 impl LastModel {
     pub fn update(&mut self, assignment: &Assignment) -> Result<(), Error> {
-        match &mut self.last_model {
-            Some(last_model) => {
-                last_model
-                    .from_reuse(&assignment)
-                    .expect("encountered unexpected incomplete assignment");
-            }
-            none => {
-                *none = Some(
-                    Model::new(&assignment)
-                        .expect("encountered unexpected incomplete assignment"),
-                );
-            }
-        }
+        self.last_model
+            .from_reuse(&assignment)
+            .expect("encountered unexpected incomplete assignment");
         Ok(())
     }
 
-    pub fn get(&self) -> Option<&Model> {
-        self.last_model.as_ref()
+    pub fn get(&self) -> &Model {
+        &self.last_model
     }
 }
 
