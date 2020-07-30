@@ -69,16 +69,12 @@ impl Literal {
         self.value.get().is_positive()
     }
 
-    /// Returns the literal's variable and polarity.
-    #[inline]
-    pub fn into_var_and_assignment(self) -> (Variable, VarAssignment) {
-        (
-            self.variable(),
-            match self.is_positive() {
-                true => VarAssignment::True,
-                false => VarAssignment::False,
-            },
-        )
+    /// Returns the assignment and polarity of the literal.
+    pub fn assignment(self) -> VarAssignment {
+        match self.is_positive() {
+            true => VarAssignment::True,
+            false => VarAssignment::False,
+        }
     }
 }
 

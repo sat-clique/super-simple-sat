@@ -98,7 +98,8 @@ impl Propagator {
         occurrence_map: &OccurrenceMap,
         assignment: &mut Assignment,
     ) -> Result<PropagationResult, Error> {
-        let (root_variable, var_assignment) = root_literal.into_var_and_assignment();
+        let root_variable = root_literal.variable();
+        let var_assignment = root_literal.assignment();
         assignment.assign(root_variable, var_assignment)?;
         let start = self.level_assignments.len();
         self.propagation_queue.clear();
@@ -126,9 +127,10 @@ impl Propagator {
                     }
                     ClauseStatus::UndeterminedLiteral(propagation_lit) => {
                         self.level_assignments.push(propagation_lit);
-                        let (variable, var_assignment) =
-                            propagation_lit.into_var_and_assignment();
-                        assignment.assign(variable, var_assignment)?;
+                        assignment.assign(
+                            propagation_lit.variable(),
+                            propagation_lit.assignment(),
+                        )?;
                         self.propagation_queue.push(propagation_lit);
                     }
                     _ => (),
