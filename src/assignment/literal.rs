@@ -1,3 +1,7 @@
+use crate::utils::{
+    Bool,
+    Index,
+};
 use core::{
     convert::TryFrom,
     num::{
@@ -16,6 +20,22 @@ pub enum VarAssignment {
 impl VarAssignment {
     #[inline]
     pub fn to_bool(self) -> bool {
+        match self {
+            Self::True => true,
+            Self::False => false,
+        }
+    }
+}
+
+impl Bool for VarAssignment {
+    fn from_bool(value: bool) -> Self {
+        match value {
+            true => Self::True,
+            false => Self::False,
+        }
+    }
+
+    fn into_bool(self) -> bool {
         match self {
             Self::True => true,
             Self::False => false,
