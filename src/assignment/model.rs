@@ -13,7 +13,6 @@ use core::{
     fmt,
     fmt::Display,
     iter,
-    slice,
 };
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
@@ -79,13 +78,15 @@ impl Model {
         if !assignment.is_assignment_complete() {
             return Err(Error::IndeterminateAssignment)
         }
-        self.assignment.increase_len(assignment.len_variables());
+        self.assignment
+            .increase_len(assignment.len_variables())
+            .map_err(|_| Error::UsedTooManyVariables)?;
         for (variable, var_assignment) in assignment {
             let var_assignment =
                 var_assignment.expect("encountered unexpected indeterminate assignment");
             self.assignment
                 .set(variable, var_assignment)
-                .map_err(|_| Error::VariableIndexOutOfRange);
+                .map_err(|_| Error::VariableIndexOutOfRange)?;
         }
         Ok(())
     }
