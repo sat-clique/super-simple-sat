@@ -3,6 +3,7 @@ use super::{
     Index,
 };
 use core::{
+    iter::FromIterator,
     marker::PhantomData,
     ops,
 };
@@ -25,6 +26,17 @@ where
     }
 }
 
+impl<Idx, T> FromIterator<T> for BoundedArray<Idx, T> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = T>,
+    {
+        Self {
+            values: iter.into_iter().collect(),
+            marker: Default::default(),
+        }
+    }
+}
 
 impl<Idx, T> BoundedArray<Idx, T> {
     /// Returns the current length of the bounded array.
