@@ -15,7 +15,7 @@ pub struct BoundedMap<K, V> {
     /// The current length of the bounded map.
     len: usize,
     /// The underlying values of the bounded map.
-    slots: BoundedArray<Option<V>>,
+    slots: BoundedArray<K, Option<V>>,
     marker: PhantomData<fn() -> K>,
 }
 
@@ -83,34 +83,17 @@ impl<K, V> BoundedMap<K, V>
 where
     K: Index,
 {
-    /// Ensures that the given index is valid for the capacity of the bounded map.
-    ///
-    /// Returns the raw value of the index if it is valid.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the index is out of bounds.
-    fn ensure_valid_index(&self, index: K) -> Result<usize, Error> {
-        let index = index.into_index();
-        if index >= self.capacity() {
-            return Err(Error::OutOfBoundsAccess)
-        }
-        Ok(index)
-    }
-
     /// Inserts the given value for the key and returns the old value if any.
     ///
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
     pub fn insert(&mut self, index: K, new_value: V) -> Result<Option<V>, Error> {
-        self.ensure_valid_index(index).map(|raw_index| {
-            let old_value = self.slots[raw_index].replace(new_value);
-            if old_value.is_none() {
-                self.len += 1;
-            }
-            old_value
-        })
+        let old_value = self.slots.get_mut(index)?.replace(new_value);
+        if old_value.is_none() {
+            self.len += 1;
+        }
+        Ok(old_value)
     }
 
     /// Takes the value of the given key and returns it if any.
@@ -119,13 +102,11 @@ where
     ///
     /// Returns an error if the key's index is out of bounds.
     pub fn take(&mut self, index: K) -> Result<Option<V>, Error> {
-        self.ensure_valid_index(index).map(|raw_index| {
-            let old_value = self.slots[raw_index].take();
-            if old_value.is_some() {
-                self.len -= 1;
-            }
-            old_value
-        })
+        let old_value = self.slots.get_mut(index)?.take();
+        if old_value.is_some() {
+            self.len -= 1;
+        }
+        Ok(old_value)
     }
 
     /// Returns a shared reference to the value for the given key if any.
@@ -139,8 +120,7 @@ where
     ///
     /// Returns an error if the key's index is out of bounds.
     fn get_impl(&self, index: K) -> Result<&Option<V>, Error> {
-        self.ensure_valid_index(index)
-            .map(move |raw_index| &self.slots[raw_index])
+        self.slots.get(index)
     }
 
     /// Returns an exclusive reference to the value for the given key if any.
@@ -154,8 +134,7 @@ where
     ///
     /// Returns an error if the key's index is out of bounds.
     fn get_mut_impl(&mut self, index: K) -> Result<&mut Option<V>, Error> {
-        self.ensure_valid_index(index)
-            .map(move |raw_index| &mut self.slots[raw_index])
+        self.slots.get_mut(index)
     }
 
     /// Returns a shared reference to the value for the given key if any.

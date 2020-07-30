@@ -1,32 +1,49 @@
-use super::{Error, Index};
-use core::ops;
+use super::{
+    Error,
+    Index,
+};
+use core::{
+    marker::PhantomData,
+    ops,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct BoundedArray<T> {
+pub struct BoundedArray<Idx, T> {
     values: Vec<T>,
+    marker: PhantomData<fn() -> Idx>,
 }
 
-impl<T> Default for BoundedArray<T>
+impl<Idx, T> Default for BoundedArray<Idx, T>
 where
     T: Default,
 {
     fn default() -> Self {
-        Self { values: Vec::new() }
+        Self {
+            values: Vec::new(),
+            marker: Default::default(),
+        }
     }
 }
 
-impl<T> BoundedArray<T> {
+
+impl<Idx, T> BoundedArray<Idx, T> {
     /// Returns the current length of the bounded array.
     pub fn len(&self) -> usize {
-        self.values.capacity()
+        self.values.len()
     }
+}
 
+impl<Idx, T> BoundedArray<Idx, T>
+where
+    Idx: Index,
+{
     /// Ensures that the given index is valid for the bounded array.
     ///
     /// # Errors
     ///
     /// If the given index is out of bounds.
-    fn ensure_valid_index(&self, index: usize) -> Result<usize, Error> {
+    fn ensure_valid_index(&self, index: Idx) -> Result<usize, Error> {
+        let index = index.into_index();
         if index >= self.len() {
             return Err(Error::OutOfBoundsAccess)
         }
@@ -34,17 +51,19 @@ impl<T> BoundedArray<T> {
     }
 
     /// Returns a shared reference to the element at the given index.
-    pub fn get(&self, index: usize) -> Result<&T, Error> {
+    pub fn get(&self, index: Idx) -> Result<&T, Error> {
         self.ensure_valid_index(index)
             .map(move |index| &self.values[index])
     }
 
     /// Returns an exclusive reference to the element at the given index.
-    pub fn get_mut(&mut self, index: usize) -> Result<&mut T, Error> {
+    pub fn get_mut(&mut self, index: Idx) -> Result<&mut T, Error> {
         self.ensure_valid_index(index)
             .map(move |index| &mut self.values[index])
     }
+}
 
+impl<Idx, T> BoundedArray<Idx, T> {
     /// Returns an iterator yielding shared references over the array values.
     pub fn iter(&self) -> core::slice::Iter<T> {
         self.values.iter()
@@ -56,7 +75,7 @@ impl<T> BoundedArray<T> {
     }
 }
 
-impl<T> BoundedArray<T>
+impl<Idx, T> BoundedArray<Idx, T>
 where
     T: Default,
 {
@@ -66,6 +85,7 @@ where
     pub fn with_len(len: usize) -> Self {
         Self {
             values: (0..len).map(|_| Default::default()).collect(),
+            marker: Default::default(),
         }
     }
 
@@ -81,7 +101,7 @@ where
     }
 }
 
-impl<'a, T> IntoIterator for &'a BoundedArray<T> {
+impl<'a, Idx, T> IntoIterator for &'a BoundedArray<Idx, T> {
     type Item = &'a T;
     type IntoIter = core::slice::Iter<'a, T>;
 
@@ -90,7 +110,7 @@ impl<'a, T> IntoIterator for &'a BoundedArray<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a mut BoundedArray<T> {
+impl<'a, Idx, T> IntoIterator for &'a mut BoundedArray<Idx, T> {
     type Item = &'a mut T;
     type IntoIter = core::slice::IterMut<'a, T>;
 
@@ -99,7 +119,10 @@ impl<'a, T> IntoIterator for &'a mut BoundedArray<T> {
     }
 }
 
-impl<T> ops::Index<usize> for BoundedArray<T> {
+impl<Idx, T> ops::Index<Idx> for BoundedArray<Idx, T>
+where
+    Idx: Index,
+{
     type Output = T;
 
     /// Returns a shared reference to the value for the given index if any.
@@ -107,18 +130,21 @@ impl<T> ops::Index<usize> for BoundedArray<T> {
     /// # Panics
     ///
     /// Returns an error if the index is out of bounds.
-    fn index(&self, index: usize) -> &Self::Output {
+    fn index(&self, index: Idx) -> &Self::Output {
         self.get(index).expect("encountered out of bounds index")
     }
 }
 
-impl<T> ops::IndexMut<usize> for BoundedArray<T> {
+impl<Idx, T> ops::IndexMut<Idx> for BoundedArray<Idx, T>
+where
+    Idx: Index,
+{
     /// Returns an exclusive reference to the value for the given index if any.
     ///
     /// # Panics
     ///
     /// Returns an error if the index is out of bounds.
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    fn index_mut(&mut self, index: Idx) -> &mut Self::Output {
         self.get_mut(index)
             .expect("encountered out of bounds index")
     }
