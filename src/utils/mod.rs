@@ -1,3 +1,4 @@
+pub mod bounded_array;
 
 
 /// Errors that may occure when operating on a bounded map.
