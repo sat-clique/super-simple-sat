@@ -25,7 +25,7 @@ pub struct LastModel {
 impl LastModel {
     pub fn update(&mut self, assignment: &Assignment) -> Result<(), Error> {
         self.last_model
-            .from_reuse(&assignment)
+            .update(&assignment)
             .expect("encountered unexpected incomplete assignment");
         Ok(())
     }
@@ -58,7 +58,7 @@ impl Model {
         self.assignment.len()
     }
 
-    pub(crate) fn from_reuse(&mut self, assignment: &Assignment) -> Result<(), Error> {
+    pub(crate) fn update(&mut self, assignment: &Assignment) -> Result<(), Error> {
         if !assignment.is_assignment_complete() {
             return Err(Error::IndeterminateAssignment)
         }
