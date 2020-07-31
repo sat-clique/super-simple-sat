@@ -228,8 +228,9 @@ fn test_3sat_v100_c430_sat() {
         .enumerate()
     {
         let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
+        let result = solver.solve(vec![]);
         assert_eq!(
-            solver.solve(vec![]).map(|res| res.is_sat()),
+            result.as_ref().map(|res| res.is_sat()),
             Ok(true),
             "failed at unsat uf100-430/{}",
             n
