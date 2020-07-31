@@ -2,6 +2,7 @@ use crate::{
     clause_db::ClauseId,
     Literal,
     Variable,
+    utils::BoundedArray,
 };
 use core::slice;
 
@@ -13,7 +14,7 @@ pub enum Error {
 
 #[derive(Debug, Default, Clone)]
 pub struct OccurrenceMap {
-    occurences: Vec<Occurrences>,
+    occurences: BoundedArray<Variable, Occurrences>,
 }
 
 /// Occurrences of a single variable.
@@ -60,16 +61,17 @@ impl OccurrenceMap {
         if !Variable::is_valid_index(new_len - 1) {
             return Err(Error::UsedTooManyVariables)
         }
-        self.occurences.resize_with(new_len, Default::default);
+        self.occurences.increase_to_capacity(new_len)
+            .map_err(|_| Error::UsedTooManyVariables)?;
         Ok(())
     }
 
     /// Returns the number of positive and negative literals occurrences of the variable.
     pub fn len_pos_neg(&self, variable: Variable) -> Result<(usize, usize), Error> {
         self.occurences
-            .get(variable.into_index())
+            .get(variable)
             .map(|occurrences| occurrences.len_pos_neg())
-            .ok_or_else(|| Error::VariableIndexOutOfRange)
+            .map_err(|_| Error::VariableIndexOutOfRange)
     }
 
     /// Registers the given clause identifier for the literal.
@@ -84,17 +86,17 @@ impl OccurrenceMap {
         id: ClauseId,
     ) -> Result<(), Error> {
         self.occurences
-            .get_mut(literal.variable().into_index())
+            .get_mut(literal.variable())
             .map(|occurrences| occurrences.register_for_lit(literal, id))
-            .ok_or_else(|| Error::VariableIndexOutOfRange)
+            .map_err(|_| Error::VariableIndexOutOfRange)
     }
 
     /// Returns an iterator over all clauses that contain the given literal.
     pub fn iter_potentially_conflicting_clauses(&self, literal: Literal) -> ClauseIdIter {
         self.occurences
-            .get(literal.variable().into_index())
+            .get(literal.variable())
             .map(|occurrences| occurrences.get(!literal))
-            .unwrap_or_else(|| ClauseIdIter::new(&[]))
+            .unwrap_or_else(|_| ClauseIdIter::new(&[]))
     }
 }
 
