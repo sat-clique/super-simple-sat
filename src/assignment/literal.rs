@@ -43,6 +43,17 @@ impl Bool for VarAssignment {
     }
 }
 
+impl Not for VarAssignment {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Self::True => Self::False,
+            Self::False => Self::True,
+        }
+    }
+}
+
 /// A literal of a variable with its polarity.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
