@@ -7,7 +7,10 @@ pub use self::{
         Clause,
         Error,
     },
-    clause_ref::ClauseRef,
+    clause_ref::{
+        ClauseRef,
+        ClauseRefMut,
+    },
     db::{
         ClauseDb,
         ClauseDbIter,

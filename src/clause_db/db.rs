@@ -1,6 +1,7 @@
 use super::{
     Clause,
     ClauseRef,
+    ClauseRefMut,
 };
 use crate::Literal;
 use core::{
@@ -86,6 +87,17 @@ impl ClauseDb {
             return None
         }
         ClauseRef::new(&self.literals[self.clause_id_to_literals_range(id)])
+            .expect("encountered invalid clause literals")
+            .into()
+    }
+
+    /// Returns the clause associated with the given clause identifier if any.
+    pub fn resolve_mut(&mut self, id: ClauseId) -> Option<ClauseRefMut> {
+        if id.into_index() >= self.len() {
+            return None
+        }
+        let literals_range = self.clause_id_to_literals_range(id);
+        ClauseRefMut::new(&mut self.literals[literals_range])
             .expect("encountered invalid clause literals")
             .into()
     }
