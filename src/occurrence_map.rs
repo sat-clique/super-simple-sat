@@ -26,6 +26,11 @@ struct Occurrences {
 }
 
 impl Occurrences {
+    /// Returns the number of positive and negative occurrences of the variable.
+    pub fn len_pos_neg(&self) -> (usize, usize) {
+        (self.pos.len(), self.neg.len())
+    }
+
     /// Registers the clause identifier for the given literal.
     pub fn register_for_lit(&mut self, literal: Literal, id: ClauseId) {
         match literal.is_positive() {
@@ -57,6 +62,14 @@ impl OccurrenceMap {
         }
         self.occurences.resize_with(new_len, Default::default);
         Ok(())
+    }
+
+    /// Returns the number of positive and negative literals occurrences of the variable.
+    pub fn len_pos_neg(&self, variable: Variable) -> Result<(usize, usize), Error> {
+        self.occurences
+            .get(variable.into_index())
+            .map(|occurrences| occurrences.len_pos_neg())
+            .ok_or_else(|| Error::VariableIndexOutOfRange)
     }
 
     /// Registers the given clause identifier for the literal.
