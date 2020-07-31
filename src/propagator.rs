@@ -5,6 +5,7 @@ use crate::{
         ClauseId,
     },
     occurrence_map::OccurrenceMap,
+    utils::Index,
     Error,
 };
 pub use crate::{
@@ -40,7 +41,7 @@ pub struct Propagator {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct DecisionId(usize);
 
-impl DecisionId {
+impl Index for DecisionId {
     fn from_index(index: usize) -> Self {
         Self(index)
     }
