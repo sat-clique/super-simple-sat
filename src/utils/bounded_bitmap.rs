@@ -210,6 +210,9 @@ where
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if self.current == self.bits.len() {
+            return None
+        }
         match self.bits.get(Idx::from_index(self.current)) {
             Ok(value) => {
                 self.current += 1;
