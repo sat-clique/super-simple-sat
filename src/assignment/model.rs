@@ -1,13 +1,15 @@
 pub use super::{
     Assignment,
     Error,
+};
+use crate::{
+    utils::{
+        bounded_bitmap,
+        BoundedBitmap,
+    },
     Literal,
     VarAssignment,
     Variable,
-};
-use crate::utils::{
-    bounded_bitmap,
-    BoundedBitmap,
 };
 use core::{
     fmt,

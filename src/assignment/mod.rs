@@ -1,18 +1,11 @@
-mod literal;
 mod model;
 
-pub use self::{
-    literal::{
-        Literal,
-        VarAssignment,
-        Variable,
-    },
-    model::{
-        LastModel,
-        Model,
-        ModelIter,
-    },
+pub use self::model::{
+    LastModel,
+    Model,
+    ModelIter,
 };
+use crate::{Variable, VarAssignment, Literal};
 use core::{
     iter,
     mem,

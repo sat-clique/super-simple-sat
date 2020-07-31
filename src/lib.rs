@@ -4,6 +4,7 @@
 mod assignment;
 mod builder;
 mod clause_db;
+mod literal;
 mod literal_chunk;
 mod occurrence_map;
 mod propagator;
@@ -21,21 +22,23 @@ use crate::{
         PropagationResult,
         Propagator,
     },
-    utils::Bool,
 };
 pub use crate::{
     assignment::{
         LastModel,
-        Literal,
         Model,
+    },
+    clause_db::Clause,
+    literal::{
+        Literal,
         VarAssignment,
         Variable,
     },
-    clause_db::Clause,
     literal_chunk::{
         LiteralChunk,
         LiteralChunkIter,
     },
+    utils::Bool,
 };
 use cnf_parser::{
     Error as CnfError,

@@ -9,13 +9,11 @@ use crate::{
     Error,
 };
 pub use crate::{
-    assignment::{
-        Literal,
-        Model,
-        VarAssignment,
-        Variable,
-    },
     clause_db::Clause,
+    Literal,
+    Model,
+    VarAssignment,
+    Variable,
 };
 
 #[derive(Debug, PartialEq, Eq)]
