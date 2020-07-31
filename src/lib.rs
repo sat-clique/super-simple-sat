@@ -21,6 +21,7 @@ use crate::{
         PropagationResult,
         Propagator,
     },
+    utils::Bool,
 };
 pub use crate::{
     assignment::{
@@ -203,32 +204,42 @@ impl Solver {
                 Ok(DecisionResult::Conflict)
             }
             PropagationResult::Consistent { decision } => {
-                let next_var = self
-                    .assignments
-                    .next_unassigned(Some(current_var))
-                    .expect("encountered unexpected invalid variable");
-                let result = match next_var {
-                    None => {
-                        self.last_model.update(&self.assignments)?;
-                        DecisionResult::Sat
-                    }
-                    Some(unassigned_var) => {
-                        if self
-                            .solve_for_decision(unassigned_var, VarAssignment::True)?
-                            .is_sat()
-                            || self
-                                .solve_for_decision(unassigned_var, VarAssignment::False)?
-                                .is_sat()
-                        {
-                            DecisionResult::Sat
-                        } else {
-                            DecisionResult::Conflict
-                        }
-                    }
-                };
+                let result = self.solve_for_next_unassigned(Some(current_var))?;
                 self.propagator
                     .backtrack_decision(decision, &mut self.assignments)?;
                 Ok(result)
+            }
+        }
+    }
+
+    fn solve_for_next_unassigned(
+        &mut self,
+        current_variable: Option<Variable>,
+    ) -> Result<DecisionResult, Error> {
+        let next_var = self
+            .assignments
+            .next_unassigned(current_variable)
+            .expect("encountered unexpected invalid variable");
+        match next_var {
+            None => {
+                self.last_model.update(&self.assignments)?;
+                Ok(DecisionResult::Sat)
+            }
+            Some(unassigned_var) => {
+                let (len_pos, len_neg) =
+                    self.occurrence_map.len_pos_neg(unassigned_var)?;
+                let prediction = VarAssignment::from_bool(len_pos >= len_neg);
+                if self
+                    .solve_for_decision(unassigned_var, prediction)?
+                    .is_sat()
+                    || self
+                        .solve_for_decision(unassigned_var, !prediction)?
+                        .is_sat()
+                {
+                    Ok(DecisionResult::Sat)
+                } else {
+                    Ok(DecisionResult::Conflict)
+                }
             }
         }
     }
@@ -253,25 +264,9 @@ impl Solver {
                 return Ok(SolveResult::Unsat)
             }
         }
-        let initial_var = self
-            .assignments
-            .next_unassigned(None)
-            .expect("encountered unexpected invalid initial variable");
-        match initial_var {
-            None => Ok(SolveResult::sat(self.last_model.get())),
-            Some(initial_var) => {
-                if let DecisionResult::Sat =
-                    self.solve_for_decision(initial_var, VarAssignment::True)?
-                {
-                    return Ok(SolveResult::sat(self.last_model.get()))
-                }
-                if let DecisionResult::Sat =
-                    self.solve_for_decision(initial_var, VarAssignment::False)?
-                {
-                    return Ok(SolveResult::sat(self.last_model.get()))
-                }
-                Ok(SolveResult::Unsat)
-            }
+        match self.solve_for_next_unassigned(None)? {
+            DecisionResult::Conflict => Ok(SolveResult::Unsat),
+            DecisionResult::Sat => Ok(SolveResult::sat(self.last_model.get())),
         }
     }
 }
