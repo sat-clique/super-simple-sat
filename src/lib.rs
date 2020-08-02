@@ -2,6 +2,7 @@
 #![allow(clippy::len_without_is_empty)]
 
 mod assignment;
+mod assignment2;
 mod builder;
 mod clause_db;
 mod literal;
@@ -50,6 +51,7 @@ pub enum Error {
     Other(&'static str),
     Occurrences(occurrence_map::Error),
     Assignment(assignment::Error),
+    Bounded(utils::Error),
     InvalidLiteralChunkRange,
     InvalidLiteralChunkStart,
     InvalidLiteralChunkEnd,
@@ -57,6 +59,7 @@ pub enum Error {
     InvalidDecisionId,
     InvalidDecisionStart,
     InvalidDecisionEnd,
+    InvalidSizeIncrement,
 }
 
 impl From<occurrence_map::Error> for Error {
@@ -68,6 +71,12 @@ impl From<occurrence_map::Error> for Error {
 impl From<assignment::Error> for Error {
     fn from(err: assignment::Error) -> Self {
         Self::Assignment(err)
+    }
+}
+
+impl From<utils::Error> for Error {
+    fn from(err: utils::Error) -> Self {
+        Self::Bounded(err)
     }
 }
 
