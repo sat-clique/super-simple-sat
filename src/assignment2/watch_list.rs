@@ -1,8 +1,8 @@
 use super::{
     AssignmentView,
+    EnqueueError,
     PropagationEnqueuer,
     PropagationResult,
-    EnqueueError,
 };
 use crate::{
     clause_db::{
@@ -53,6 +53,12 @@ impl VariableWatchers {
         }
     }
 
+    /// Propagates the literal to the recorded watchers.
+    ///
+    /// Calls back about the watchers and their propagation results.
+    ///
+    /// Returns a propagation result that either tells that the propagation
+    /// yielded a consistent assignemnt or a conflict.
     fn propagate<F>(
         &mut self,
         literal: Literal,
@@ -144,8 +150,11 @@ impl WatchList {
         assignment: AssignmentView<'a>,
         mut queue: PropagationEnqueuer<'a>,
     ) -> PropagationResult {
-        let Self { watchers, deferred_actions } = self;
-        watchers
+        let Self {
+            watchers,
+            deferred_actions,
+        } = self;
+        let result = watchers
             .get_mut(literal.variable())
             .expect("encountered unexpected invalid propagation literal")
             .propagate(literal, clause_db, &assignment, |watcher, result| {
@@ -165,6 +174,14 @@ impl WatchList {
                     }
                 }
                 PropagationResult::Consistent
-            })
+            });
+        for deferred in self.deferred_actions.drain(..) {
+            self
+                .watchers
+                .get_mut(deferred.literal.variable())
+                .expect("encountered unexpected invalid variable")
+                .register_for_lit(deferred.literal, deferred.watched_by);
+        }
+        result
     }
 }
