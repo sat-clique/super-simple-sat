@@ -154,6 +154,16 @@ where
     pub fn get_mut(&mut self, index: K) -> Result<Option<&mut V>, Error> {
         self.get_mut_impl(index).map(Into::into)
     }
+
+    /// Returns an iterator yielding shared references to the key and value pairs.
+    pub fn iter(&self) -> Iter<K, V> {
+        Iter::new(self)
+    }
+
+    /// Returns an iterator yielding exclusive references to the key and value pairs.
+    pub fn iter_mut(&mut self) -> IterMut<K, V> {
+        IterMut::new(self)
+    }
 }
 
 impl<'a, K, V> IntoIterator for &'a BoundedMap<K, V>
@@ -164,7 +174,7 @@ where
     type IntoIter = Iter<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Iter::new(self)
+        self.iter()
     }
 }
 
@@ -176,7 +186,7 @@ where
     type IntoIter = IterMut<'a, K, V>;
 
     fn into_iter(self) -> Self::IntoIter {
-        IterMut::new(self)
+        self.iter_mut()
     }
 }
 
