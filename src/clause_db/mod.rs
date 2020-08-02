@@ -10,6 +10,7 @@ pub use self::{
     clause_ref::{
         ClauseRef,
         ClauseRefMut,
+        PropagationResult,
     },
     db::{
         ClauseDb,
