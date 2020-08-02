@@ -1,7 +1,6 @@
 use super::Error;
 use crate::{
     assignment2::AssignmentView,
-    Assignment,
     Literal,
 };
 use core::{
