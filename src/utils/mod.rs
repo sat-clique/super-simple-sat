@@ -1,9 +1,11 @@
 pub mod bounded_array;
 pub mod bounded_bitmap;
 pub mod bounded_map;
+pub mod bounded_stack;
 
 pub use self::{
     bounded_array::BoundedArray,
+    bounded_stack::BoundedStack,
     bounded_bitmap::{
         Bool,
         BoundedBitmap,
@@ -16,6 +18,7 @@ pub use self::{
 pub enum Error {
     OutOfBoundsAccess,
     InvalidSizeIncrement,
+    InvalidSizeDecrement,
 }
 
 /// Index types that may be used as keys for the bounded map.
