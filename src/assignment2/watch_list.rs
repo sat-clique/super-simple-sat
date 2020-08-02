@@ -16,7 +16,6 @@ use crate::{
     VarAssignment,
     Variable,
 };
-use core::slice;
 
 /// The watchers of a single variable.
 ///
@@ -42,14 +41,6 @@ impl VariableWatchers {
         match literal.assignment() {
             VarAssignment::True => &mut self.pos,
             VarAssignment::False => &mut self.neg,
-        }
-    }
-
-    /// Returns an iterator over the watchers for the polarity of the literal.
-    fn literal_watchers(&self, literal: Literal) -> slice::Iter<ClauseId> {
-        match literal.assignment() {
-            VarAssignment::True => self.pos.iter(),
-            VarAssignment::False => self.neg.iter(),
         }
     }
 
@@ -122,24 +113,16 @@ impl WatchList {
     /// If the number of total variables is out of supported bounds.
     pub fn register_new_variables(&mut self, new_variables: usize) -> Result<(), Error> {
         let total_variables = self.len_variables() + new_variables;
-        self.watchers.increase_len_to(total_variables);
+        self.watchers.increase_len_to(total_variables)?;
         Ok(())
     }
 
     /// Registers the clause identifier for the given literal.
-    fn register_for_lit(&mut self, literal: Literal, clause: ClauseId) {
+    pub fn register_for_lit(&mut self, literal: Literal, clause: ClauseId) {
         self.watchers
             .get_mut(literal.variable())
             .expect("encountered unexpected variable")
             .register_for_lit(literal, clause)
-    }
-
-    /// Returns an iterator over the watchers for the given literal.
-    fn literal_watchers(&self, literal: Literal) -> slice::Iter<ClauseId> {
-        self.watchers
-            .get(literal.variable())
-            .expect("unexpected invalid variable")
-            .literal_watchers(literal)
     }
 
     /// Propagates the literal assignment to the watching clauses.
