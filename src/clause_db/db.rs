@@ -86,7 +86,7 @@ impl ClauseDb {
         if id.into_index() >= self.len() {
             return None
         }
-        ClauseRef::new(&self.literals[self.clause_id_to_literals_range(id)])
+        ClauseRef::new(id, &self.literals[self.clause_id_to_literals_range(id)])
             .expect("encountered invalid clause literals")
             .into()
     }
@@ -166,7 +166,7 @@ impl<'a> Iterator for ClauseDbIter<'a> {
                 let start = mem::replace(&mut self.last_end, end.into_index());
                 let end = end.into_index();
                 self.current += 1;
-                let clause_ref = ClauseRef::new(&self.literals[start..end])
+                let clause_ref = ClauseRef::new(id, &self.literals[start..end])
                     .expect("encountered invalid literals");
                 Some((id, clause_ref))
             }

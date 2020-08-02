@@ -3,6 +3,7 @@ use crate::{
     assignment2::AssignmentView,
     Literal,
 };
+use super::ClauseId;
 use core::{
     iter,
     slice,
@@ -10,13 +11,20 @@ use core::{
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ClauseRef<'a> {
+    id: ClauseId,
     literals: &'a [Literal],
 }
 
 impl<'a> ClauseRef<'a> {
-    pub fn new(literals: &'a [Literal]) -> Result<Self, Error> {
+    /// Creates a new shared clause reference.
+    pub fn new(id: ClauseId, literals: &'a [Literal]) -> Result<Self, Error> {
         debug_assert!(!literals.is_empty());
-        Ok(Self { literals })
+        Ok(Self { id, literals })
+    }
+
+    /// Returns the identifier of the referenced clause.
+    pub fn id(&self) -> ClauseId {
+        self.id
     }
 }
 
