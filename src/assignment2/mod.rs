@@ -220,7 +220,7 @@ impl Assignment {
     }
 
     /// Returns `true` if the assignment is complete.
-    pub fn is_complete(&self) -> bool {
+    fn is_complete(&self) -> bool {
         self.len_variables() == self.assigned_variables()
     }
 
