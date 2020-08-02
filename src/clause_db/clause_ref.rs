@@ -46,6 +46,11 @@ pub enum PropagationResult {
 }
 
 impl<'a> ClauseRefMut<'a> {
+    /// Creates a new exclusive clause reference for the given literal slice.
+    ///
+    /// # Panics
+    ///
+    /// If the given literal slice is empty.
     pub fn new(literals: &'a mut [Literal]) -> Result<Self, Error> {
         debug_assert!(!literals.is_empty());
         Ok(Self { literals })
