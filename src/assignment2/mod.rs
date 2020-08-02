@@ -15,6 +15,7 @@ use self::{
     watch_list::WatchList,
 };
 use crate::{
+    clause_db::ClauseRef,
     utils::{
         bounded_map,
         BoundedMap,
@@ -60,7 +61,7 @@ impl<'a> PropagationEnqueuer<'a> {
     pub fn push(
         &mut self,
         literal: Literal,
-        assignment: &AssignmentView,
+        assignment: &VariableAssignment,
     ) -> Result<(), EnqueueError> {
         self.queue.push(literal, assignment)
     }
@@ -98,7 +99,7 @@ impl PropagationQueue {
     pub fn push(
         &mut self,
         literal: Literal,
-        assignment: &AssignmentView,
+        assignment: &VariableAssignment,
     ) -> Result<(), EnqueueError> {
         match assignment.get(literal.variable()) {
             Some(VarAssignment::True) => Err(EnqueueError::AlreadySatisfied),
@@ -119,22 +120,36 @@ impl PropagationQueue {
     }
 }
 
-/// Thin-wrapper arround the variable assignment.
-///
-/// Can only be used to inspect and mutate variable assignment.
-///
-/// # Note
-///
-/// Panics for unexpected inputs instead of returning results.
-#[derive(Debug)]
-pub struct AssignmentView<'a> {
-    assignment: &'a mut BoundedMap<Variable, VarAssignment>,
+/// The actual variable assignment.
+#[derive(Debug, Default, Clone)]
+pub struct VariableAssignment {
+    assignment: BoundedMap<Variable, VarAssignment>,
 }
 
-impl<'a> AssignmentView<'a> {
-    /// Creates a new mutable assignment wrapper.
-    fn new(assignment: &'a mut BoundedMap<Variable, VarAssignment>) -> Self {
-        Self { assignment }
+impl VariableAssignment {
+    /// Returns the number of assigned variables.
+    pub fn len_assigned(&self) -> usize {
+        self.assignment.len()
+    }
+
+    /// Returns an iterator yielding shared references to the variable assignments.
+    ///
+    /// # Note
+    ///
+    /// Variables that have not been assigned, yet will not be yielded.
+    pub fn iter(&self) -> bounded_map::Iter<Variable, VarAssignment> {
+        self.assignment.iter()
+    }
+
+    /// Registers the given number of additional variables.
+    ///
+    /// # Errors
+    ///
+    /// If the number of total variables is out of supported bounds.
+    pub fn register_new_variables(&mut self, new_variables: usize) -> Result<(), Error> {
+        let new_len = self.assignment.len() + new_variables;
+        self.assignment.increase_capacity_to(new_len)?;
+        Ok(())
     }
 
     /// Returns the assignment for the given variable.
@@ -204,10 +219,9 @@ impl<'a> AssignmentView<'a> {
 /// - Propagation queue
 #[derive(Debug, Default, Clone)]
 pub struct Assignment {
-    is_initialized: bool,
     num_variables: usize,
     trail: Trail,
-    assignments: BoundedMap<Variable, VarAssignment>,
+    assignments: VariableAssignment,
     watchers: WatchList,
     propagation_queue: PropagationQueue,
 }
@@ -238,7 +252,7 @@ impl Assignment {
 
     /// Returns the number of currently assigned variables.
     fn assigned_variables(&self) -> usize {
-        self.assignments.len()
+        self.assignments.len_assigned()
     }
 
     /// Returns `true` if the assignment is complete.
@@ -254,7 +268,7 @@ impl Assignment {
     pub fn register_new_variables(&mut self, new_variables: usize) -> Result<(), Error> {
         let total_variables = self.len_variables() + new_variables;
         self.trail.register_new_variables(new_variables)?;
-        self.assignments.increase_capacity_to(total_variables)?;
+        self.assignments.register_new_variables(new_variables)?;
         self.watchers.register_new_variables(total_variables)?;
         self.num_variables += new_variables;
         Ok(())
@@ -266,9 +280,7 @@ impl Assignment {
             trail, assignments, ..
         } = self;
         trail.pop_to_level(level, |popped_lit| {
-            assignments
-                .take(popped_lit.variable())
-                .expect("encountered unexpected invalid unassigned variable");
+            assignments.unassign(popped_lit.variable());
         })
     }
 
@@ -279,8 +291,7 @@ impl Assignment {
         &mut self,
         assumption: Literal,
     ) -> Result<(), EnqueueError> {
-        self.propagation_queue
-            .push(assumption, &AssignmentView::new(&mut self.assignments))
+        self.propagation_queue.push(assumption, &self.assignments)
     }
 }
 
@@ -309,10 +320,14 @@ impl Assignment {
             ..
         } = self;
         while let Some(propagation_literal) = propagation_queue.pop() {
+            assignments.assign(
+                propagation_literal.variable(),
+                propagation_literal.assignment(),
+            );
             let result = watchers.propagate(
                 propagation_literal,
                 clause_db,
-                AssignmentView::new(assignments),
+                &assignments,
                 PropagationEnqueuer::new(propagation_queue),
             );
             if result.is_conflict() {

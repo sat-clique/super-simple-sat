@@ -1,6 +1,6 @@
 use super::{
-    AssignmentView,
     EnqueueError,
+    VariableAssignment,
     PropagationEnqueuer,
     PropagationResult,
 };
@@ -54,7 +54,7 @@ impl VariableWatchers {
         &mut self,
         literal: Literal,
         clause_db: &mut ClauseDb,
-        assignment: &AssignmentView<'_>,
+        assignment: &VariableAssignment,
         mut for_watcher: F,
     ) -> PropagationResult
     where
@@ -130,7 +130,7 @@ impl WatchList {
         &mut self,
         literal: Literal,
         clause_db: &mut ClauseDb,
-        assignment: AssignmentView<'a>,
+        assignment: &VariableAssignment,
         mut queue: PropagationEnqueuer<'a>,
     ) -> PropagationResult {
         let Self {
