@@ -34,6 +34,8 @@ pub enum AssignmentError {
     UnexpectedIndeterminateAssignment,
     /// Variable invalid for the current assignment.
     InvalidVariable,
+    /// Initialize an already initialized assignment.
+    AlreadyInitialized,
 }
 
 /// Allows to enqueue new literals into the propagation queue.
@@ -201,6 +203,7 @@ impl<'a> AssignmentView<'a> {
 /// - Propagation queue
 #[derive(Debug, Default)]
 pub struct Assignment {
+    is_initialized: bool,
     num_variables: usize,
     trail: Trail,
     assignments: BoundedMap<Variable, VarAssignment>,
@@ -209,6 +212,24 @@ pub struct Assignment {
 }
 
 impl Assignment {
+    /// Initializes the watchers of the assignment given the clause database.
+    ///
+    /// # Errors
+    ///
+    /// If the initialization has already taken place.
+    pub fn initialize_watchers(&mut self, clause_db: &ClauseDb) -> Result<(), AssignmentError> {
+        if self.is_initialized {
+            return Err(AssignmentError::AlreadyInitialized)
+        }
+        self.is_initialized = true;
+        for (clause_id, clause) in clause_db {
+            for literal in clause {
+                self.watchers.register_for_lit(literal, clause_id);
+            }
+        }
+        Ok(())
+    }
+
     /// Returns the current number of variables.
     fn len_variables(&self) -> usize {
         self.num_variables
