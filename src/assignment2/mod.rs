@@ -82,7 +82,7 @@ impl EnqueueError {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct PropagationQueue {
     queue: VecDeque<Literal>,
 }
@@ -126,6 +126,7 @@ impl PropagationQueue {
 /// # Note
 ///
 /// Panics for unexpected inputs instead of returning results.
+#[derive(Debug)]
 pub struct AssignmentView<'a> {
     assignment: &'a mut BoundedMap<Variable, VarAssignment>,
 }
@@ -201,7 +202,7 @@ impl<'a> AssignmentView<'a> {
 /// - Decision trail
 /// - 2-watched literals
 /// - Propagation queue
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Assignment {
     is_initialized: bool,
     num_variables: usize,

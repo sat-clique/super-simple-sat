@@ -2,7 +2,7 @@ use super::Error;
 use core::slice;
 
 /// A stack that is bound to a given maximum size.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoundedStack<T> {
     stack: Vec<T>,
 }

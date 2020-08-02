@@ -33,7 +33,7 @@ impl Index for DecisionLevel {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TrailLimits {
     limits: Vec<TrailLimit>,
 }
@@ -71,7 +71,7 @@ impl TrailLimits {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Trail {
     decisions: BoundedStack<Literal>,
     limits: TrailLimits,

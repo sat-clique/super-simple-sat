@@ -20,7 +20,7 @@ use crate::{
 /// The watchers of a single variable.
 ///
 /// Stores the watchers for the positive and negative polarities of the variable.
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct VariableWatchers {
     /// Watchers for the literal with positive polarity.
     pos: Vec<ClauseId>,
@@ -94,7 +94,7 @@ pub struct DeferredUpdate {
 }
 
 /// The watch list monitoring which clauses are watching which literals.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct WatchList {
     deferred_actions: Vec<DeferredUpdate>,
     watchers: BoundedArray<Variable, VariableWatchers>,
