@@ -1,5 +1,6 @@
 use super::Error;
 use crate::{
+    assignment2::AssignmentView,
     Assignment,
     Literal,
 };
@@ -42,7 +43,7 @@ pub enum PropagationResult {
     /// The clause chose a new watched literal.
     NewWatchedLiteral(Literal),
     /// The clause is now unit under the current assignment.
-    UnitUnderAssignment,
+    UnitUnderAssignment(Literal),
 }
 
 impl<'a> ClauseRefMut<'a> {
@@ -59,7 +60,7 @@ impl<'a> ClauseRefMut<'a> {
     pub fn propagate(
         &mut self,
         propagated_lit: Literal,
-        assignment: &Assignment,
+        assignment: &AssignmentView<'_>,
     ) -> PropagationResult {
         // Make sure the false literal is in the second [1] position.
         if self.literals[0] == !propagated_lit {
@@ -68,7 +69,6 @@ impl<'a> ClauseRefMut<'a> {
         // If 0-th watch is true, then clause is already satisfied.
         if assignment
             .is_satisfied(self.literals[0])
-            .expect("encountered unexpected invalid literal")
             .unwrap_or_else(|| false)
         {
             return PropagationResult::AlreadySatisfied
@@ -77,14 +77,13 @@ impl<'a> ClauseRefMut<'a> {
         for i in 2..self.literals.len() {
             if !assignment
                 .is_satisfied(self.literals[0])
-                .expect("encountered unexpected invalid literal")
                 .unwrap_or_else(|| false)
             {
                 self.literals.swap(1, i);
-                return PropagationResult::NewWatchedLiteral(self.literals[i])
+                return PropagationResult::NewWatchedLiteral(self.literals[1])
             }
         }
         // Clause is unit under current assignment:
-        PropagationResult::UnitUnderAssignment
+        PropagationResult::UnitUnderAssignment(self.literals[0])
     }
 }
