@@ -61,7 +61,7 @@ impl OccurrenceMap {
         if !Variable::is_valid_index(new_len - 1) {
             return Err(Error::UsedTooManyVariables)
         }
-        self.occurences.increase_to_capacity(new_len)
+        self.occurences.increase_len_to(new_len)
             .map_err(|_| Error::UsedTooManyVariables)?;
         Ok(())
     }

@@ -104,7 +104,7 @@ where
     /// Increases the length of the bounded array to the given new length.
     ///
     /// Fills all additional slots with default values.
-    pub fn increase_to_capacity(&mut self, new_len: usize) -> Result<(), Error> {
+    pub fn increase_len_to(&mut self, new_len: usize) -> Result<(), Error> {
         if self.len() > new_len {
             return Err(Error::InvalidSizeIncrement)
         }

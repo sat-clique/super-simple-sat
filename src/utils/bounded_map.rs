@@ -54,7 +54,7 @@ impl<K, V> BoundedMap<K, V> {
         if new_len < self.capacity() {
             return Err(Error::InvalidSizeIncrement)
         }
-        self.slots.increase_to_capacity(new_len)?;
+        self.slots.increase_len_to(new_len)?;
         Ok(())
     }
 
