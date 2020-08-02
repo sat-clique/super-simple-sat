@@ -1,6 +1,6 @@
 use super::Error;
 use crate::{
-    assignment2::AssignmentView,
+    assignment2::VariableAssignment,
     Literal,
 };
 use super::ClauseId;
@@ -67,7 +67,7 @@ impl<'a> ClauseRefMut<'a> {
     pub fn propagate(
         &mut self,
         propagated_lit: Literal,
-        assignment: &AssignmentView<'_>,
+        assignment: &VariableAssignment,
     ) -> PropagationResult {
         // Make sure the false literal is in the second [1] position.
         if self.literals[0] == !propagated_lit {
