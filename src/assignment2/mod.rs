@@ -232,17 +232,11 @@ impl Assignment {
     /// # Errors
     ///
     /// If the initialization has already taken place.
-    pub fn initialize_watchers(&mut self, clause_db: &ClauseDb) -> Result<(), AssignmentError> {
-        if self.is_initialized {
-            return Err(AssignmentError::AlreadyInitialized)
+    pub fn initialize_watchers(&mut self, clause: ClauseRef) {
+        let clause_id = clause.id();
+        for literal in clause.into_iter().take(2) {
+            self.watchers.register_for_lit(literal, clause_id);
         }
-        self.is_initialized = true;
-        for (clause_id, clause) in clause_db {
-            for literal in clause {
-                self.watchers.register_for_lit(literal, clause_id);
-            }
-        }
-        Ok(())
     }
 
     /// Returns the current number of variables.
