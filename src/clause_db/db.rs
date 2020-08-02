@@ -69,6 +69,21 @@ impl ClauseDb {
         ClauseId::from_index(id)
     }
 
+    /// Pushes another clause to the clause database, returns its identifier.
+    ///
+    /// # Note
+    ///
+    /// The identifier can be used to resolve the clause again.
+    pub fn push_get(&mut self, clause: Clause) -> ClauseRef {
+        let id = ClauseId::from_index(self.len());
+        let start = self.literals.len();
+        self.literals.extend(&clause);
+        let end = self.literals.len();
+        self.ends.push(LiteralsEnd::from_index(end));
+        ClauseRef::new(id, &self.literals[start..end])
+            .expect("encountered unexpected invalid shared clause reference")
+    }
+
     /// Converts the clause identifier into the range of its literals.
     fn clause_id_to_literals_range(&self, id: ClauseId) -> Range<usize> {
         let index = id.into_index();
