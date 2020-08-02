@@ -11,7 +11,7 @@ use core::{
     slice,
 };
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ClauseId(usize);
 
 impl ClauseId {
