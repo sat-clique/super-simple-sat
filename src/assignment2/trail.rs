@@ -73,6 +73,12 @@ impl TrailLimits {
         self.limits.truncate(level.into_index() + 1);
         self.last()
     }
+
+    /// Returns the current decision level.
+    pub fn current_decision_level(&self) -> DecisionLevel {
+        let index = self.limits.len();
+        DecisionLevel::from_index(index)
+    }
 }
 
 #[derive(Debug, Default, Clone)]
@@ -95,17 +101,22 @@ impl Trail {
     /// If the number of total variables is out of supported bounds.
     pub fn register_new_variables(&mut self, new_variables: usize) {
         let total_variables = self.len_variables() + new_variables;
-        println!("Trail::register_new_variables: total = {}", total_variables);
+        // println!("Trail::register_new_variables: total = {}", total_variables);
         self.decisions_and_implications
             .increase_capacity_to(total_variables)
             .expect("encountered unexpected invalid size increment");
     }
 
     /// Pushes a new decision level and returns it.
-    pub fn new_decision_level(&mut self) -> DecisionLevel {
+    pub fn bump_decision_level(&mut self) -> DecisionLevel {
         let limit = TrailLimit::from_index(self.decisions_and_implications.len());
         let index = self.limits.push(limit);
         index
+    }
+
+    /// Returns the current decision level.
+    pub fn current_decision_level(&self) -> DecisionLevel {
+        self.limits.current_decision_level()
     }
 
     /// Returns `true` if the propagation queue is empty.
@@ -142,11 +153,11 @@ impl Trail {
         println!("Trail::push {:?}", literal);
         match assignment.is_conflicting(literal) {
             Some(true) => {
-                println!("Trail::push conflicting assignment");
+                // println!("Trail::push conflicting assignment");
                 return Err(AssignmentError::Conflict)
             }
             Some(false) => {
-                println!("Trail::push literal is already assigned");
+                // println!("Trail::push literal is already assigned");
                 return Err(AssignmentError::AlreadyAssigned)
             }
             None => (),
@@ -163,6 +174,7 @@ impl Trail {
     where
         F: FnMut(Literal),
     {
+        let level = DecisionLevel::from_index(level.into_index() - 1);
         let limit = self.limits.pop_to_level(level);
         self.propagate_head = limit.into_index();
         self.decisions_and_implications

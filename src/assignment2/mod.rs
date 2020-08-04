@@ -210,10 +210,10 @@ impl Assignment {
     pub fn initialize_watchers(&mut self, clause: ClauseRef) {
         let clause_id = clause.id();
         for literal in clause.into_iter().take(2) {
-            println!(
-                "Assignment::initialize_watchers: watch {:?} for {:?}",
-                !literal, clause
-            );
+            // println!(
+            //     "Assignment::initialize_watchers: watch {:?} for {:?}",
+            //     !literal, clause
+            // );
             self.watchers.register_for_lit(!literal, clause_id);
         }
     }
@@ -293,6 +293,26 @@ impl PropagationResult {
 }
 
 impl Assignment {
+    /// Bumps the decision level.
+    pub fn bump_decision_level(&mut self) -> DecisionLevel {
+        self.trail.bump_decision_level()
+    }
+
+    /// Pops the decision level to the given level.
+    ///
+    /// This also unassigned all variables assigned in the given decision level.
+    pub fn pop_decision_level(&mut self, level: DecisionLevel) {
+        let Self {
+            assignments,
+            trail,
+            ..
+        } = self;
+        trail.pop_to_level(level, |unassigned| {
+            // println!("Assignment::propagate unassign {:?}", unassigned);
+            assignments.unassign(unassigned.variable());
+        });
+    }
+
     /// Propagates the enqueued assumptions.
     pub fn propagate(&mut self, clause_db: &mut ClauseDb) -> PropagationResult {
         let Self {
@@ -301,10 +321,11 @@ impl Assignment {
             trail,
             ..
         } = self;
-        let level = trail.new_decision_level();
+        // let level = trail.new_decision_level();
+        let level = trail.current_decision_level();
         println!("Assignment::propagate: level = {:?}", level);
         while let Some(propagation_literal) = trail.pop_enqueued() {
-            println!("Assignment::propagate: literal = {:?}", propagation_literal);
+            // println!("Assignment::propagate: literal = {:?}", propagation_literal);
             let result = watchers.propagate(
                 propagation_literal,
                 clause_db,
@@ -312,14 +333,19 @@ impl Assignment {
                 PropagationEnqueuer::new(trail),
             );
             if result.is_conflict() {
-                println!("Assignment::propagate found conflict! BACKTRACK");
+                // println!("Assignment::propagate found conflict! BACKTRACK");
+                // println!("Assignment::propagate assignment (before) = {:#?}", trail);
+                println!("Assignment::propagate pop to level = {:?}", level);
                 trail.pop_to_level(level, |unassigned| {
+                    // println!("Assignment::propagate unassign {:?}", unassigned);
                     assignments.unassign(unassigned.variable());
                 });
+                // println!("Assignment::propagate popped level = {:?}", trail.current_decision_level());
+                // println!("Assignment::propagate assignment (after) = {:#?}", trail);
                 return result
             }
         }
-        println!("Assignment::propagate end");
+        // println!("Assignment::propagate end");
         PropagationResult::Consistent
     }
 }

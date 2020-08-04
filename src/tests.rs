@@ -5,6 +5,7 @@ use crate::{
     VarAssignment,
     Variable,
     SolveResult,
+    Error,
 };
 use std::{
     fs,
@@ -17,6 +18,43 @@ fn simple_sat_works() {
         &mut &br"
         p cnf 2 1
         1 2 0
+    "[..],
+    )
+    .unwrap();
+    assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(true));
+}
+
+#[test]
+fn simple_3sat_works() {
+    let mut solver = Solver::from_cnf(
+        &mut &br"
+        c A SAT instance generated from a 3-CNF formula that had 25 clauses and 5 variables
+        p cnf 5 25
+        -1 5 -4 0
+        5 2 -1 0
+        3 4 -5 0
+        1 2 4 0
+        -2 1 5 0
+        3 5 4 0
+        2 -3 -5 0
+        2 4 -5 0
+        -4 -3 -1 0
+        -3 -4 2 0
+        4 5 -2 0
+        -1 -4 2 0
+        4 2 -1 0
+        -2 3 -1 0
+        -5 -1 2 0
+        -4 -1 2 0
+        3 4 -1 0
+        -3 1 -2 0
+        -4 5 2 0
+        2 4 -1 0
+        -4 -1 5 0
+        -4 -2 -1 0
+        -1 5 -3 0
+        3 -2 1 0
+        -3 2 1 0
     "[..],
     )
     .unwrap();
@@ -72,11 +110,9 @@ fn solve_problem_with_non_contradictory_unit_clauses() {
 fn solve_problem_with_contradictory_unit_clauses() {
     let mut solver = Solver::default();
     let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
-    solver.consume_clause(clause(&[ vars[2]])).unwrap();
-    solver.consume_clause(clause(&[ vars[4]])).unwrap();
-    solver.consume_clause(clause(&[!vars[4]])).unwrap();
-    let result = solver.solve(vec![]);
-    assert_eq!(result.map(|res| res.is_sat()), Ok(false));
+    assert!(solver.consume_clause(clause(&[ vars[2]])).is_ok());
+    assert!(solver.consume_clause(clause(&[ vars[4]])).is_ok());
+    assert_eq!(solver.consume_clause(clause(&[!vars[4]])), Err(Error::Conflict));
 }
 
 #[test]
