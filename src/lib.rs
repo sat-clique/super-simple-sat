@@ -14,8 +14,8 @@ mod tests;
 
 use crate::{
     assignment2::{
-        AssignmentError,
         Assignment as Assignment2,
+        AssignmentError,
         LastModel as LastModel2,
         Model as Model2,
         PropagationResult as PropagationResult2,
@@ -162,7 +162,10 @@ impl Solver {
                 self.assignment2.initialize_watchers(clause);
             }
             Err(unit_clause) => {
-                println!("Solver::consume_clause unit clause: {:?}", unit_clause.literal);
+                println!(
+                    "Solver::consume_clause unit clause: {:?}",
+                    unit_clause.literal
+                );
                 self.assignment2
                     .enqueue_assumption(unit_clause.literal)
                     .map_err(|_| Error::Conflict)?;
@@ -214,16 +217,24 @@ impl Solver {
         chunk
     }
 
-    fn solve_for_decision(
-        &mut self,
-        decision: Literal,
-    ) -> Result<DecisionResult, Error> {
-        self.assignment2
-            .enqueue_assumption(decision)
-            .expect("encountered unexpected invalid assumption literal");
-        println!("Solver::solve_for_decision assignment = {:#?}", self.assignment2);
+    fn solve_for_decision(&mut self, decision: Literal) -> Result<DecisionResult, Error> {
+        match self.assignment2.enqueue_assumption(decision) {
+            Err(AssignmentError::Conflict) => return Ok(DecisionResult::Conflict),
+            Err(AssignmentError::AlreadyAssigned) => {
+                panic!("decision heuristic unexpectedly proposed already assigned variable for propagation")
+            }
+            Err(_) => panic!("encountered unexpected or unknown enqueue error"),
+            Ok(()) => (),
+        }
+        println!(
+            "Solver::solve_for_decision assignment = {:#?}",
+            self.assignment2
+        );
         let propagation_result = self.assignment2.propagate(&mut self.clauses);
-        println!("Solver::solve_for_decision propagation_result = {:?}", propagation_result);
+        println!(
+            "Solver::solve_for_decision propagation_result = {:?}",
+            propagation_result
+        );
         match propagation_result {
             PropagationResult2::Conflict => Ok(DecisionResult::Conflict),
             PropagationResult2::Consistent => {
@@ -291,7 +302,9 @@ impl Solver {
         // Bail out if the provided assumptions are in conflict with the instance.
         println!("Solver::solve add given assumptions and propagate them");
         for assumption in assumptions {
-            if let Err(AssignmentError::Conflict) = self.assignment2.enqueue_assumption(assumption) {
+            if let Err(AssignmentError::Conflict) =
+                self.assignment2.enqueue_assumption(assumption)
+            {
                 return Ok(SolveResult::Unsat)
             }
         }
