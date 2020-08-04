@@ -40,7 +40,7 @@ impl Output for SolverBuilder {
     ) -> Result<(), Self::Error> {
         let num_variables = num_variables as usize;
         self.num_variables = Some(num_variables);
-        self.solver.new_literal_chunk(num_variables)?;
+        self.solver.new_literal_chunk(num_variables);
         Ok(())
     }
 

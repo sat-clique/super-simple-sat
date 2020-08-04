@@ -1,34 +1,30 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::len_without_is_empty)]
 
-mod assignment;
 mod assignment2;
 mod builder;
 mod clause_db;
+mod decider;
 mod literal;
 mod literal_chunk;
-mod occurrence_map;
-mod propagator;
 mod utils;
 
 #[cfg(test)]
 mod tests;
 
 use crate::{
-    assignment::Assignment,
+    assignment2::{
+        AssignmentError,
+        Assignment as Assignment2,
+        LastModel as LastModel2,
+        Model as Model2,
+        PropagationResult as PropagationResult2,
+    },
     builder::SolverBuilder,
     clause_db::ClauseDb,
-    occurrence_map::OccurrenceMap,
-    propagator::{
-        PropagationResult,
-        Propagator,
-    },
+    decider::Decider,
 };
 pub use crate::{
-    assignment::{
-        LastModel,
-        Model,
-    },
     clause_db::Clause,
     literal::{
         Literal,
@@ -49,9 +45,9 @@ use cnf_parser::{
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     Other(&'static str),
-    Occurrences(occurrence_map::Error),
-    Assignment(assignment::Error),
+    Assignment(AssignmentError),
     Bounded(utils::Error),
+    Conflict,
     InvalidLiteralChunkRange,
     InvalidLiteralChunkStart,
     InvalidLiteralChunkEnd,
@@ -62,21 +58,15 @@ pub enum Error {
     InvalidSizeIncrement,
 }
 
-impl From<occurrence_map::Error> for Error {
-    fn from(err: occurrence_map::Error) -> Self {
-        Self::Occurrences(err)
-    }
-}
-
-impl From<assignment::Error> for Error {
-    fn from(err: assignment::Error) -> Self {
-        Self::Assignment(err)
-    }
-}
-
 impl From<utils::Error> for Error {
     fn from(err: utils::Error) -> Self {
         Self::Bounded(err)
+    }
+}
+
+impl From<AssignmentError> for Error {
+    fn from(err: AssignmentError) -> Self {
+        Self::Assignment(err)
     }
 }
 
@@ -98,13 +88,14 @@ impl DecisionResult {
     }
 }
 
+#[derive(Debug)]
 pub enum SolveResult<'a> {
     Unsat,
     Sat(SatResult<'a>),
 }
 
 impl<'a> SolveResult<'a> {
-    fn sat(model: &'a Model) -> Self {
+    fn sat(model: &'a Model2) -> Self {
         Self::Sat(SatResult { model })
     }
 
@@ -117,12 +108,13 @@ impl<'a> SolveResult<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct SatResult<'a> {
-    model: &'a Model,
+    model: &'a Model2,
 }
 
 impl<'a> SatResult<'a> {
-    pub fn model(&self) -> &'a Model {
+    pub fn model(&self) -> &'a Model2 {
         self.model
     }
 }
@@ -131,13 +123,18 @@ impl<'a> SatResult<'a> {
 pub struct Solver {
     len_variables: usize,
     clauses: ClauseDb,
-    occurrence_map: OccurrenceMap,
-    assignments: Assignment,
-    propagator: Propagator,
-    last_model: LastModel,
+
+    // occurrence_map: OccurrenceMap,
+    // assignments: Assignment,
+    // propagator: Propagator,
+    // last_model: LastModel,
+    assignment2: Assignment2,
+    decider: Decider,
+    last_model2: LastModel2,
 }
 
 impl Solver {
+    /// Returns the number of currently registered variables.
     fn len_variables(&self) -> usize {
         self.len_variables
     }
@@ -151,31 +148,49 @@ impl Solver {
         Ok(builder.finalize())
     }
 
+    /// Consumes the given clause.
+    ///
+    /// # Errors
+    ///
+    /// If the clause is unit and is in conflict with the current assignment.
+    /// This is mostly encountered upon consuming two conflicting unit clauses.
     pub fn consume_clause(&mut self, clause: Clause) -> Result<(), Error> {
-        let id = self.clauses.push(clause);
-        for literal in self
-            .clauses
-            .resolve(id)
-            .expect("unexpected missing clause that has just been inserted")
-        {
-            self.occurrence_map.register_for_lit(literal, id)?
+        println!("Solver::consume_clause");
+        match self.clauses.push_get(clause) {
+            Ok(clause) => {
+                println!("Solver::consume_clause normal clause: {:?}", clause);
+                self.assignment2.initialize_watchers(clause);
+            }
+            Err(unit_clause) => {
+                println!("Solver::consume_clause unit clause: {:?}", unit_clause.literal);
+                self.assignment2
+                    .enqueue_assumption(unit_clause.literal)
+                    .map_err(|_| Error::Conflict)?;
+            }
         }
         Ok(())
     }
 
-    /// Allocates a new literal for the solver and returns it.
+    /// Returns the next variable.
+    fn new_variable(&mut self) -> Variable {
+        self.assignment2.register_new_variables(1);
+        self.decider.register_new_variables(1);
+        let next_id = self.len_variables();
+        let variable =
+            Variable::from_index(next_id).expect("registered too many variables");
+        self.len_variables += 1;
+        variable
+    }
+
+    /// Registers a new literal for the solver and returns it.
+    ///
+    /// The returned literal has positive polarity.
     ///
     /// # Errors
     ///
     /// If there are too many variables in use after this operation.
-    pub fn new_literal(&mut self) -> Result<Literal, Error> {
-        self.occurrence_map.register_variables(1)?;
-        self.assignments.register_variables(1)?;
-        let next_id = self.len_variables();
-        let variable =
-            Variable::from_index(next_id).ok_or_else(|| Error::TooManyVariablesInUse)?;
-        self.len_variables += 1;
-        Ok(variable.into_literal(VarAssignment::True))
+    pub fn new_literal(&mut self) -> Literal {
+        self.new_variable().into_literal(VarAssignment::True)
     }
 
     /// Allocates the given amount of new literals for the solver and returns them.
@@ -185,71 +200,72 @@ impl Solver {
     /// The new literals are returned as a chunk which serves the purpose of
     /// efficiently accessing them.
     ///
-    /// # Errors
+    /// # Panics
     ///
     /// If there are too many variables in use after this operation.
-    pub fn new_literal_chunk(&mut self, amount: usize) -> Result<LiteralChunk, Error> {
+    pub fn new_literal_chunk(&mut self, amount: usize) -> LiteralChunk {
         let old_len = self.len_variables();
         let new_len = self.len_variables() + amount;
-        let chunk = LiteralChunk::new(old_len, new_len)?;
-        self.occurrence_map.register_variables(amount)?;
-        self.assignments.register_variables(amount)?;
+        let chunk = LiteralChunk::new(old_len, new_len)
+            .expect("encountered unexpected invalid literal chunk");
+        self.assignment2.register_new_variables(amount);
+        self.decider.register_new_variables(amount);
         self.len_variables += amount;
-        Ok(chunk)
+        chunk
     }
 
     fn solve_for_decision(
         &mut self,
-        current_var: Variable,
-        assignment: VarAssignment,
+        decision: Literal,
     ) -> Result<DecisionResult, Error> {
-        let current_lit = current_var.into_literal(assignment);
-        match self.propagator.propagate(
-            current_lit,
-            &self.clauses,
-            &self.occurrence_map,
-            &mut self.assignments,
-        )? {
-            PropagationResult::Conflict { decision } => {
-                self.propagator
-                    .backtrack_decision(decision, &mut self.assignments)?;
-                Ok(DecisionResult::Conflict)
-            }
-            PropagationResult::Consistent { decision } => {
-                let result = self.solve_for_next_unassigned(Some(current_var))?;
-                self.propagator
-                    .backtrack_decision(decision, &mut self.assignments)?;
+        self.assignment2
+            .enqueue_assumption(decision)
+            .expect("encountered unexpected invalid assumption literal");
+        println!("Solver::solve_for_decision assignment = {:#?}", self.assignment2);
+        let propagation_result = self.assignment2.propagate(&mut self.clauses);
+        println!("Solver::solve_for_decision propagation_result = {:?}", propagation_result);
+        match propagation_result {
+            PropagationResult2::Conflict => Ok(DecisionResult::Conflict),
+            PropagationResult2::Consistent => {
+                let result = self.decide_and_propagate()?;
                 Ok(result)
             }
         }
     }
 
-    fn solve_for_next_unassigned(
-        &mut self,
-        current_variable: Option<Variable>,
-    ) -> Result<DecisionResult, Error> {
-        let next_var = self
-            .assignments
-            .next_unassigned(current_variable)
-            .expect("encountered unexpected invalid variable");
-        match next_var {
+    fn decide_and_propagate(&mut self) -> Result<DecisionResult, Error> {
+        println!("\n\nSolver::decide_and_propagate");
+        let next_variable = self
+            .decider
+            .next_unassigned(self.assignment2.variable_assignment());
+        match next_variable {
             None => {
-                self.last_model.update(&self.assignments)?;
+                println!("Solver::decide_and_propagate found solution!");
+                self.last_model2
+                    .update(self.assignment2.variable_assignment())
+                    .expect("encountered unexpected indeterminate variable assignment");
                 Ok(DecisionResult::Sat)
             }
-            Some(unassigned_var) => {
-                let (len_pos, len_neg) =
-                    self.occurrence_map.len_pos_neg(unassigned_var)?;
-                let prediction = VarAssignment::from_bool(len_pos >= len_neg);
+            Some(unassigned_variable) => {
+                println!(
+                    "Solver::decide_and_propagate unassigned_variable = {:?}",
+                    unassigned_variable
+                );
                 if self
-                    .solve_for_decision(unassigned_var, prediction)?
+                    .solve_for_decision(
+                        unassigned_variable.into_literal(VarAssignment::True),
+                    )?
                     .is_sat()
                     || self
-                        .solve_for_decision(unassigned_var, !prediction)?
+                        .solve_for_decision(
+                            unassigned_variable.into_literal(VarAssignment::False),
+                        )?
                         .is_sat()
                 {
+                    println!("Solver::decide_and_propagate SAT");
                     Ok(DecisionResult::Sat)
                 } else {
+                    println!("Solver::decide_and_propagate found conflict!");
                     Ok(DecisionResult::Conflict)
                 }
             }
@@ -260,25 +276,40 @@ impl Solver {
     where
         L: IntoIterator<Item = Literal>,
     {
+        println!("Solver::solve len_variables = {}", self.len_variables());
         // If the set of clauses contain the empty clause: UNSAT
         if self.len_variables() == 0 {
-            return Ok(SolveResult::sat(self.last_model.get()))
+            return Ok(SolveResult::sat(self.last_model2.get()))
         }
+        // Propagate in case the set of clauses contained unit clauses.
+        // Bail out if the instance is already in conflict with itself.
+        println!("Solver::solve propagate unit clauses of the problem instance");
+        if self.assignment2.propagate(&mut self.clauses).is_conflict() {
+            return Ok(SolveResult::Unsat)
+        }
+        // Enqueue assumptions and propagate them afterwards.
+        // Bail out if the provided assumptions are in conflict with the instance.
+        println!("Solver::solve add given assumptions and propagate them");
         for assumption in assumptions {
-            if let PropagationResult::Conflict { decision: _ } =
-                self.propagator.propagate(
-                    assumption,
-                    &self.clauses,
-                    &self.occurrence_map,
-                    &mut self.assignments,
-                )?
-            {
+            if let Err(AssignmentError::Conflict) = self.assignment2.enqueue_assumption(assumption) {
                 return Ok(SolveResult::Unsat)
             }
         }
-        match self.solve_for_next_unassigned(None)? {
-            DecisionResult::Conflict => Ok(SolveResult::Unsat),
-            DecisionResult::Sat => Ok(SolveResult::sat(self.last_model.get())),
+        if self.assignment2.propagate(&mut self.clauses).is_conflict() {
+            return Ok(SolveResult::Unsat)
         }
+        println!("Solver::solve dive into decide and propagate iteration");
+        // println!("Solver::solve assignment = {:#?}", self.assignment2);
+        let result = match self.decide_and_propagate()? {
+            DecisionResult::Conflict => SolveResult::Unsat,
+            DecisionResult::Sat => {
+                let result = SolveResult::sat(self.last_model2.get());
+                println!("Solver::solve model = {}", self.last_model2.get());
+                result
+            }
+        };
+        println!("Solver::solve assignment = {:#?}", self.assignment2);
+        println!("Solver::solve new_result = {:#x?}", result);
+        Ok(result)
     }
 }
