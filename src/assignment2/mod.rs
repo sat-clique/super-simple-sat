@@ -145,6 +145,17 @@ impl VariableAssignment {
             })
     }
 
+    /// Returns `true` if the given literal is conflicting with the current assignment.
+    ///
+    /// Returns `None` if the assignment is indeterminate.
+    ///
+    /// # Panics
+    ///
+    /// If the variable is invalid and cannot be resolved.
+    pub fn is_conflicting(&self, literal: Literal) -> Option<bool> {
+        self.is_satisfied(literal).map(|is_satisfied| !is_satisfied)
+    }
+
     /// Updates the assignment of the variable.
     ///
     /// # Panics
