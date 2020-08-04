@@ -45,6 +45,17 @@ pub struct ClauseDb {
     literals: Vec<Literal>,
 }
 
+/// A unit clause that cannot be stored in the clause data base.
+///
+/// # Note
+///
+/// Unit clauses are instead turned into problem instance assumptions.
+#[derive(Debug)]
+pub struct UnitClause {
+    /// The unit literal of the unit clause.
+    pub literal: Literal,
+}
+
 impl ClauseDb {
     /// Returns the number of clauses stored in the clause database.
     pub fn len(&self) -> usize {
@@ -61,12 +72,22 @@ impl ClauseDb {
     /// # Note
     ///
     /// The identifier can be used to resolve the clause again.
-    pub fn push(&mut self, clause: Clause) -> ClauseId {
-        let id = self.len();
-        self.literals.extend(&clause);
-        let end = self.literals.len();
-        self.ends.push(LiteralsEnd::from_index(end));
-        ClauseId::from_index(id)
+    ///
+    /// # Errors
+    ///
+    /// If the given clause is a unit clause. In this case the clause is
+    /// returned as unit clause for further processing.
+    pub fn push(&mut self, clause: Clause) -> Result<ClauseId, UnitClause> {
+        match clause.unit_literal() {
+            Some(literal) => Err(UnitClause { literal }),
+            None => {
+                let id = self.len();
+                self.literals.extend(&clause);
+                let end = self.literals.len();
+                self.ends.push(LiteralsEnd::from_index(end));
+                Ok(ClauseId::from_index(id))
+            }
+        }
     }
 
     /// Pushes another clause to the clause database, returns its identifier.
@@ -74,14 +95,25 @@ impl ClauseDb {
     /// # Note
     ///
     /// The identifier can be used to resolve the clause again.
-    pub fn push_get(&mut self, clause: Clause) -> ClauseRef {
-        let id = ClauseId::from_index(self.len());
-        let start = self.literals.len();
-        self.literals.extend(&clause);
-        let end = self.literals.len();
-        self.ends.push(LiteralsEnd::from_index(end));
-        ClauseRef::new(id, &self.literals[start..end])
-            .expect("encountered unexpected invalid shared clause reference")
+    ///
+    /// # Errors
+    ///
+    /// If the given clause is a unit clause. In this case the clause is
+    /// returned as unit clause for further processing.
+    pub fn push_get(&mut self, clause: Clause) -> Result<ClauseRef, UnitClause> {
+        match clause.unit_literal() {
+            Some(literal) => Err(UnitClause { literal }),
+            None => {
+                let id = ClauseId::from_index(self.len());
+                let start = self.literals.len();
+                self.literals.extend(&clause);
+                let end = self.literals.len();
+                self.ends.push(LiteralsEnd::from_index(end));
+                let clause_ref = ClauseRef::new(id, &self.literals[start..end])
+                    .expect("encountered unexpected invalid shared clause reference");
+                Ok(clause_ref)
+            }
+        }
     }
 
     /// Converts the clause identifier into the range of its literals.

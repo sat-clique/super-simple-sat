@@ -1,24 +1,36 @@
-use super::Error;
+use super::{
+    ClauseId,
+    Error,
+};
 use crate::{
     assignment2::VariableAssignment,
     Literal,
 };
-use super::ClauseId;
 use core::{
     iter,
     slice,
 };
 
+/// A shared reference to a clause stored in the clause database.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ClauseRef<'a> {
+    /// The unique identifier of the clause.
     id: ClauseId,
+    /// The literals of the clause.
     literals: &'a [Literal],
 }
 
 impl<'a> ClauseRef<'a> {
     /// Creates a new shared clause reference.
+    ///
+    /// # Panics
+    ///
+    /// If there are less than 2 literals in the literal slice.
     pub fn new(id: ClauseId, literals: &'a [Literal]) -> Result<Self, Error> {
-        debug_assert!(!literals.is_empty());
+        assert!(
+            literals.len() >= 2,
+            "expected at least 2 literals in a shared clause reference"
+        );
         Ok(Self { id, literals })
     }
 
@@ -37,6 +49,7 @@ impl<'a> IntoIterator for ClauseRef<'a> {
     }
 }
 
+/// An exclusive reference to a clause stored in the clause database.
 #[derive(Debug)]
 pub struct ClauseRefMut<'a> {
     literals: &'a mut [Literal],
@@ -58,9 +71,12 @@ impl<'a> ClauseRefMut<'a> {
     ///
     /// # Panics
     ///
-    /// If the given literal slice is empty.
+    /// If there are less than 2 literals in the literal slice.
     pub fn new(literals: &'a mut [Literal]) -> Result<Self, Error> {
-        debug_assert!(!literals.is_empty());
+        assert!(
+            literals.len() >= 2,
+            "expected at least 2 literals in an exclusive clause reference"
+        );
         Ok(Self { literals })
     }
 
