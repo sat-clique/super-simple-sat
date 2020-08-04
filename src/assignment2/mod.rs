@@ -2,12 +2,12 @@ mod model;
 mod trail;
 mod watch_list;
 
+pub use self::model::{
+    LastModel,
+    Model,
+    ModelIter,
+};
 use self::{
-    model::{
-        LastModel,
-        Model,
-        ModelIter,
-    },
     trail::{
         DecisionLevel,
         Trail,
@@ -21,33 +21,40 @@ use crate::{
         BoundedMap,
     },
     ClauseDb,
-    Error,
     Literal,
     VarAssignment,
     Variable,
 };
-use std::collections::VecDeque;
 
 /// Errors that may be encountered when operating on the assignment.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum AssignmentError {
     /// When trying to create a model from an indeterminate assignment.
     UnexpectedIndeterminateAssignment,
     /// Variable invalid for the current assignment.
     InvalidVariable,
-    /// Initialize an already initialized assignment.
-    AlreadyInitialized,
+    /// When trying to assign a variable that has already been assigned.
+    AlreadyAssigned,
+    /// When trying to assign a conflict.
+    Conflict,
+}
+
+impl AssignmentError {
+    /// Returns `true` if the assignment error was caused by a conflict.
+    pub fn is_conflict(self) -> bool {
+        matches!(self, Self::Conflict)
+    }
 }
 
 /// Allows to enqueue new literals into the propagation queue.
 #[derive(Debug)]
 pub struct PropagationEnqueuer<'a> {
-    queue: &'a mut PropagationQueue,
+    queue: &'a mut Trail,
 }
 
 impl<'a> PropagationEnqueuer<'a> {
     /// Returns a new wrapper around the given propagation queue.
-    fn new(queue: &'a mut PropagationQueue) -> Self {
+    fn new(queue: &'a mut Trail) -> Self {
         Self { queue }
     }
 
@@ -61,62 +68,9 @@ impl<'a> PropagationEnqueuer<'a> {
     pub fn push(
         &mut self,
         literal: Literal,
-        assignment: &VariableAssignment,
-    ) -> Result<(), EnqueueError> {
+        assignment: &mut VariableAssignment,
+    ) -> Result<(), AssignmentError> {
         self.queue.push(literal, assignment)
-    }
-}
-
-/// Errors that may be encountered upon enqueuing a literal to the propagation queue.
-#[derive(Debug)]
-pub enum EnqueueError {
-    /// The literal is alreday satisfied and does not need to be propagated.
-    AlreadySatisfied,
-    /// The literal is in conflict with the current assignment.
-    Conflict,
-}
-
-impl EnqueueError {
-    /// Returns `true` if the enqueue error was caused by a conflict.
-    pub fn is_conflict(self) -> bool {
-        matches!(self, Self::Conflict)
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct PropagationQueue {
-    queue: VecDeque<Literal>,
-}
-
-impl PropagationQueue {
-    /// Pushes another literal to the propagation queue.
-    ///
-    /// # Errors
-    ///
-    /// - If the literal has already been satisfied.
-    /// - If the literal is in conflict with the current assignment. This will
-    ///   also clear the propagation queue.
-    pub fn push(
-        &mut self,
-        literal: Literal,
-        assignment: &VariableAssignment,
-    ) -> Result<(), EnqueueError> {
-        match assignment.get(literal.variable()) {
-            Some(VarAssignment::True) => Err(EnqueueError::AlreadySatisfied),
-            Some(VarAssignment::False) => {
-                self.queue.clear();
-                Err(EnqueueError::Conflict)
-            }
-            None => {
-                self.queue.push_back(literal);
-                Ok(())
-            }
-        }
-    }
-
-    /// Pops the next propagation literal from the propagation queue.
-    pub fn pop(&mut self) -> Option<Literal> {
-        self.queue.pop_front()
     }
 }
 
@@ -127,9 +81,19 @@ pub struct VariableAssignment {
 }
 
 impl VariableAssignment {
+    /// Returns the number of registered variables.
+    pub fn len(&self) -> usize {
+        self.assignment.capacity()
+    }
+
     /// Returns the number of assigned variables.
     pub fn len_assigned(&self) -> usize {
         self.assignment.len()
+    }
+
+    /// Returns `true` if the assignment is complete.
+    pub fn is_complete(&self) -> bool {
+        self.len() == self.len_assigned()
     }
 
     /// Returns an iterator yielding shared references to the variable assignments.
@@ -146,10 +110,11 @@ impl VariableAssignment {
     /// # Errors
     ///
     /// If the number of total variables is out of supported bounds.
-    pub fn register_new_variables(&mut self, new_variables: usize) -> Result<(), Error> {
-        let new_len = self.assignment.len() + new_variables;
-        self.assignment.increase_capacity_to(new_len)?;
-        Ok(())
+    pub fn register_new_variables(&mut self, new_variables: usize) {
+        let new_len = self.len() + new_variables;
+        self.assignment
+            .increase_capacity_to(new_len)
+            .expect("encountered unexpected invalid size increment");
     }
 
     /// Returns the assignment for the given variable.
@@ -223,7 +188,6 @@ pub struct Assignment {
     trail: Trail,
     assignments: VariableAssignment,
     watchers: WatchList,
-    propagation_queue: PropagationQueue,
 }
 
 impl Assignment {
@@ -235,8 +199,17 @@ impl Assignment {
     pub fn initialize_watchers(&mut self, clause: ClauseRef) {
         let clause_id = clause.id();
         for literal in clause.into_iter().take(2) {
-            self.watchers.register_for_lit(literal, clause_id);
+            println!(
+                "Assignment::initialize_watchers: watch {:?} for {:?}",
+                !literal, clause
+            );
+            self.watchers.register_for_lit(!literal, clause_id);
         }
+    }
+
+    /// Returns a view into the assignment.
+    pub fn variable_assignment(&self) -> &VariableAssignment {
+        &self.assignments
     }
 
     /// Returns the current number of variables.
@@ -251,21 +224,19 @@ impl Assignment {
 
     /// Returns `true` if the assignment is complete.
     fn is_complete(&self) -> bool {
-        self.len_variables() == self.assigned_variables()
+        self.assignments.is_complete()
     }
 
     /// Registers the given number of additional variables.
     ///
-    /// # Errors
+    /// # Panics
     ///
     /// If the number of total variables is out of supported bounds.
-    pub fn register_new_variables(&mut self, new_variables: usize) -> Result<(), Error> {
-        let total_variables = self.len_variables() + new_variables;
-        self.trail.register_new_variables(new_variables)?;
-        self.assignments.register_new_variables(new_variables)?;
-        self.watchers.register_new_variables(total_variables)?;
+    pub fn register_new_variables(&mut self, new_variables: usize) {
+        self.trail.register_new_variables(new_variables);
+        self.assignments.register_new_variables(new_variables);
+        self.watchers.register_new_variables(new_variables);
         self.num_variables += new_variables;
-        Ok(())
     }
 
     /// Resets the assignment to the given decision level.
@@ -284,8 +255,9 @@ impl Assignment {
     pub fn enqueue_assumption(
         &mut self,
         assumption: Literal,
-    ) -> Result<(), EnqueueError> {
-        self.propagation_queue.push(assumption, &self.assignments)
+    ) -> Result<(), AssignmentError> {
+        println!("Assignment::enqueue_assumption = {:?}", assumption);
+        self.trail.push(assumption, &mut self.assignments)
     }
 }
 
@@ -308,31 +280,35 @@ impl Assignment {
     /// Propagates the enqueued assumptions.
     pub fn propagate(&mut self, clause_db: &mut ClauseDb) -> PropagationResult {
         let Self {
-            propagation_queue,
             watchers,
             assignments,
+            trail,
             ..
         } = self;
-        while let Some(propagation_literal) = propagation_queue.pop() {
-            assignments.assign(
-                propagation_literal.variable(),
-                propagation_literal.assignment(),
-            );
+        let level = trail.new_decision_level();
+        println!("Assignment::propagate: level = {:?}", level);
+        while let Some(propagation_literal) = trail.pop_enqueued() {
+            println!("Assignment::propagate: literal = {:?}", propagation_literal);
             let result = watchers.propagate(
                 propagation_literal,
                 clause_db,
-                &assignments,
-                PropagationEnqueuer::new(propagation_queue),
+                assignments,
+                PropagationEnqueuer::new(trail),
             );
             if result.is_conflict() {
+                println!("Assignment::propagate found conflict! BACKTRACK");
+                trail.pop_to_level(level, |unassigned| {
+                    assignments.unassign(unassigned.variable());
+                });
                 return result
             }
         }
+        println!("Assignment::propagate end");
         PropagationResult::Consistent
     }
 }
 
-impl<'a> IntoIterator for &'a Assignment {
+impl<'a> IntoIterator for &'a VariableAssignment {
     type Item = (Variable, VarAssignment);
     type IntoIter = Iter<'a>;
 
@@ -341,14 +317,23 @@ impl<'a> IntoIterator for &'a Assignment {
     }
 }
 
+impl<'a> IntoIterator for &'a Assignment {
+    type Item = (Variable, VarAssignment);
+    type IntoIter = Iter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter::new(&self.assignments)
+    }
+}
+
 pub struct Iter<'a> {
     iter: bounded_map::Iter<'a, Variable, VarAssignment>,
 }
 
 impl<'a> Iter<'a> {
-    pub fn new(assignment: &'a Assignment) -> Self {
+    pub fn new(assignment: &'a VariableAssignment) -> Self {
         Self {
-            iter: assignment.assignments.iter(),
+            iter: assignment.iter(),
         }
     }
 }

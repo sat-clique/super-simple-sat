@@ -1,6 +1,7 @@
 pub use super::{
     Assignment,
     AssignmentError,
+    VariableAssignment,
 };
 use crate::{
     utils::{
@@ -28,7 +29,10 @@ impl LastModel {
     /// # Errors
     ///
     /// If the given assignment is not complete.
-    pub fn update(&mut self, assignment: &Assignment) -> Result<(), AssignmentError> {
+    pub fn update(
+        &mut self,
+        assignment: &VariableAssignment,
+    ) -> Result<(), AssignmentError> {
         self.last_model
             .update(&assignment)
             .expect("encountered unexpected incomplete assignment");
@@ -69,12 +73,15 @@ impl Model {
     /// # Errors
     ///
     /// If the given assignment is not complete.
-    pub(crate) fn update(&mut self, assignment: &Assignment) -> Result<(), AssignmentError> {
+    pub(crate) fn update(
+        &mut self,
+        assignment: &VariableAssignment,
+    ) -> Result<(), AssignmentError> {
         if !assignment.is_complete() {
             return Err(AssignmentError::UnexpectedIndeterminateAssignment)
         }
         self.assignment
-            .increase_len(assignment.len_variables())
+            .increase_len(assignment.len())
             .expect("encountered unexpected too many variables for model creation");
         for (variable, var_assignment) in assignment {
             self.assignment

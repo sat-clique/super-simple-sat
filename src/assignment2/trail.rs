@@ -1,10 +1,14 @@
+use super::{
+    AssignmentError,
+    VariableAssignment,
+};
 use crate::{
     utils::{
         BoundedStack,
         Index,
     },
-    Error,
     Literal,
+    VarAssignment,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -73,14 +77,15 @@ impl TrailLimits {
 
 #[derive(Debug, Default, Clone)]
 pub struct Trail {
-    decisions: BoundedStack<Literal>,
+    propagate_head: usize,
+    decisions_and_implications: BoundedStack<Literal>,
     limits: TrailLimits,
 }
 
 impl Trail {
     /// Returns the current number of variables.
     fn len_variables(&self) -> usize {
-        self.decisions.capacity()
+        self.decisions_and_implications.capacity()
     }
 
     /// Registers the given number of additional variables.
@@ -88,17 +93,71 @@ impl Trail {
     /// # Errors
     ///
     /// If the number of total variables is out of supported bounds.
-    pub fn register_new_variables(&mut self, new_variables: usize) -> Result<(), Error> {
+    pub fn register_new_variables(&mut self, new_variables: usize) {
         let total_variables = self.len_variables() + new_variables;
-        self.decisions.increase_capacity_to(total_variables);
-        Ok(())
+        println!("Trail::register_new_variables: total = {}", total_variables);
+        self.decisions_and_implications
+            .increase_capacity_to(total_variables)
+            .expect("encountered unexpected invalid size increment");
     }
 
     /// Pushes a new decision level and returns it.
     pub fn new_decision_level(&mut self) -> DecisionLevel {
-        let limit = TrailLimit::from_index(self.decisions.len());
+        let limit = TrailLimit::from_index(self.decisions_and_implications.len());
         let index = self.limits.push(limit);
         index
+    }
+
+    /// Returns `true` if the propagation queue is empty.
+    fn is_propagation_queue_empty(&self) -> bool {
+        if self.decisions_and_implications.is_empty() {
+            return true
+        }
+        self.propagate_head == self.decisions_and_implications.len()
+        // assert!(self.propagate_head <= self.decisions_and_implications.len());
+        // self.propagate_head + 1 >= self.decisions_and_implications.len()
+    }
+
+    /// Returns the next literal from the propagation queue if any.
+    pub fn pop_enqueued(&mut self) -> Option<Literal> {
+        if self.is_propagation_queue_empty() {
+            return None
+        }
+        let popped = self.decisions_and_implications[self.propagate_head];
+        self.propagate_head += 1;
+        Some(popped)
+    }
+
+    /// Pushes a new literal to the trail.
+    ///
+    /// This does not yet propagate the pushed literal.
+    ///
+    /// # Errors
+    ///
+    /// - If the pushed literal is in conflict with the current assignment.
+    /// - If the literal has already been assigned.
+    pub fn push(
+        &mut self,
+        literal: Literal,
+        assignment: &mut VariableAssignment,
+    ) -> Result<(), AssignmentError> {
+        println!("Trail::push {:?}", literal);
+        match assignment.get(literal.variable()) {
+            Some(VarAssignment::True) => {
+                println!("Trail::push already assigned to true");
+                return Err(AssignmentError::AlreadyAssigned)
+            }
+            Some(VarAssignment::False) => {
+                println!("Trail::push conflicting assignment");
+                return Err(AssignmentError::Conflict)
+            }
+            None => (),
+        }
+        self.decisions_and_implications
+            .push(literal)
+            .expect("encountered unexpected invalid variable");
+        assignment.assign(literal.variable(), literal.assignment());
+        Ok(())
     }
 
     /// Backjumps the trail to the given decision level.
@@ -107,7 +166,8 @@ impl Trail {
         F: FnMut(Literal),
     {
         let limit = self.limits.pop_to_level(level);
-        self.decisions
+        self.propagate_head = limit.into_index();
+        self.decisions_and_implications
             .pop_to(limit.into_index(), |popped| observer(*popped))
             .expect("encountered unexpected invalid trail limit");
     }
