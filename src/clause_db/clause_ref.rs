@@ -98,12 +98,12 @@ impl<'a> ClauseRefMut<'a> {
         }
         // Look for new literal to watch:
         for i in 2..self.literals.len() {
-            if !assignment
-                .is_satisfied(self.literals[0])
-                .unwrap_or_else(|| false)
+            if assignment
+                .is_satisfied(self.literals[i])
+                .unwrap_or_else(|| true)
             {
                 self.literals.swap(1, i);
-                return PropagationResult::NewWatchedLiteral(self.literals[1])
+                return PropagationResult::NewWatchedLiteral(!self.literals[1])
             }
         }
         // Clause is unit under current assignment:
