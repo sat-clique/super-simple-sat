@@ -5,7 +5,6 @@ use super::{
 };
 use crate::Literal;
 use core::{
-    iter::FromIterator,
     mem,
     ops::Range,
     slice,
@@ -147,28 +146,6 @@ impl ClauseDb {
         ClauseRefMut::new(&mut self.literals[literals_range])
             .expect("encountered invalid clause literals")
             .into()
-    }
-}
-
-impl FromIterator<Clause> for ClauseDb {
-    fn from_iter<I>(clauses: I) -> Self
-    where
-        I: IntoIterator<Item = Clause>,
-    {
-        let mut clause_db = ClauseDb::default();
-        clause_db.extend(clauses);
-        clause_db
-    }
-}
-
-impl Extend<Clause> for ClauseDb {
-    fn extend<I>(&mut self, clauses: I)
-    where
-        I: IntoIterator<Item = Clause>,
-    {
-        for clause in clauses {
-            self.push(clause);
-        }
     }
 }
 
