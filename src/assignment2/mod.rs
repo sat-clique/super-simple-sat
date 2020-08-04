@@ -210,10 +210,6 @@ impl Assignment {
     pub fn initialize_watchers(&mut self, clause: ClauseRef) {
         let clause_id = clause.id();
         for literal in clause.into_iter().take(2) {
-            // println!(
-            //     "Assignment::initialize_watchers: watch {:?} for {:?}",
-            //     !literal, clause
-            // );
             self.watchers.register_for_lit(!literal, clause_id);
         }
     }
@@ -272,7 +268,6 @@ impl Assignment {
         &mut self,
         assumption: Literal,
     ) -> Result<(), AssignmentError> {
-        println!("Assignment::enqueue_assumption = {:?}", assumption);
         self.trail.push(assumption, &mut self.assignments)
     }
 }
@@ -308,7 +303,6 @@ impl Assignment {
             ..
         } = self;
         trail.pop_to_level(level, |unassigned| {
-            // println!("Assignment::propagate unassign {:?}", unassigned);
             assignments.unassign(unassigned.variable());
         });
     }
@@ -323,9 +317,7 @@ impl Assignment {
         } = self;
         // let level = trail.new_decision_level();
         let level = trail.current_decision_level();
-        println!("Assignment::propagate: level = {:?}", level);
         while let Some(propagation_literal) = trail.pop_enqueued() {
-            // println!("Assignment::propagate: literal = {:?}", propagation_literal);
             let result = watchers.propagate(
                 propagation_literal,
                 clause_db,
@@ -333,19 +325,12 @@ impl Assignment {
                 PropagationEnqueuer::new(trail),
             );
             if result.is_conflict() {
-                // println!("Assignment::propagate found conflict! BACKTRACK");
-                // println!("Assignment::propagate assignment (before) = {:#?}", trail);
-                println!("Assignment::propagate pop to level = {:?}", level);
                 trail.pop_to_level(level, |unassigned| {
-                    // println!("Assignment::propagate unassign {:?}", unassigned);
                     assignments.unassign(unassigned.variable());
                 });
-                // println!("Assignment::propagate popped level = {:?}", trail.current_decision_level());
-                // println!("Assignment::propagate assignment (after) = {:#?}", trail);
                 return result
             }
         }
-        // println!("Assignment::propagate end");
         PropagationResult::Consistent
     }
 }

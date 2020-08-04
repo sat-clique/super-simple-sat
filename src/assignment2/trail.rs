@@ -101,7 +101,6 @@ impl Trail {
     /// If the number of total variables is out of supported bounds.
     pub fn register_new_variables(&mut self, new_variables: usize) {
         let total_variables = self.len_variables() + new_variables;
-        // println!("Trail::register_new_variables: total = {}", total_variables);
         self.decisions_and_implications
             .increase_capacity_to(total_variables)
             .expect("encountered unexpected invalid size increment");
@@ -150,14 +149,11 @@ impl Trail {
         literal: Literal,
         assignment: &mut VariableAssignment,
     ) -> Result<(), AssignmentError> {
-        println!("Trail::push {:?}", literal);
         match assignment.is_conflicting(literal) {
             Some(true) => {
-                // println!("Trail::push conflicting assignment");
                 return Err(AssignmentError::Conflict)
             }
             Some(false) => {
-                // println!("Trail::push literal is already assigned");
                 return Err(AssignmentError::AlreadyAssigned)
             }
             None => (),

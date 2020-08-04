@@ -60,7 +60,6 @@ impl VariableWatchers {
     where
         F: FnMut(ClauseId, ClausePropagationResult),
     {
-        println!("VariableWatchers::propagate");
         let mut seen_conflict = false;
         let watchers = self.literal_watchers_mut(literal);
         watchers.retain(|&watcher| {
@@ -143,7 +142,6 @@ impl WatchList {
             watchers,
             deferred_inserts,
         } = self;
-        println!("WatchList::propagate");
         let result = watchers
             .get_mut(literal.variable())
             .expect("encountered unexpected invalid propagation literal")
