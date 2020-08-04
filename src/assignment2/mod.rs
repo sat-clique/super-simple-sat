@@ -252,6 +252,11 @@ impl Assignment {
     /// Enqueues a propagation literal.
     ///
     /// This does not yet perform the actual unit propagation.
+    ///
+    /// # Errors
+    ///
+    /// - If the pushed literal is in conflict with the current assignment.
+    /// - If the literal has already been assigned.
     pub fn enqueue_assumption(
         &mut self,
         assumption: Literal,
