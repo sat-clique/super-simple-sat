@@ -140,14 +140,14 @@ impl Trail {
         assignment: &mut VariableAssignment,
     ) -> Result<(), AssignmentError> {
         println!("Trail::push {:?}", literal);
-        match assignment.get(literal.variable()) {
-            Some(VarAssignment::True) => {
-                println!("Trail::push already assigned to true");
-                return Err(AssignmentError::AlreadyAssigned)
-            }
-            Some(VarAssignment::False) => {
+        match assignment.is_conflicting(literal) {
+            Some(true) => {
                 println!("Trail::push conflicting assignment");
                 return Err(AssignmentError::Conflict)
+            }
+            Some(false) => {
+                println!("Trail::push literal is already assigned");
+                return Err(AssignmentError::AlreadyAssigned)
             }
             None => (),
         }
