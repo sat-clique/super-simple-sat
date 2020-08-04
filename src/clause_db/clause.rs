@@ -47,6 +47,16 @@ impl Clause {
         Ok(Self { literals })
     }
 
+    /// Returns the first literal of the clause if the clause is a unit clause.
+    ///
+    /// Otherwise returns `None`.
+    pub fn unit_literal(&self) -> Option<Literal> {
+        if self.len() == 1 {
+            return Some(self.literals[0])
+        }
+        None
+    }
+
     /// Returns the length of the clause.
     pub fn len(&self) -> usize {
         self.literals.len()
