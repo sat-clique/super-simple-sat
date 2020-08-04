@@ -114,8 +114,6 @@ impl Trail {
             return true
         }
         self.propagate_head == self.decisions_and_implications.len()
-        // assert!(self.propagate_head <= self.decisions_and_implications.len());
-        // self.propagate_head + 1 >= self.decisions_and_implications.len()
     }
 
     /// Returns the next literal from the propagation queue if any.
