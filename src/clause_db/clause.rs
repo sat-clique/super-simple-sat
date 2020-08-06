@@ -35,7 +35,7 @@ impl Clause {
         if literals.is_empty() {
             return Err(Error::EmptyClause)
         }
-        literals.sort();
+        literals.sort_unstable();
         literals.dedup();
         let mut occurences = HashSet::new();
         for &literal in &literals {
