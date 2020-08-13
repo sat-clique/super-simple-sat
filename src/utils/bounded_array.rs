@@ -63,12 +63,20 @@ where
     }
 
     /// Returns a shared reference to the element at the given index.
+    ///
+    /// # Errors
+    ///
+    /// If the given index is out of bounds for the bounded array.
     pub fn get(&self, index: Idx) -> Result<&T, Error> {
         self.ensure_valid_index(index)
             .map(move |index| &self.values[index])
     }
 
     /// Returns an exclusive reference to the element at the given index.
+    ///
+    /// # Errors
+    ///
+    /// If the given index is out of bounds for the bounded array.
     pub fn get_mut(&mut self, index: Idx) -> Result<&mut T, Error> {
         self.ensure_valid_index(index)
             .map(move |index| &mut self.values[index])
