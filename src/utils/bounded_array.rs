@@ -62,6 +62,16 @@ where
         Ok(index)
     }
 
+    /// Updates the value of the element at the given index.
+    ///
+    /// # Errors
+    ///
+    /// If the given index is out of bounds for the bounded array.
+    pub fn update(&mut self, index: Idx, new_value: T) -> Result<(), Error> {
+        self.ensure_valid_index(index)
+            .map(move |index| self.values[index] = new_value)
+    }
+
     /// Returns a shared reference to the element at the given index.
     ///
     /// # Errors
