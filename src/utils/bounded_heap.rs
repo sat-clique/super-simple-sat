@@ -270,15 +270,52 @@ where
     ///
     /// This does not pop the maximum element from the bounded heap.
     pub fn peek(&self) -> Option<(&K, &W)> {
-        let key = self.heap
+        if self.is_empty() {
+            return None
+        }
+        let key = self
+            .heap
             .get(HeapPosition::root())
-            .ok()?;
-        let weight = self.weights.get(*key).ok()?;
+            .expect("encountered unexpected empty heap array");
+        let weight = self
+            .weights
+            .get(*key)
+            .expect("encountered invalid root key");
         Some((key, weight))
     }
 
     /// Pops the current maximum key and its weight from the bounded heap.
     pub fn pop(&mut self) -> Option<(K, W)> {
-        todo!()
+        if self.is_empty() {
+            return None
+        }
+        let key = *self
+            .heap
+            .get(HeapPosition::root())
+            .expect("encountered unexpected empty heap array");
+        self.positions
+            .update(key, None)
+            .expect("encountered invalid root key");
+        let weight = *self.weights.get(key).expect("encountered invalid root key");
+        if self.len == 1 {
+            // No need to adjust heap properties.
+            self.len = 0;
+        } else {
+            // Replace root with the last element of the heap.
+            let new_root = *self
+                .heap
+                .get(HeapPosition::from_index(self.len - 1))
+                .expect("unexpected missing last element in heap");
+            self.heap
+                .update(HeapPosition::root(), new_root)
+                .expect("encountered error upon heap update of new root");
+            self.positions
+                .update(new_root, Some(HeapPosition::root()))
+                .expect("encountered unexpected error upon positions heap update");
+            self.len -= 1;
+            self.sift_down(HeapPosition::root())
+                .expect("encountered error upon sifting down new root in heap");
+        }
+        Some((key, weight))
     }
 }
