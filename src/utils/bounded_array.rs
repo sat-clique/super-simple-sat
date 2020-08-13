@@ -73,6 +73,18 @@ where
         self.ensure_valid_index(index)
             .map(move |index| &mut self.values[index])
     }
+
+    /// Swaps the elements at the given indices.
+    ///
+    /// # Errors
+    ///
+    /// If any of the given indices is out of bounds for the bounded array.
+    pub fn swap(&mut self, lhs: Idx, rhs: Idx) -> Result<(), Error> {
+        let lhs = self.ensure_valid_index(lhs)?;
+        let rhs = self.ensure_valid_index(rhs)?;
+        self.values.swap(lhs, rhs);
+        Ok(())
+    }
 }
 
 impl<Idx, T> BoundedArray<Idx, T> {
