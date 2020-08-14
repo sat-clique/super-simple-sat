@@ -213,19 +213,23 @@ where
     /// Used if the weight of the pivot element has been increased or after
     /// a new key weight pair has been inserted into the heap.
     fn sift_up(&mut self, pivot: HeapPosition) -> Result<(), Error> {
-        let mut pivot = pivot;
-        'perculate: while let Some(parent) = pivot.parent() {
-            let pivot_key = *self.heap.get(pivot)?;
+        let pivot_key = *self.heap.get(pivot)?;
+        let mut cursor = pivot;
+        'perculate: while let Some(parent) = cursor.parent() {
+            let cursor_key = *self.heap.get(cursor)?;
             let parent_key = *self.heap.get(parent)?;
-            match self.cmp_weights(pivot_key, parent_key)? {
+            match self.cmp_weights(cursor_key, parent_key)? {
                 Ordering::Greater => {
-                    self.heap.swap(pivot, parent)?;
-                    self.positions.swap(pivot_key, parent_key)?;
-                    pivot = parent;
+                    // Child is greater than the current parent -> move down the parent.
+                    self.heap.update(cursor, parent_key)?;
+                    self.positions.update(parent_key, Some(cursor))?;
+                    cursor = parent;
                 }
                 Ordering::Equal | Ordering::Less => break 'perculate,
             }
         }
+        self.heap.update(cursor, pivot_key)?;
+        self.positions.update(pivot_key, Some(cursor))?;
         Ok(())
     }
 
@@ -233,7 +237,8 @@ where
     ///
     /// # Note
     ///
-    /// Used of the weight of the pivot element has been decreased.
+    /// Used of the weight of the pivot element has been decreased or the root
+    /// element has been popped.
     fn sift_down(&mut self, pivot: HeapPosition) -> Result<(), Error> {
         let pivot_key = *self.heap.get(pivot)?;
         let mut cursor = pivot;
