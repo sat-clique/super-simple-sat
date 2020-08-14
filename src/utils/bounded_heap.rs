@@ -347,7 +347,6 @@ where
                 "encountered error upon comparing parent and right child weights",
             ) != Ordering::Greater
             {
-                println!("satisfies_heap_property NOT satisfied for {}", i);
                 return false
             }
         }
