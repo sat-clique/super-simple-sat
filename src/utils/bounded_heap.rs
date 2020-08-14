@@ -62,7 +62,7 @@ impl Index for HeapPosition {
 }
 
 /// A bounded binary max-heap that supports update of key weights.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct BoundedHeap<K, W> {
     /// The number of current elements.
     len: usize,
@@ -78,6 +78,21 @@ pub struct BoundedHeap<K, W> {
     positions: BoundedArray<K, Option<HeapPosition>>,
     /// The weight for every key.
     weights: BoundedArray<K, W>,
+}
+
+impl<K, W> Default for BoundedHeap<K, W>
+where
+    K: Index,
+    W: Default,
+{
+    fn default() -> Self {
+        Self {
+            len: 0,
+            heap: BoundedArray::default(),
+            positions: BoundedArray::default(),
+            weights: BoundedArray::default(),
+        }
+    }
 }
 
 impl<K, W> BoundedHeap<K, W>
