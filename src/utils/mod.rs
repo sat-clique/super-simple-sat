@@ -12,6 +12,7 @@ pub use self::{
         BoundedBitmap,
     },
     bounded_map::BoundedMap,
+    bounded_heap::BoundedHeap,
 };
 
 /// Errors that may occure when operating on a bounded map.
