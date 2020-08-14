@@ -101,8 +101,8 @@ where
     }
 
     /// Returns `true` if the element associated with the given key is contained.
-    pub fn contains(&self, key: K) -> bool {
-        self.positions[key].is_some()
+    pub fn contains(&self, key: K) -> Result<bool, BoundedError> {
+        Ok(self.positions.get(key)?.is_some())
     }
 
     /// Returns the index of the left child given the heap position.
@@ -158,12 +158,12 @@ where
     /// If the key is already contained in the heap.
     fn push_heap_position(&mut self, key: K) -> Result<HeapPosition, BoundedError> {
         assert!(
-            !self.contains(key),
+            !self.contains(key)?,
             "encountered already contained key upon push"
         );
-        let position = self.positions.get_mut(key)?;
         let last_position = HeapPosition::from_index(self.len);
-        *position = Some(last_position);
+        self.positions.update(key, Some(last_position))?;
+        self.heap.update(last_position, key)?;
         self.len += 1;
         Ok(last_position)
     }
@@ -176,7 +176,7 @@ where
     ///
     /// If the key index is out of bounds.
     pub fn push_or_update(&mut self, key: K, new_weight: W) -> Result<(), Error> {
-        let already_contained = self.contains(key);
+        let already_contained = self.contains(key)?;
         if !already_contained {
             self.push_heap_position(key)?;
         }
@@ -216,9 +216,8 @@ where
         let pivot_key = *self.heap.get(pivot)?;
         let mut cursor = pivot;
         'perculate: while let Some(parent) = cursor.parent() {
-            let cursor_key = *self.heap.get(cursor)?;
             let parent_key = *self.heap.get(parent)?;
-            match self.cmp_weights(cursor_key, parent_key)? {
+            match self.cmp_weights(pivot_key, parent_key)? {
                 Ordering::Greater => {
                     // Child is greater than the current parent -> move down the parent.
                     self.heap.update(cursor, parent_key)?;
@@ -249,15 +248,14 @@ where
                     let left_child_key = *self.heap.get(left_child)?;
                     let right_child_key = *self.heap.get(right_child)?;
                     match self.cmp_weights(left_child_key, right_child_key)? {
-                        Ordering::Less | Ordering::Equal => left_child,
-                        Ordering::Greater => right_child,
+                        Ordering::Less | Ordering::Equal => right_child,
+                        Ordering::Greater => left_child,
                     }
                 }
                 None => left_child,
             };
-            let cursor_key = *self.heap.get(cursor)?;
             let max_child_key = *self.heap.get(max_child)?;
-            if self.cmp_weights(cursor_key, max_child_key)? == Ordering::Less {
+            if self.cmp_weights(pivot_key, max_child_key)? == Ordering::Less {
                 // Child is greater than element -> move it upwards.
                 self.heap.update(cursor, max_child_key)?;
                 self.positions.update(max_child_key, Some(cursor))?;
