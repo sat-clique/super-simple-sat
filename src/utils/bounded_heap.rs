@@ -359,9 +359,10 @@ where
                 .heap
                 .get(parent)
                 .expect("encountered missing parent heap entry");
-            if self.cmp_weights(*parent_key, *child_key).expect(
-                "encountered error upon comparing parent and right child weights",
-            ) != Ordering::Greater
+            if self
+                .cmp_weights(*parent_key, *child_key)
+                .expect("encountered error upon comparing parent and right child weights")
+                != Ordering::Greater
             {
                 return false
             }
@@ -461,7 +462,10 @@ mod tests {
         let len = 10;
         let mut heap = BoundedHeap::default();
         heap.increase_capacity_to(len).unwrap();
-        assert_eq!(heap.push_or_update(10, 42), Err(Error::Bounded(BoundedError::OutOfBoundsAccess)));
+        assert_eq!(
+            heap.push_or_update(10, 42),
+            Err(Error::Bounded(BoundedError::OutOfBoundsAccess))
+        );
     }
 
     #[test]
@@ -477,7 +481,11 @@ mod tests {
         let mut removed_sequence = Vec::new();
         while let Some((k, w)) = heap.pop() {
             removed_sequence.push(w);
-            assert!(heap.satisfies_heap_property(), "heap property NOT satisfied after popping key {}", k);
+            assert!(
+                heap.satisfies_heap_property(),
+                "heap property NOT satisfied after popping key {}",
+                k
+            );
         }
         let expected_sequence = {
             let mut weights = test_weights.to_vec();
@@ -517,7 +525,10 @@ mod tests {
             heap.push_or_update(k, w).unwrap();
         }
         assert_eq!(heap.len(), len);
-        assert_eq!(heap.push_or_update(len, 40), Err(Error::Bounded(BoundedError::OutOfBoundsAccess)));
+        assert_eq!(
+            heap.push_or_update(len, 40),
+            Err(Error::Bounded(BoundedError::OutOfBoundsAccess))
+        );
         heap.increase_capacity_to(len + 1).unwrap();
         heap.push_or_update(len, 40).unwrap();
         assert_eq!(heap.len(), len + 1);
