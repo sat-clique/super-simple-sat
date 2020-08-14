@@ -14,10 +14,7 @@ pub struct BoundedArray<Idx, T> {
     marker: PhantomData<fn() -> Idx>,
 }
 
-impl<Idx, T> Default for BoundedArray<Idx, T>
-where
-    T: Default,
-{
+impl<Idx, T> Default for BoundedArray<Idx, T> {
     fn default() -> Self {
         Self {
             values: Vec::new(),
