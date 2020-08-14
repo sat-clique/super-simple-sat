@@ -97,7 +97,7 @@ where
 
 impl<K, W> BoundedHeap<K, W>
 where
-    K: Default + Index + Eq,
+    K: Index + Eq,
     W: Default + Ord + Copy,
 {
     /// Returns the number of elements stored in the bounded heap.
@@ -144,7 +144,8 @@ where
 
     /// Increases the length of the bounded heap to the new length.
     pub fn increase_capacity_to(&mut self, new_cap: usize) -> Result<(), Error> {
-        self.heap.increase_len_to(new_cap)?;
+        self.heap
+            .increase_len_to_with(new_cap, || K::from_index(0))?;
         self.positions.increase_len_to(new_cap)?;
         self.weights.increase_len_to(new_cap)?;
         Ok(())
