@@ -321,4 +321,191 @@ where
         }
         Some((key, weight))
     }
+
+    /// Returns `true` if the heap property is satisfied for all elements in the bounded heap.
+    ///
+    /// # Note
+    ///
+    /// The heap property is that the weight of parent nodes is always greater than or equal
+    /// to the weight of their children.
+    ///
+    /// This is a test-only API and generally not available.
+    #[cfg(test)]
+    fn satisfies_heap_property(&self) -> bool {
+        for i in 1..self.len() {
+            let child = HeapPosition::from_index(i);
+            let parent = child.parent().expect("encountered missing parent");
+            let child_key = self
+                .heap
+                .get(child)
+                .expect("encountered missing child heap entry");
+            let parent_key = self
+                .heap
+                .get(parent)
+                .expect("encountered missing parent heap entry");
+            if self.cmp_weights(*parent_key, *child_key).expect(
+                "encountered error upon comparing parent and right child weights",
+            ) != Ordering::Greater
+            {
+                println!("satisfies_heap_property NOT satisfied for {}", i);
+                return false
+            }
+        }
+        true
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_heap_is_marked_as_empty() {
+        let mut heap = <BoundedHeap<usize, i32>>::default();
+        assert_eq!(heap.len(), 0);
+        assert_eq!(heap.capacity(), 0);
+        assert!(heap.is_empty());
+        heap.increase_capacity_to(10).unwrap();
+        assert_eq!(heap.len(), 0);
+        assert_eq!(heap.capacity(), 10);
+        assert!(heap.is_empty());
+    }
+
+    #[test]
+    fn empty_heap_contains_no_elements() {
+        let size = 10;
+        let mut heap = <BoundedHeap<usize, i32>>::default();
+        heap.increase_capacity_to(size).unwrap();
+        for i in 0..size {
+            assert_eq!(heap.contains(i), Ok(false));
+        }
+    }
+
+    #[test]
+    fn single_element_heap_contains_exactly_one_element() {
+        let size = 10;
+        let mut heap = <BoundedHeap<usize, i32>>::default();
+        heap.increase_capacity_to(size).unwrap();
+        heap.push_or_update(5, 42).unwrap();
+        assert!(!heap.is_empty());
+        assert_eq!(heap.len(), 1);
+        for i in 0..10 {
+            assert_eq!(heap.contains(i), Ok(i == 5), "{} unexpectedly contained", i);
+        }
+    }
+
+    #[test]
+    fn no_duplicate_elements_upon_double_insertion() {
+        let size = 10;
+        let mut heap = <BoundedHeap<usize, i32>>::default();
+        heap.increase_capacity_to(size).unwrap();
+        heap.push_or_update(5, 42).unwrap();
+        heap.push_or_update(5, 42).unwrap();
+        assert_eq!(heap.len(), 1);
+        assert_eq!(heap.pop(), Some((5, 42)));
+        assert!(heap.is_empty());
+    }
+
+    #[test]
+    fn single_element_heap_is_empty_after_pop() {
+        let size = 10;
+        let mut heap = <BoundedHeap<usize, i32>>::default();
+        heap.increase_capacity_to(size).unwrap();
+        heap.push_or_update(5, 42).unwrap();
+        assert_eq!(heap.len(), 1);
+        assert_eq!(heap.pop(), Some((5, 42)));
+        assert!(heap.is_empty());
+    }
+
+    #[test]
+    fn satisfies_heap_property_after_insertion() {
+        let test_weights = [3, 9, 1, -5, -10, -9, 10, 0, -1, 7];
+        let size = test_weights.len();
+        let mut heap = <BoundedHeap<usize, i32>>::default();
+        heap.increase_capacity_to(size).unwrap();
+        for (k, w) in test_weights.iter().copied().enumerate() {
+            heap.push_or_update(k, w).unwrap();
+        }
+        assert_eq!(heap.len(), test_weights.len());
+        assert!(heap.satisfies_heap_property());
+    }
+
+    #[test]
+    fn heap_can_be_filled_to_max() {
+        let len = 10;
+        let mut heap = BoundedHeap::default();
+        heap.increase_capacity_to(len).unwrap();
+        for (k, w) in (0..len).map(|i| i * 10).enumerate() {
+            heap.push_or_update(k, w).unwrap();
+        }
+        assert_eq!(heap.len(), 10);
+    }
+
+    #[test]
+    fn out_of_bounds_key_is_rejected() {
+        let len = 10;
+        let mut heap = BoundedHeap::default();
+        heap.increase_capacity_to(len).unwrap();
+        assert_eq!(heap.push_or_update(10, 42), Err(Error::Bounded(BoundedError::OutOfBoundsAccess)));
+    }
+
+    #[test]
+    fn has_descending_removal_sequence() {
+        let test_weights = [3, 9, 1, -5, -10, -9, 10, 0, -1, 7];
+        let len = test_weights.len();
+        let mut heap = BoundedHeap::default();
+        heap.increase_capacity_to(len).unwrap();
+        for (k, w) in test_weights.iter().copied().enumerate() {
+            heap.push_or_update(k, w).unwrap();
+        }
+        assert!(heap.satisfies_heap_property());
+        let mut removed_sequence = Vec::new();
+        while let Some((k, w)) = heap.pop() {
+            removed_sequence.push(w);
+            assert!(heap.satisfies_heap_property(), "heap property NOT satisfied after popping key {}", k);
+        }
+        let expected_sequence = {
+            let mut weights = test_weights.to_vec();
+            weights.sort_by_key(|k| core::cmp::Reverse(*k));
+            weights
+        };
+        assert_eq!(removed_sequence, expected_sequence);
+        assert!(heap.is_empty());
+    }
+
+    #[test]
+    fn push_pop_sequence_works() {
+        let test_weights = [3, 9, 1, -5];
+        let len = test_weights.len();
+        let mut heap = BoundedHeap::default();
+        heap.increase_capacity_to(10).unwrap();
+        for (k, w) in test_weights.iter().copied().enumerate() {
+            heap.push_or_update(k, w).unwrap();
+        }
+        assert_eq!(heap.pop(), Some((1, 9)));
+        assert_eq!(heap.pop(), Some((0, 3)));
+        heap.push_or_update(len, 2).unwrap();
+        assert_eq!(heap.pop(), Some((len, 2)));
+        heap.push_or_update(len + 1, -3).unwrap();
+        assert_eq!(heap.pop(), Some((2, 1)));
+        assert_eq!(heap.pop(), Some((len + 1, -3)));
+        assert_eq!(heap.pop(), Some((3, -5)));
+    }
+
+    #[test]
+    fn heap_can_be_resized() {
+        let test_weights = [10, 30, 20];
+        let len = test_weights.len();
+        let mut heap = BoundedHeap::default();
+        heap.increase_capacity_to(len).unwrap();
+        for (k, w) in test_weights.iter().copied().enumerate() {
+            heap.push_or_update(k, w).unwrap();
+        }
+        assert_eq!(heap.len(), len);
+        assert_eq!(heap.push_or_update(len, 40), Err(Error::Bounded(BoundedError::OutOfBoundsAccess)));
+        heap.increase_capacity_to(len + 1).unwrap();
+        heap.push_or_update(len, 40).unwrap();
+        assert_eq!(heap.len(), len + 1);
+        assert_eq!(heap.pop(), Some((len, 40)));
+    }
 }
