@@ -1,4 +1,4 @@
-use super::Error as BoundedError;
+use super::OutOfBoundsAccess;
 use crate::{
     utils::{
         BoundedArray,
@@ -119,15 +119,15 @@ where
     /// # Errors
     ///
     /// If the key is not within valid bounds of the bounded heap.
-    fn ensure_valid_key(&self, key: K) -> Result<(), BoundedError> {
+    fn ensure_valid_key(&self, key: K) -> Result<(), OutOfBoundsAccess> {
         if key.into_index() >= self.capacity() {
-            return Err(BoundedError::OutOfBoundsAccess)
+            return Err(OutOfBoundsAccess)
         }
         Ok(())
     }
 
     /// Returns `true` if the element associated with the given key is contained.
-    pub fn contains(&self, key: K) -> Result<bool, BoundedError> {
+    pub fn contains(&self, key: K) -> Result<bool, OutOfBoundsAccess> {
         Ok(self.positions.get(key)?.is_some())
     }
 
@@ -153,16 +153,11 @@ where
         Some(child)
     }
 
-    /// Increases the length of the bounded heap to the new length.
-    ///
-    /// # Panics
-    ///
-    /// If the new capacity demands more memory than the operating system can provide.
-    pub fn increase_capacity_to(&mut self, new_cap: usize) -> Result<(), Error> {
+    /// Resizes the capacity of the bounded heap.
+    pub fn resize_capacity(&mut self, new_cap: usize) {
         self.heap.resize_with(new_cap, || K::from_index(0));
         self.positions.resize_with(new_cap, Default::default);
         self.priorities.resize_with(new_cap, Default::default);
-        Ok(())
     }
 
     /// Pushes the key to the heap.
@@ -200,7 +195,11 @@ where
     /// # Errors
     ///
     /// If the key index is out of bounds.
-    pub fn push_or_update<F>(&mut self, key: K, eval_new_priority: F) -> Result<(), Error>
+    pub fn push_or_update<F>(
+        &mut self,
+        key: K,
+        eval_new_priority: F,
+    ) -> Result<(), OutOfBoundsAccess>
     where
         F: FnOnce(W) -> W,
     {
@@ -243,7 +242,7 @@ where
         &mut self,
         key: K,
         eval_new_priority: F,
-    ) -> Result<(), Error>
+    ) -> Result<(), OutOfBoundsAccess>
     where
         F: FnOnce(W) -> W,
     {
@@ -515,7 +514,7 @@ mod tests {
         assert_eq!(heap.len(), 0);
         assert_eq!(heap.capacity(), 0);
         assert!(heap.is_empty());
-        heap.increase_capacity_to(10).unwrap();
+        heap.resize_capacity(10);
         assert_eq!(heap.len(), 0);
         assert_eq!(heap.capacity(), 10);
         assert!(heap.is_empty());
@@ -525,7 +524,7 @@ mod tests {
     fn empty_heap_contains_no_elements() {
         let size = 10;
         let mut heap = <BoundedHeap<usize, i32>>::default();
-        heap.increase_capacity_to(size).unwrap();
+        heap.resize_capacity(10);
         for i in 0..size {
             assert_eq!(heap.contains(i), Ok(false));
         }
@@ -535,7 +534,7 @@ mod tests {
     fn single_element_heap_contains_exactly_one_element() {
         let size = 10;
         let mut heap = <BoundedHeap<usize, i32>>::default();
-        heap.increase_capacity_to(size).unwrap();
+        heap.resize_capacity(10);
         heap.push_or_update(5, |_| 42).unwrap();
         assert!(!heap.is_empty());
         assert_eq!(heap.len(), 1);
@@ -548,7 +547,7 @@ mod tests {
     fn no_duplicate_elements_upon_double_insertion() {
         let size = 10;
         let mut heap = <BoundedHeap<usize, i32>>::default();
-        heap.increase_capacity_to(size).unwrap();
+        heap.resize_capacity(size);
         heap.push_or_update(5, |_| 42).unwrap();
         heap.push_or_update(5, |_| 42).unwrap();
         assert_eq!(heap.len(), 1);
@@ -560,7 +559,7 @@ mod tests {
     fn single_element_heap_is_empty_after_pop() {
         let size = 10;
         let mut heap = <BoundedHeap<usize, i32>>::default();
-        heap.increase_capacity_to(size).unwrap();
+        heap.resize_capacity(size);
         heap.push_or_update(5, |_| 42).unwrap();
         assert_eq!(heap.len(), 1);
         assert_eq!(heap.pop(), Some((5, 42)));
@@ -572,7 +571,7 @@ mod tests {
         let test_priorities = [3, 9, 1, -5, -10, -9, 10, 0, -1, 7];
         let size = test_priorities.len();
         let mut heap = <BoundedHeap<usize, i32>>::default();
-        heap.increase_capacity_to(size).unwrap();
+        heap.resize_capacity(size);
         for (k, w) in test_priorities.iter().copied().enumerate() {
             heap.push_or_update(k, |_| w).unwrap();
         }
@@ -584,7 +583,7 @@ mod tests {
     fn heap_can_be_filled_to_max() {
         let len = 10;
         let mut heap = BoundedHeap::default();
-        heap.increase_capacity_to(len).unwrap();
+        heap.resize_capacity(len);
         for (k, w) in (0..len).map(|i| i * 10).enumerate() {
             heap.push_or_update(k, |_| w).unwrap();
         }
@@ -595,10 +594,10 @@ mod tests {
     fn out_of_bounds_key_is_rejected() {
         let len = 10;
         let mut heap = BoundedHeap::default();
-        heap.increase_capacity_to(len).unwrap();
+        heap.resize_capacity(len);
         assert_eq!(
             heap.push_or_update(10, |_| 42),
-            Err(Error::Bounded(BoundedError::OutOfBoundsAccess))
+            Err(OutOfBoundsAccess)
         );
     }
 
@@ -607,7 +606,7 @@ mod tests {
         let test_priorities = [3, 9, 1, -5, -10, -9, 10, 0, -1, 7];
         let len = test_priorities.len();
         let mut heap = BoundedHeap::default();
-        heap.increase_capacity_to(len).unwrap();
+        heap.resize_capacity(len);
         for (k, w) in test_priorities.iter().copied().enumerate() {
             heap.push_or_update(k, |_| w).unwrap();
         }
@@ -635,7 +634,7 @@ mod tests {
         let test_weights = [3, 9, 1, -5];
         let len = test_weights.len();
         let mut heap = BoundedHeap::default();
-        heap.increase_capacity_to(10).unwrap();
+        heap.resize_capacity(10);
         for (k, w) in test_weights.iter().copied().enumerate() {
             heap.push_or_update(k, |_| w).unwrap();
         }
@@ -654,16 +653,16 @@ mod tests {
         let test_weights = [10, 30, 20];
         let len = test_weights.len();
         let mut heap = BoundedHeap::default();
-        heap.increase_capacity_to(len).unwrap();
+        heap.resize_capacity(len);
         for (k, w) in test_weights.iter().copied().enumerate() {
             heap.push_or_update(k, |_| w).unwrap();
         }
         assert_eq!(heap.len(), len);
         assert_eq!(
             heap.push_or_update(len, |_| 40),
-            Err(Error::Bounded(BoundedError::OutOfBoundsAccess))
+            Err(OutOfBoundsAccess)
         );
-        heap.increase_capacity_to(len + 1).unwrap();
+        heap.resize_capacity(len + 1);
         heap.push_or_update(len, |_| 40).unwrap();
         assert_eq!(heap.len(), len + 1);
         assert_eq!(heap.pop(), Some((len, 40)));

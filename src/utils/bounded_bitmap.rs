@@ -1,6 +1,6 @@
 use super::{
     BoundedArray,
-    Error,
+    OutOfBoundsAccess,
     Index,
 };
 use core::marker::PhantomData;
@@ -147,14 +147,14 @@ where
         )
     }
 
-    pub fn get(&self, index: Idx) -> Result<T, Error> {
+    pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
         let (chunk_idx, bit_idx) = Self::split_index(index);
         let chunk = self.chunks.get(chunk_idx)?;
         let value = chunk & Self::bit_index_to_mask(bit_idx);
         Ok(T::from_bool(value != 0))
     }
 
-    pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), Error> {
+    pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
         let new_value = new_value.into_bool();
         let (chunk_idx, bit_idx) = Self::split_index(index);
         let chunk = self.chunks.get_mut(chunk_idx)?;

@@ -46,7 +46,7 @@ use cnf_parser::{
 pub enum Error {
     Other(&'static str),
     Assignment(AssignmentError),
-    Bounded(utils::Error),
+    Bounded(utils::OutOfBoundsAccess),
     Conflict,
     InvalidLiteralChunkRange,
     InvalidLiteralChunkStart,
@@ -58,8 +58,8 @@ pub enum Error {
     InvalidSizeIncrement,
 }
 
-impl From<utils::Error> for Error {
-    fn from(err: utils::Error) -> Self {
+impl From<utils::OutOfBoundsAccess> for Error {
+    fn from(err: utils::OutOfBoundsAccess) -> Self {
         Self::Bounded(err)
     }
 }

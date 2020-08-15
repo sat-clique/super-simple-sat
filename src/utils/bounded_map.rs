@@ -1,7 +1,7 @@
 use super::{
     BoundedArray,
-    Error,
     Index,
+    OutOfBoundsAccess,
 };
 use core::{
     iter::IntoIterator,
@@ -84,7 +84,11 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
-    pub fn insert(&mut self, index: K, new_value: V) -> Result<Option<V>, Error> {
+    pub fn insert(
+        &mut self,
+        index: K,
+        new_value: V,
+    ) -> Result<Option<V>, OutOfBoundsAccess> {
         let old_value = self.slots.get_mut(index)?.replace(new_value);
         if old_value.is_none() {
             self.len += 1;
@@ -97,7 +101,7 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
-    pub fn take(&mut self, index: K) -> Result<Option<V>, Error> {
+    pub fn take(&mut self, index: K) -> Result<Option<V>, OutOfBoundsAccess> {
         let old_value = self.slots.get_mut(index)?.take();
         if old_value.is_some() {
             self.len -= 1;
@@ -115,7 +119,7 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
-    fn get_impl(&self, index: K) -> Result<&Option<V>, Error> {
+    fn get_impl(&self, index: K) -> Result<&Option<V>, OutOfBoundsAccess> {
         self.slots.get(index)
     }
 
@@ -129,7 +133,7 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
-    fn get_mut_impl(&mut self, index: K) -> Result<&mut Option<V>, Error> {
+    fn get_mut_impl(&mut self, index: K) -> Result<&mut Option<V>, OutOfBoundsAccess> {
         self.slots.get_mut(index)
     }
 
@@ -138,7 +142,7 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
-    pub fn get(&self, index: K) -> Result<Option<&V>, Error> {
+    pub fn get(&self, index: K) -> Result<Option<&V>, OutOfBoundsAccess> {
         self.get_impl(index).map(Into::into)
     }
 
@@ -147,7 +151,7 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
-    pub fn get_mut(&mut self, index: K) -> Result<Option<&mut V>, Error> {
+    pub fn get_mut(&mut self, index: K) -> Result<Option<&mut V>, OutOfBoundsAccess> {
         self.get_mut_impl(index).map(Into::into)
     }
 
@@ -298,7 +302,7 @@ mod tests {
             assert_eq!((&map)[i], None);
             assert_eq!((&mut map)[i], None);
         }
-        assert_eq!(map.get(3), Err(Error::OutOfBoundsAccess));
+        assert_eq!(map.get(3), Err(OutOfBoundsAccess));
     }
 
     #[test]
@@ -316,9 +320,9 @@ mod tests {
             assert_eq!(map.get_mut(i), Ok(Some(&mut test_values[i])));
             assert_eq!(map[i], Some(test_values[i]));
         }
-        assert_eq!(map.insert(3, b'D'), Err(Error::OutOfBoundsAccess));
-        assert_eq!(map.get(3), Err(Error::OutOfBoundsAccess));
-        assert_eq!(map.get_mut(3), Err(Error::OutOfBoundsAccess));
+        assert_eq!(map.insert(3, b'D'), Err(OutOfBoundsAccess));
+        assert_eq!(map.get(3), Err(OutOfBoundsAccess));
+        assert_eq!(map.get_mut(3), Err(OutOfBoundsAccess));
     }
 
     #[test]
@@ -329,7 +333,7 @@ mod tests {
         assert_eq!(map.len(), 0);
         assert_eq!(map.capacity(), 0);
         assert_eq!(map.into_iter().next(), None);
-        assert_eq!(map.get(0), Err(Error::OutOfBoundsAccess));
+        assert_eq!(map.get(0), Err(OutOfBoundsAccess));
         // Now increase size to 3:
         map.resize_capacity(3);
         assert!(map.is_empty());

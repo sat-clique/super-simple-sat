@@ -15,13 +15,9 @@ pub use self::{
     bounded_heap::BoundedHeap,
 };
 
-/// Errors that may occure when operating on a bounded map.
+/// Errors that may occure when operating on a bounded data structure.
 #[derive(Debug, PartialEq, Eq)]
-pub enum Error {
-    OutOfBoundsAccess,
-    InvalidSizeIncrement,
-    InvalidSizeDecrement,
-}
+pub struct OutOfBoundsAccess;
 
 /// Index types that may be used as keys for the bounded map.
 pub trait Index: Copy + Clone {

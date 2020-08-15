@@ -172,7 +172,6 @@ impl Trail {
         let limit = self.limits.pop_to_level(level);
         self.propagate_head = limit.into_index();
         self.decisions_and_implications
-            .pop_to(limit.into_index(), |popped| observer(*popped))
-            .expect("encountered unexpected invalid trail limit");
+            .pop_to(limit.into_index(), |popped| observer(*popped));
     }
 }

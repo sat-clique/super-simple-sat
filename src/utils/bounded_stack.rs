@@ -1,4 +1,4 @@
-use super::Error;
+use super::OutOfBoundsAccess;
 use core::{
     ops,
     slice,
@@ -68,9 +68,9 @@ impl<T> BoundedStack<T> {
     /// # Errors
     ///
     /// If the bounded stack is full already.
-    pub fn push(&mut self, new_value: T) -> Result<(), Error> {
+    pub fn push(&mut self, new_value: T) -> Result<(), OutOfBoundsAccess> {
         if self.len() == self.capacity() {
-            return Err(Error::OutOfBoundsAccess)
+            return Err(OutOfBoundsAccess)
         }
         self.stack.push(new_value);
         Ok(())
@@ -83,22 +83,29 @@ impl<T> BoundedStack<T> {
 
     /// Pops the latest values from the bounded stack until it reaches the new length.
     ///
-    /// # Errors
+    /// # Panics
     ///
-    /// If the new length is greater than the current length.
-    pub fn pop_to<F>(&mut self, new_len: usize, mut observer: F) -> Result<(), Error>
+    /// If the new length is larger than the current length.
+    pub fn pop_to<F>(
+        &mut self,
+        new_len: usize,
+        mut observer: F,
+    )
     where
         F: FnMut(&T),
     {
-        if self.len() < new_len {
-            return Err(Error::InvalidSizeDecrement)
-        }
+        assert!(
+            new_len <= self.len(),
+            "tried to pop the stack to a length greater than the current one. \
+             current length is {} but new length is {}",
+            self.len(),
+            new_len,
+        );
         let popped_amount = self.len() - new_len;
         for popped in self.iter().rev().take(popped_amount) {
             observer(popped);
         }
         self.stack.truncate(new_len);
-        Ok(())
     }
 
     /// Returns an iterator yielding shared references to the values of the bounded stack.
@@ -116,21 +123,21 @@ impl<T> BoundedStack<T> {
     /// # Errors
     ///
     /// If the given index is out of bounds.
-    fn ensure_valid_index(&self, index: usize) -> Result<usize, Error> {
+    fn ensure_valid_index(&self, index: usize) -> Result<usize, OutOfBoundsAccess> {
         if index >= self.len() {
-            return Err(Error::OutOfBoundsAccess)
+            return Err(OutOfBoundsAccess)
         }
         Ok(index)
     }
 
     /// Returns a shared reference to the element at the given index.
-    pub fn get(&self, index: usize) -> Result<&T, Error> {
+    pub fn get(&self, index: usize) -> Result<&T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| &self.stack[index])
     }
 
     /// Returns an exclusive reference to the element at the given index.
-    pub fn get_mut(&mut self, index: usize) -> Result<&mut T, Error> {
+    pub fn get_mut(&mut self, index: usize) -> Result<&mut T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| &mut self.stack[index])
     }

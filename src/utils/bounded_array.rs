@@ -1,5 +1,5 @@
 use super::{
-    Error,
+    OutOfBoundsAccess,
     Index,
 };
 use core::{
@@ -51,10 +51,10 @@ where
     /// # Errors
     ///
     /// If the given index is out of bounds.
-    fn ensure_valid_index(&self, index: Idx) -> Result<usize, Error> {
+    fn ensure_valid_index(&self, index: Idx) -> Result<usize, OutOfBoundsAccess> {
         let index = index.into_index();
         if index >= self.len() {
-            return Err(Error::OutOfBoundsAccess)
+            return Err(OutOfBoundsAccess)
         }
         Ok(index)
     }
@@ -64,7 +64,7 @@ where
     /// # Errors
     ///
     /// If the given index is out of bounds for the bounded array.
-    pub fn update(&mut self, index: Idx, new_value: T) -> Result<(), Error> {
+    pub fn update(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| self.values[index] = new_value)
     }
@@ -74,7 +74,7 @@ where
     /// # Errors
     ///
     /// If the given index is out of bounds for the bounded array.
-    pub fn get(&self, index: Idx) -> Result<&T, Error> {
+    pub fn get(&self, index: Idx) -> Result<&T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| &self.values[index])
     }
@@ -84,7 +84,7 @@ where
     /// # Errors
     ///
     /// If the given index is out of bounds for the bounded array.
-    pub fn get_mut(&mut self, index: Idx) -> Result<&mut T, Error> {
+    pub fn get_mut(&mut self, index: Idx) -> Result<&mut T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| &mut self.values[index])
     }
@@ -94,7 +94,7 @@ where
     /// # Errors
     ///
     /// If any of the given indices is out of bounds for the bounded array.
-    pub fn swap(&mut self, lhs: Idx, rhs: Idx) -> Result<(), Error> {
+    pub fn swap(&mut self, lhs: Idx, rhs: Idx) -> Result<(), OutOfBoundsAccess> {
         let lhs = self.ensure_valid_index(lhs)?;
         let rhs = self.ensure_valid_index(rhs)?;
         self.values.swap(lhs, rhs);
