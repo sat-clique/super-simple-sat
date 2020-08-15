@@ -127,20 +127,13 @@ where
             marker: Default::default(),
         }
     }
-
-    /// Increases the length of the bounded array to the given new length.
-    ///
-    /// Fills all additional slots with default values.
-    pub fn increase_len_to(&mut self, new_len: usize) -> Result<(), Error> {
-        self.increase_len_to_with(new_len, || Default::default())
-    }
 }
 
 impl<Idx, T> BoundedArray<Idx, T> {
     /// Increases the length of the bounded array to the given new length.
     ///
     /// Fills all additional slots with values evaluated by the given closure.
-    pub fn increase_len_to_with<F>(&mut self, new_len: usize, placeholder: F) -> Result<(), Error>
+    pub fn increase_len_to<F>(&mut self, new_len: usize, placeholder: F) -> Result<(), Error>
     where
         F: FnMut() -> T,
     {

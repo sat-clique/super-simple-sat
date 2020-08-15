@@ -112,7 +112,7 @@ impl<Idx, T> BoundedBitmap<Idx, T> {
 
     pub fn increase_len(&mut self, new_len: usize) -> Result<(), Error> {
         self.chunks
-            .increase_len_to((new_len / CHUNK_LEN) + 1)?;
+            .increase_len_to((new_len / CHUNK_LEN) + 1, Default::default)?;
         self.len = new_len;
         Ok(())
     }

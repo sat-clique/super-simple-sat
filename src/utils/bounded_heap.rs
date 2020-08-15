@@ -114,7 +114,7 @@ where
         self.priorities.len()
     }
 
-    /// Returns `Ok` if the key is without bounds for the bounded heap.
+    /// Returns `Ok` if the key is within bounds for the bounded heap.
     ///
     /// # Errors
     ///
@@ -154,11 +154,15 @@ where
     }
 
     /// Increases the length of the bounded heap to the new length.
+    ///
+    /// # Panics
+    ///
+    /// If the new capacity demands more memory than the operating system can provide.
     pub fn increase_capacity_to(&mut self, new_cap: usize) -> Result<(), Error> {
         self.heap
-            .increase_len_to_with(new_cap, || K::from_index(0))?;
-        self.positions.increase_len_to(new_cap)?;
-        self.priorities.increase_len_to(new_cap)?;
+            .increase_len_to(new_cap, || K::from_index(0))?;
+        self.positions.increase_len_to(new_cap, Default::default)?;
+        self.priorities.increase_len_to(new_cap, Default::default)?;
         Ok(())
     }
 
