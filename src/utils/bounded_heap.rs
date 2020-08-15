@@ -4,7 +4,6 @@ use crate::{
         BoundedArray,
         Index,
     },
-    Error,
 };
 use core::{
     cmp::Ordering,
