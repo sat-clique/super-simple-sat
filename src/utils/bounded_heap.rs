@@ -10,7 +10,7 @@ use core::{
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
-pub struct HeapPosition(NonZeroUsize);
+struct HeapPosition(NonZeroUsize);
 
 impl HeapPosition {
     /// Returns the root heap position.
