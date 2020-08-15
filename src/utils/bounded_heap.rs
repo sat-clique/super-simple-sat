@@ -8,7 +8,6 @@ use crate::{
 };
 use core::{
     cmp::Ordering,
-    mem,
     num::NonZeroUsize,
 };
 
@@ -115,6 +114,18 @@ where
         self.weights.len()
     }
 
+    /// Returns `Ok` if the key is without bounds for the bounded heap.
+    ///
+    /// # Errors
+    ///
+    /// If the key is not within valid bounds of the bounded heap.
+    fn ensure_valid_key(&self, key: K) -> Result<(), BoundedError> {
+        if key.into_index() >= self.capacity() {
+            return Err(BoundedError::OutOfBoundsAccess)
+        }
+        Ok(())
+    }
+
     /// Returns `true` if the element associated with the given key is contained.
     pub fn contains(&self, key: K) -> Result<bool, BoundedError> {
         Ok(self.positions.get(key)?.is_some())
@@ -151,20 +162,6 @@ where
         Ok(())
     }
 
-    /// Returns the heap position of the given key.
-    ///
-    /// # Errors
-    ///
-    /// - If the given key index is out of bounds for the bounded heap.
-    /// - If the key does not currently have a heap position.
-    fn heap_position(&self, key: K) -> Result<HeapPosition, BoundedError> {
-        self.positions
-            .get(key)?
-            .as_ref()
-            .copied()
-            .ok_or_else(|| BoundedError::OutOfBoundsAccess)
-    }
-
     /// Pushes the key to the heap.
     ///
     /// This increases the length of the bounded heap and updates the positions array.
@@ -172,21 +169,30 @@ where
     /// # Panics
     ///
     /// If the key is already contained in the heap.
-    fn push_heap_position(&mut self, key: K) -> Result<HeapPosition, BoundedError> {
+    ///
+    /// # Errors
+    ///
+    /// If the key is out of bounds for the bounded heap.
+    fn push_heap_position(&mut self, key: K) -> HeapPosition {
         assert!(
-            !self.contains(key)?,
+            !self
+                .contains(key)
+                .expect("unexpected out of bounds key (push heap position)"),
             "encountered already contained key upon push"
         );
         let last_position = HeapPosition::from_index(self.len);
-        self.positions.update(key, Some(last_position))?;
-        self.heap.update(last_position, key)?;
+        self.update_position(key, last_position);
         self.len += 1;
-        Ok(last_position)
+        last_position
     }
 
     /// Inserts a new key/weight pair into the heap or updates the weight of an existing key.
     ///
     /// Increases the length of the heap if the key was not contained before.
+    ///
+    /// # Note
+    ///
+    /// Restore a key and its old weight by using the identify function for `eval_new_weight`.
     ///
     /// # Errors
     ///
@@ -195,40 +201,102 @@ where
     where
         F: FnOnce(W) -> W,
     {
+        self.ensure_valid_key(key)?;
+        let already_contained = self
+            .contains(key)
+            .expect("unexpected invalid key (contains)");
         if !already_contained {
-            self.push_heap_position(key)?;
+            self.push_heap_position(key);
         }
         let is_weight_increased = {
-            let old_weight = *self
-                .weights
-                .get(key)
-                .expect("unexpected invalid key (get weight)");
+            let old_weight = self.get_weight(key);
             let new_weight = eval_new_weight(old_weight);
             self.weights
                 .update(key, new_weight)
                 .expect("unexpected invalid key (update weight)");
             !already_contained || old_weight <= new_weight
         };
-        let position = self.heap_position(key)?;
+        let position = self
+            .get_position(key)
+            .expect("unexpected uncontained key (push or update)");
         match is_weight_increased {
-            true => self.sift_up(position)?,
-            false => self.sift_down(position)?,
+            true => self.sift_up(position),
+            false => self.sift_down(position),
         }
         Ok(())
     }
 
-    /// Compares the weights of the given keys.
+    /// Updates the weight of a key.
+    ///
+    /// If the key is contained in the heap this will also adjust the heap structure.
+    /// In case the key is not contained the weight will still be adjusted. This is
+    /// useful in case the key is going to be restored in the future to its former
+    /// weight.
     ///
     /// # Errors
     ///
-    /// If any of the given keys is out of bounds for the bounded heap.
-    fn cmp_weights(&self, lhs: K, rhs: K) -> Result<Ordering, Error> {
-        if lhs == rhs {
-            return Ok(Ordering::Equal)
+    /// If the given key is out of bounds for the bounded heap.
+    pub fn update_weight<F>(&mut self, key: K, eval_new_weight: F) -> Result<(), Error>
+    where
+        F: FnOnce(W) -> W,
+    {
+        self.ensure_valid_key(key)?;
+        let is_weight_increased = {
+            let old_weight = self.get_weight(key);
+            let new_weight = eval_new_weight(old_weight);
+            self.weights
+                .update(key, new_weight)
+                .expect("unexpected out of bounds key (weight update)");
+            old_weight <= new_weight
+        };
+        let position = self
+            .get_position(key)
+            .expect("unexpected uncontained key (update weight)");
+        if self
+            .contains(key)
+            .expect("encountered unexpected invalid key (contains query)")
+        {
+            match is_weight_increased {
+                true => self.sift_up(position),
+                false => self.sift_down(position),
+            }
         }
-        let lhs_weight = self.weights.get(lhs)?;
-        let rhs_weight = self.weights.get(rhs)?;
-        Ok(lhs_weight.cmp(rhs_weight))
+        Ok(())
+    }
+
+    /// Transforms the weights of all valid keys using the given closure.
+    ///
+    /// The heap properties must be satisfied after the transformation.
+    ///
+    /// # Panics
+    ///
+    /// If the heap properties are not satisfied after the transformation.
+    ///
+    /// This panics instead of returning an error since the heap is in an
+    /// unresolvable inconsistent state if a call to this method invalidates
+    /// its heap properties.
+    pub fn transform_weights<F>(&mut self, mut new_weight_eval: F)
+    where
+        F: FnMut(W) -> W,
+    {
+        for weight in &mut self.weights {
+            *weight = new_weight_eval(*weight);
+        }
+        assert!(self.satisfies_heap_property());
+    }
+
+    /// Compares the weights of the given keys.
+    ///
+    /// # Panics
+    ///
+    /// If any of the given keys is out of bounds for the bounded heap.
+    fn cmp_weights(&self, lhs: K, rhs: K) -> Ordering {
+        if lhs == rhs {
+            return Ordering::Equal
+        }
+        let lhs_weight = self.get_weight(lhs);
+        let rhs_weight = self.get_weight(rhs);
+        lhs_weight.cmp(&rhs_weight)
     }
 
     /// Adjusts the heap ordering for the given pivot element.
@@ -237,24 +305,32 @@ where
     ///
     /// Used if the weight of the pivot element has been increased or after
     /// a new key weight pair has been inserted into the heap.
-    fn sift_up(&mut self, pivot: HeapPosition) -> Result<(), Error> {
-        let pivot_key = *self.heap.get(pivot)?;
+    ///
+    /// # Panics
+    ///
+    /// If the given heap position is out of bounds for the bounded heap.
+    fn sift_up(&mut self, pivot: HeapPosition) {
+        assert!(
+            pivot.into_index() < self.len(),
+            "unexpected out of bounds heap position (sift-up). \
+             position is {:?} but heap len is {}",
+            pivot,
+            self.len(),
+        );
+        let pivot_key = self.heap_entry(pivot);
         let mut cursor = pivot;
         'perculate: while let Some(parent) = cursor.parent() {
-            let parent_key = *self.heap.get(parent)?;
-            match self.cmp_weights(pivot_key, parent_key)? {
+            let parent_key = self.heap_entry(parent);
+            match self.cmp_weights(pivot_key, parent_key) {
                 Ordering::Greater => {
                     // Child is greater than the current parent -> move down the parent.
-                    self.heap.update(cursor, parent_key)?;
-                    self.positions.update(parent_key, Some(cursor))?;
+                    self.update_position(parent_key, cursor);
                     cursor = parent;
                 }
                 Ordering::Equal | Ordering::Less => break 'perculate,
             }
         }
-        self.heap.update(cursor, pivot_key)?;
-        self.positions.update(pivot_key, Some(cursor))?;
-        Ok(())
+        self.update_position(pivot_key, cursor);
     }
 
     /// Adjusts the heap ordering for the given pivot element.
@@ -263,52 +339,54 @@ where
     ///
     /// Used of the weight of the pivot element has been decreased or the root
     /// element has been popped.
-    fn sift_down(&mut self, pivot: HeapPosition) -> Result<(), Error> {
-        let pivot_key = *self.heap.get(pivot)?;
+    ///
+    /// # Panics
+    ///
+    /// If the given heap position is out of bounds for the bounded heap.
+    fn sift_down(&mut self, pivot: HeapPosition) {
+        assert!(
+            pivot.into_index() < self.len(),
+            "unexpected out of bounds heap position (sift-down). \
+             position is {:?} but heap len is {}",
+            pivot,
+            self.len(),
+        );
+        let pivot_key = self.heap_entry(pivot);
         let mut cursor = pivot;
         'perculate: while let Some(left_child) = self.left_child(cursor) {
             let right_child = self.right_child(cursor);
             let max_child = match right_child {
                 Some(right_child) => {
-                    let left_child_key = *self.heap.get(left_child)?;
-                    let right_child_key = *self.heap.get(right_child)?;
-                    match self.cmp_weights(left_child_key, right_child_key)? {
+                    let left_child_key = self.heap_entry(left_child);
+                    let right_child_key = self.heap_entry(right_child);
+                    match self.cmp_weights(left_child_key, right_child_key) {
                         Ordering::Less | Ordering::Equal => right_child,
                         Ordering::Greater => left_child,
                     }
                 }
                 None => left_child,
             };
-            let max_child_key = *self.heap.get(max_child)?;
-            if self.cmp_weights(pivot_key, max_child_key)? == Ordering::Less {
+            let max_child_key = self.heap_entry(max_child);
+            if self.cmp_weights(pivot_key, max_child_key) == Ordering::Less {
                 // Child is greater than element -> move it upwards.
-                self.heap.update(cursor, max_child_key)?;
-                self.positions.update(max_child_key, Some(cursor))?;
+                self.update_position(max_child_key, cursor);
                 cursor = max_child;
             } else {
                 break 'perculate
             }
         }
-        self.heap.update(cursor, pivot_key)?;
-        self.positions.update(pivot_key, Some(cursor))?;
-        Ok(())
+        self.update_position(pivot_key, cursor);
     }
 
     /// Returns a shared reference to the current maximum key and its weight.
     ///
     /// This does not pop the maximum element from the bounded heap.
-    pub fn peek(&self) -> Option<(&K, &W)> {
+    pub fn peek(&self) -> Option<(K, W)> {
         if self.is_empty() {
             return None
         }
-        let key = self
-            .heap
-            .get(HeapPosition::root())
-            .expect("encountered unexpected empty heap array");
-        let weight = self
-            .weights
-            .get(*key)
-            .expect("encountered invalid root key");
+        let key = self.heap_entry(HeapPosition::root());
+        let weight = self.get_weight(key);
         Some((key, weight))
     }
 
@@ -317,34 +395,76 @@ where
         if self.is_empty() {
             return None
         }
-        let key = *self
-            .heap
-            .get(HeapPosition::root())
-            .expect("encountered unexpected empty heap array");
+        let key = self.heap_entry(HeapPosition::root());
         self.positions
             .update(key, None)
-            .expect("encountered invalid root key");
-        let weight = *self.weights.get(key).expect("encountered invalid root key");
+            .expect("invalid root key of non-empty heap");
+        let weight = self.get_weight(key);
         if self.len == 1 {
             // No need to adjust heap properties.
             self.len = 0;
         } else {
             // Replace root with the last element of the heap.
-            let new_root = *self
-                .heap
-                .get(HeapPosition::from_index(self.len - 1))
-                .expect("unexpected missing last element in heap");
-            self.heap
-                .update(HeapPosition::root(), new_root)
-                .expect("encountered error upon heap update of new root");
-            self.positions
-                .update(new_root, Some(HeapPosition::root()))
-                .expect("encountered unexpected error upon positions heap update");
+            let new_root = self.heap_entry(HeapPosition::from_index(self.len - 1));
+            self.update_position(new_root, HeapPosition::root());
             self.len -= 1;
-            self.sift_down(HeapPosition::root())
-                .expect("encountered error upon sifting down new root in heap");
+            self.sift_down(HeapPosition::root());
         }
         Some((key, weight))
+    }
+
+    /// Updates the keys heap position.
+    ///
+    /// # Panics
+    ///
+    /// - If the given key is out of bounds for the bounded heap.
+    /// - If the given heap position is out of bouds for the bounded heap.
+    fn update_position(&mut self, key: K, position: HeapPosition) {
+        self.heap
+            .update(position, key)
+            .expect("unexpected out of bounds heap position (heap update)");
+        self.positions
+            .update(key, Some(position))
+            .expect("unexpected out of bounds key (heap update)");
+    }
+
+    /// Returns the weight associated with the given key.
+    ///
+    /// # Panics
+    ///
+    /// If the key is out of bounds for the bounded heap.
+    fn get_weight(&self, key: K) -> W {
+        *self
+            .weights
+            .get(key)
+            .expect("unexpected out of bounds key (get weight)")
+    }
+
+    /// Returns the heap position of the given key.
+    ///
+    /// Returns `None` if the key is currently not contained in the heap.
+    ///
+    /// # Panics
+    ///
+    /// If the key if out of bounds for the bounded heap.
+    fn get_position(&self, key: K) -> Option<HeapPosition> {
+        *self
+            .positions
+            .get(key)
+            .expect("unexpected out of bounds key (get position)")
+    }
+
+    /// Returns the heap entry for the given heap position.
+    ///
+    /// # Panics
+    ///
+    /// If the given heap position is invalid for the bounded heap.
+    fn heap_entry(&self, position: HeapPosition) -> K {
+        assert!(position.into_index() < self.len());
+        *self
+            .heap
+            .get(position)
+            .expect("encountered out of bounds heap position (query entry)")
     }
 
     /// Returns `true` if the heap property is satisfied for all elements in the bounded heap.
@@ -355,24 +475,13 @@ where
     /// to the weight of their children.
     ///
     /// This is a test-only API and generally not available.
-    #[cfg(test)]
     fn satisfies_heap_property(&self) -> bool {
         for i in 1..self.len() {
             let child = HeapPosition::from_index(i);
             let parent = child.parent().expect("encountered missing parent");
-            let child_key = self
-                .heap
-                .get(child)
-                .expect("encountered missing child heap entry");
-            let parent_key = self
-                .heap
-                .get(parent)
-                .expect("encountered missing parent heap entry");
-            if self
-                .cmp_weights(*parent_key, *child_key)
-                .expect("encountered error upon comparing parent and right child weights")
-                != Ordering::Greater
-            {
+            let child_key = self.heap_entry(child);
+            let parent_key = self.heap_entry(parent);
+            if self.cmp_weights(parent_key, child_key) != Ordering::Greater {
                 return false
             }
         }
