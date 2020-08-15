@@ -1,7 +1,7 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::len_without_is_empty)]
 
-mod assignment2;
+mod assignment;
 mod builder;
 mod clause_db;
 mod decider;
@@ -13,7 +13,7 @@ mod utils;
 mod tests;
 
 use crate::{
-    assignment2::{
+    assignment::{
         Assignment as Assignment2,
         AssignmentError,
         LastModel as LastModel2,

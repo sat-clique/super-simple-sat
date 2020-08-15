@@ -3,7 +3,7 @@ use super::{
     Error,
 };
 use crate::{
-    assignment2::VariableAssignment,
+    assignment::VariableAssignment,
     Literal,
 };
 use core::{
