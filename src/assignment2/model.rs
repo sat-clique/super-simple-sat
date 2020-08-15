@@ -81,8 +81,7 @@ impl Model {
             return Err(AssignmentError::UnexpectedIndeterminateAssignment)
         }
         self.assignment
-            .increase_len(assignment.len())
-            .expect("encountered unexpected too many variables for model creation");
+            .resize_with(assignment.len());
         for (variable, var_assignment) in assignment {
             self.assignment
                 .set(variable, var_assignment)

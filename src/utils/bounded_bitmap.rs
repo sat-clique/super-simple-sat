@@ -110,11 +110,10 @@ impl<Idx, T> BoundedBitmap<Idx, T> {
         }
     }
 
-    pub fn increase_len(&mut self, new_len: usize) -> Result<(), Error> {
+    pub fn resize_with(&mut self, new_len: usize) {
         self.chunks
-            .increase_len_to((new_len / CHUNK_LEN) + 1, Default::default)?;
+            .resize_with((new_len / CHUNK_LEN) + 1, Default::default);
         self.len = new_len;
-        Ok(())
     }
 
     fn bit_index_to_mask(index: BitIndex) -> Chunk {

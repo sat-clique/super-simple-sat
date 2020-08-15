@@ -130,18 +130,16 @@ where
 }
 
 impl<Idx, T> BoundedArray<Idx, T> {
-    /// Increases the length of the bounded array to the given new length.
+    /// Resizes the length of the bounded array to the given length.
     ///
-    /// Fills all additional slots with values evaluated by the given closure.
-    pub fn increase_len_to<F>(&mut self, new_len: usize, placeholder: F) -> Result<(), Error>
+    /// Truncates the bounded array if the new length is less than the current.
+    /// Fills all additional array entries with values evaluated by the given
+    /// closure.
+    pub fn resize_with<F>(&mut self, new_len: usize, placeholder: F)
     where
         F: FnMut() -> T,
     {
-        if self.len() > new_len {
-            return Err(Error::InvalidSizeIncrement)
-        }
         self.values.resize_with(new_len, placeholder);
-        Ok(())
     }
 }
 

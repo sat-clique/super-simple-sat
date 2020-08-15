@@ -118,8 +118,7 @@ impl WatchList {
     pub fn register_new_variables(&mut self, new_variables: usize) {
         let total_variables = self.len_variables() + new_variables;
         self.watchers
-            .increase_len_to(total_variables, Default::default)
-            .expect("encountered unexpected invalid size increment");
+            .resize_with(total_variables, Default::default);
     }
 
     /// Registers the clause identifier for the given literal.

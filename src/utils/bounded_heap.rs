@@ -159,10 +159,9 @@ where
     ///
     /// If the new capacity demands more memory than the operating system can provide.
     pub fn increase_capacity_to(&mut self, new_cap: usize) -> Result<(), Error> {
-        self.heap
-            .increase_len_to(new_cap, || K::from_index(0))?;
-        self.positions.increase_len_to(new_cap, Default::default)?;
-        self.priorities.increase_len_to(new_cap, Default::default)?;
+        self.heap.resize_with(new_cap, || K::from_index(0));
+        self.positions.resize_with(new_cap, Default::default);
+        self.priorities.resize_with(new_cap, Default::default);
         Ok(())
     }
 
@@ -240,7 +239,11 @@ where
     /// # Errors
     ///
     /// If the given key is out of bounds for the bounded heap.
-    pub fn update_priority<F>(&mut self, key: K, eval_new_priority: F) -> Result<(), Error>
+    pub fn update_priority<F>(
+        &mut self,
+        key: K,
+        eval_new_priority: F,
+    ) -> Result<(), Error>
     where
         F: FnOnce(W) -> W,
     {
