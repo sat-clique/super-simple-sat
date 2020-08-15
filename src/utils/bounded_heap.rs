@@ -529,13 +529,13 @@ mod tests {
 
     #[test]
     fn single_element_heap_contains_exactly_one_element() {
-        let size = 10;
+        let len = 10;
         let mut heap = <BoundedHeap<usize, i32>>::default();
-        heap.resize_capacity(10);
+        heap.resize_capacity(len);
         heap.push_or_update(5, |_| 42).unwrap();
         assert!(!heap.is_empty());
         assert_eq!(heap.len(), 1);
-        for i in 0..10 {
+        for i in 0..len {
             assert_eq!(heap.contains(i), Ok(i == 5), "{} unexpectedly contained", i);
         }
     }
