@@ -16,6 +16,7 @@ use self::{
 };
 use crate::{
     clause_db::ClauseRef,
+    decider::InformDecider,
     utils::{
         bounded_map,
         BoundedMap,
@@ -245,12 +246,18 @@ impl Assignment {
     }
 
     /// Resets the assignment to the given decision level.
-    pub fn reset_to_level(&mut self, level: DecisionLevel) {
+    pub fn reset_to_level(
+        &mut self,
+        level: DecisionLevel,
+        mut inform_decider: InformDecider,
+    ) {
         let Self {
             trail, assignments, ..
         } = self;
-        trail.pop_to_level(level, |popped_lit| {
-            assignments.unassign(popped_lit.variable());
+        trail.pop_to_level(level, |unassigned| {
+            let variable = unassigned.variable();
+            assignments.unassign(variable);
+            inform_decider.restore_variable(variable)
         })
     }
 
@@ -294,24 +301,33 @@ impl Assignment {
     /// Pops the decision level to the given level.
     ///
     /// This also unassigned all variables assigned in the given decision level.
-    pub fn pop_decision_level(&mut self, level: DecisionLevel) {
+    pub fn pop_decision_level(
+        &mut self,
+        level: DecisionLevel,
+        mut inform_decider: InformDecider,
+    ) {
         let Self {
             assignments, trail, ..
         } = self;
         trail.pop_to_level(level, |unassigned| {
-            assignments.unassign(unassigned.variable());
+            let variable = unassigned.variable();
+            assignments.unassign(variable);
+            inform_decider.restore_variable(variable)
         });
     }
 
     /// Propagates the enqueued assumptions.
-    pub fn propagate(&mut self, clause_db: &mut ClauseDb) -> PropagationResult {
+    pub fn propagate(
+        &mut self,
+        clause_db: &mut ClauseDb,
+        mut inform_decider: InformDecider,
+    ) -> PropagationResult {
         let Self {
             watchers,
             assignments,
             trail,
             ..
         } = self;
-        // let level = trail.new_decision_level();
         let level = trail.current_decision_level();
         while let Some(propagation_literal) = trail.pop_enqueued() {
             let result = watchers.propagate(
@@ -322,7 +338,9 @@ impl Assignment {
             );
             if result.is_conflict() {
                 trail.pop_to_level(level, |unassigned| {
-                    assignments.unassign(unassigned.variable());
+                    let variable = unassigned.variable();
+                    assignments.unassign(variable);
+                    inform_decider.restore_variable(variable)
                 });
                 return result
             }

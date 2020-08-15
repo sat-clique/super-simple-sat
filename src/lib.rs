@@ -14,15 +14,18 @@ mod tests;
 
 use crate::{
     assignment::{
-        Assignment as Assignment2,
+        Assignment,
         AssignmentError,
-        LastModel as LastModel2,
-        Model as Model2,
-        PropagationResult as PropagationResult2,
+        LastModel,
+        Model,
+        PropagationResult,
     },
     builder::SolverBuilder,
     clause_db::ClauseDb,
-    decider::Decider,
+    decider::{
+        Decider,
+        InformDecider,
+    },
 };
 pub use crate::{
     clause_db::Clause,
@@ -95,7 +98,7 @@ pub enum SolveResult<'a> {
 }
 
 impl<'a> SolveResult<'a> {
-    fn sat(model: &'a Model2) -> Self {
+    fn sat(model: &'a Model) -> Self {
         Self::Sat(SatResult { model })
     }
 
@@ -110,11 +113,11 @@ impl<'a> SolveResult<'a> {
 
 #[derive(Debug)]
 pub struct SatResult<'a> {
-    model: &'a Model2,
+    model: &'a Model,
 }
 
 impl<'a> SatResult<'a> {
-    pub fn model(&self) -> &'a Model2 {
+    pub fn model(&self) -> &'a Model {
         self.model
     }
 }
@@ -123,9 +126,9 @@ impl<'a> SatResult<'a> {
 pub struct Solver {
     len_variables: usize,
     clauses: ClauseDb,
-    assignment: Assignment2,
+    assignment: Assignment,
     decider: Decider,
-    last_model2: LastModel2,
+    last_model2: LastModel,
 }
 
 impl Solver {
@@ -154,6 +157,10 @@ impl Solver {
         match self.clauses.push_get(clause) {
             Ok(clause) => {
                 self.assignment.initialize_watchers(clause);
+                for literal in clause {
+                    let variable = literal.variable();
+                    self.decider.bump_priority_by(variable, 1);
+                }
             }
             Err(unit_clause) => {
                 self.assignment
@@ -216,10 +223,12 @@ impl Solver {
             Err(_) => panic!("encountered unexpected or unknown enqueue error"),
             Ok(_) => (),
         }
-        let propagation_result = self.assignment.propagate(&mut self.clauses);
+        let propagation_result = self
+            .assignment
+            .propagate(&mut self.clauses, self.decider.informer());
         match propagation_result {
-            PropagationResult2::Conflict => Ok(DecisionResult::Conflict),
-            PropagationResult2::Consistent => {
+            PropagationResult::Conflict => Ok(DecisionResult::Conflict),
+            PropagationResult::Consistent => {
                 let result = self.decide_and_propagate()?;
                 Ok(result)
             }
@@ -240,9 +249,7 @@ impl Solver {
             Some(unassigned_variable) => {
                 let level = self.assignment.bump_decision_level();
                 if self
-                    .solve_for_decision(
-                        unassigned_variable.into_literal(VarAssignment::True),
-                    )?
+                    .solve_for_decision(unassigned_variable.into_literal(VarAssignment::True))?
                     .is_sat()
                     || self
                         .solve_for_decision(
@@ -252,7 +259,8 @@ impl Solver {
                 {
                     Ok(DecisionResult::Sat)
                 } else {
-                    self.assignment.pop_decision_level(level);
+                    self.assignment
+                        .pop_decision_level(level, self.decider.informer());
                     Ok(DecisionResult::Conflict)
                 }
             }
@@ -270,7 +278,11 @@ impl Solver {
         // Propagate in case the set of clauses contained unit clauses.
         // Bail out if the instance is already in conflict with itself.
         let _root_level = self.assignment.bump_decision_level();
-        if self.assignment.propagate(&mut self.clauses).is_conflict() {
+        if self
+            .assignment
+            .propagate(&mut self.clauses, self.decider.informer())
+            .is_conflict()
+        {
             return Ok(SolveResult::Unsat)
         }
         // Enqueue assumptions and propagate them afterwards.
@@ -283,7 +295,11 @@ impl Solver {
                 return Ok(SolveResult::Unsat)
             }
         }
-        if self.assignment.propagate(&mut self.clauses).is_conflict() {
+        if self
+            .assignment
+            .propagate(&mut self.clauses, self.decider.informer())
+            .is_conflict()
+        {
             return Ok(SolveResult::Unsat)
         }
         let _constraints_level = self.assignment.bump_decision_level();
