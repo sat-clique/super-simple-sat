@@ -12,7 +12,7 @@ use crate::{
     utils::BoundedArray,
     ClauseDb,
     Literal,
-    VarAssignment,
+    Sign,
     Variable,
 };
 
@@ -31,15 +31,15 @@ impl VariableWatchers {
     /// Registers the clause identifier for the given literal.
     fn register_for_lit(&mut self, literal: Literal, id: ClauseId) {
         match literal.assignment() {
-            VarAssignment::True => self.pos.push(id),
-            VarAssignment::False => self.neg.push(id),
+            Sign::True => self.pos.push(id),
+            Sign::False => self.neg.push(id),
         }
     }
 
     fn literal_watchers_mut(&mut self, literal: Literal) -> &mut Vec<ClauseId> {
         match literal.assignment() {
-            VarAssignment::True => &mut self.pos,
-            VarAssignment::False => &mut self.neg,
+            Sign::True => &mut self.pos,
+            Sign::False => &mut self.neg,
         }
     }
 

@@ -76,7 +76,7 @@ impl<'a> IntoIterator for &'a Clause {
 mod tests {
     use super::*;
     use crate::{
-        VarAssignment,
+        Sign,
         Variable,
     };
 
@@ -88,15 +88,15 @@ mod tests {
     #[test]
     fn new_self_conflicting_clause_fails() {
         let var = Variable::from_index(0).unwrap();
-        let a1 = var.into_literal(VarAssignment::True);
-        let a2 = var.into_literal(VarAssignment::False);
+        let a1 = var.into_literal(Sign::True);
+        let a2 = var.into_literal(Sign::False);
         assert_eq!(Clause::new(vec![a1, a2]), Err(Error::SelfConflictingClause));
     }
 
     #[test]
     fn new_unit_clause_works() {
         let var = Variable::from_index(0).unwrap();
-        let lit = var.into_literal(VarAssignment::True);
+        let lit = var.into_literal(Sign::True);
         assert!(Clause::new(vec![lit]).is_ok());
     }
 
@@ -105,16 +105,16 @@ mod tests {
         let a = Variable::from_index(0).unwrap();
         let b = Variable::from_index(1).unwrap();
         let c = Variable::from_index(2).unwrap();
-        let pa = a.into_literal(VarAssignment::True);
-        let pb = b.into_literal(VarAssignment::True);
-        let nc = c.into_literal(VarAssignment::False);
+        let pa = a.into_literal(Sign::True);
+        let pb = b.into_literal(Sign::True);
+        let nc = c.into_literal(Sign::False);
         assert!(Clause::new(vec![pa, pb, nc]).is_ok());
     }
 
     #[test]
     fn new_clause_with_duplicate_lits_works() {
         let var = Variable::from_index(0).unwrap();
-        let lit = var.into_literal(VarAssignment::True);
+        let lit = var.into_literal(Sign::True);
         let clause = Clause::new(vec![lit, lit]).unwrap();
         assert_eq!(clause.len(), 1);
     }
@@ -124,9 +124,9 @@ mod tests {
         let a = Variable::from_index(0).unwrap();
         let b = Variable::from_index(1).unwrap();
         let c = Variable::from_index(2).unwrap();
-        let pa = a.into_literal(VarAssignment::True);
-        let pb = b.into_literal(VarAssignment::True);
-        let nc = c.into_literal(VarAssignment::False);
+        let pa = a.into_literal(Sign::True);
+        let pb = b.into_literal(Sign::True);
+        let nc = c.into_literal(Sign::False);
         let clause = Clause::new(vec![pa, pb, nc]).unwrap();
         let lits = clause.into_iter().collect::<Vec<_>>();
         assert!(lits.contains(&pa));

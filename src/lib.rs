@@ -31,7 +31,7 @@ pub use crate::{
     clause_db::Clause,
     literal::{
         Literal,
-        VarAssignment,
+        Sign,
         Variable,
     },
     literal_chunk::{
@@ -190,7 +190,7 @@ impl Solver {
     ///
     /// If there are too many variables in use after this operation.
     pub fn new_literal(&mut self) -> Literal {
-        self.new_variable().into_literal(VarAssignment::True)
+        self.new_variable().into_literal(Sign::True)
     }
 
     /// Allocates the given amount of new literals for the solver and returns them.
@@ -249,11 +249,11 @@ impl Solver {
             Some(unassigned_variable) => {
                 let level = self.assignment.bump_decision_level();
                 if self
-                    .solve_for_decision(unassigned_variable.into_literal(VarAssignment::True))?
+                    .solve_for_decision(unassigned_variable.into_literal(Sign::True))?
                     .is_sat()
                     || self
                         .solve_for_decision(
-                            unassigned_variable.into_literal(VarAssignment::False),
+                            unassigned_variable.into_literal(Sign::False),
                         )?
                         .is_sat()
                 {

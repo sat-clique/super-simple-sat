@@ -12,12 +12,12 @@ use core::{
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum VarAssignment {
+pub enum Sign {
     True,
     False,
 }
 
-impl VarAssignment {
+impl Sign {
     #[inline]
     pub fn to_bool(self) -> bool {
         match self {
@@ -27,7 +27,7 @@ impl VarAssignment {
     }
 }
 
-impl Bool for VarAssignment {
+impl Bool for Sign {
     fn from_bool(value: bool) -> Self {
         match value {
             true => Self::True,
@@ -43,7 +43,7 @@ impl Bool for VarAssignment {
     }
 }
 
-impl Not for VarAssignment {
+impl Not for Sign {
     type Output = Self;
 
     fn not(self) -> Self::Output {
@@ -81,10 +81,10 @@ impl Literal {
     }
 
     /// Returns the assignment and polarity of the literal.
-    pub fn assignment(self) -> VarAssignment {
+    pub fn assignment(self) -> Sign {
         match self.is_positive() {
-            true => VarAssignment::True,
-            false => VarAssignment::False,
+            true => Sign::True,
+            false => Sign::False,
         }
     }
 }
@@ -150,10 +150,10 @@ impl Variable {
     }
 
     /// Returns the literal for the variable with the given polarity.
-    pub fn into_literal(self, assignment: VarAssignment) -> Literal {
+    pub fn into_literal(self, assignment: Sign) -> Literal {
         let value = match assignment {
-            VarAssignment::True => self.value.get() as i32,
-            VarAssignment::False => -(self.value.get() as i32),
+            Sign::True => self.value.get() as i32,
+            Sign::False => -(self.value.get() as i32),
         };
         Literal {
             value: NonZeroI32::new(value).expect("encountered unexpected zero i32"),

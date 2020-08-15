@@ -23,7 +23,7 @@ use crate::{
     },
     ClauseDb,
     Literal,
-    VarAssignment,
+    Sign,
     Variable,
 };
 
@@ -78,7 +78,7 @@ impl<'a> PropagationEnqueuer<'a> {
 /// The actual variable assignment.
 #[derive(Debug, Default, Clone)]
 pub struct VariableAssignment {
-    assignment: BoundedMap<Variable, VarAssignment>,
+    assignment: BoundedMap<Variable, Sign>,
 }
 
 impl VariableAssignment {
@@ -102,7 +102,7 @@ impl VariableAssignment {
     /// # Note
     ///
     /// Variables that have not been assigned, yet will not be yielded.
-    pub fn iter(&self) -> bounded_map::Iter<Variable, VarAssignment> {
+    pub fn iter(&self) -> bounded_map::Iter<Variable, Sign> {
         self.assignment.iter()
     }
 
@@ -121,7 +121,7 @@ impl VariableAssignment {
     /// # Panics
     ///
     /// If the variable is invalid and cannot be resolved.
-    pub fn get(&self, variable: Variable) -> Option<VarAssignment> {
+    pub fn get(&self, variable: Variable) -> Option<Sign> {
         self.assignment
             .get(variable)
             .expect("encountered unexpected invalid variable")
@@ -137,7 +137,7 @@ impl VariableAssignment {
     /// If the variable is invalid and cannot be resolved.
     pub fn is_satisfied(&self, literal: Literal) -> Option<bool> {
         self.get(literal.variable())
-            .map(VarAssignment::to_bool)
+            .map(Sign::to_bool)
             .map(|assignment| {
                 literal.is_positive() && assignment
                     || literal.is_negative() && !assignment
@@ -161,7 +161,7 @@ impl VariableAssignment {
     ///
     /// - If the variable is invalid and cannot be resolved.
     /// - If the variable has already been assigned.
-    pub fn assign(&mut self, variable: Variable, assignment: VarAssignment) {
+    pub fn assign(&mut self, variable: Variable, assignment: Sign) {
         let old_assignment = self
             .assignment
             .insert(variable, assignment)
@@ -350,7 +350,7 @@ impl Assignment {
 }
 
 impl<'a> IntoIterator for &'a VariableAssignment {
-    type Item = (Variable, VarAssignment);
+    type Item = (Variable, Sign);
     type IntoIter = Iter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -359,7 +359,7 @@ impl<'a> IntoIterator for &'a VariableAssignment {
 }
 
 impl<'a> IntoIterator for &'a Assignment {
-    type Item = (Variable, VarAssignment);
+    type Item = (Variable, Sign);
     type IntoIter = Iter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -368,7 +368,7 @@ impl<'a> IntoIterator for &'a Assignment {
 }
 
 pub struct Iter<'a> {
-    iter: bounded_map::Iter<'a, Variable, VarAssignment>,
+    iter: bounded_map::Iter<'a, Variable, Sign>,
 }
 
 impl<'a> Iter<'a> {
@@ -380,7 +380,7 @@ impl<'a> Iter<'a> {
 }
 
 impl<'a> Iterator for Iter<'a> {
-    type Item = (Variable, VarAssignment);
+    type Item = (Variable, Sign);
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter

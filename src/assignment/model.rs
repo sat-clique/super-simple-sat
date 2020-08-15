@@ -9,7 +9,7 @@ use crate::{
         BoundedBitmap,
     },
     Literal,
-    VarAssignment,
+    Sign,
     Variable,
 };
 use core::{
@@ -47,7 +47,7 @@ impl LastModel {
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Model {
-    assignment: BoundedBitmap<Variable, VarAssignment>,
+    assignment: BoundedBitmap<Variable, Sign>,
 }
 
 impl Display for Model {
@@ -90,7 +90,7 @@ impl Model {
     }
 
     /// Resolves the assingment of the given variable.
-    fn resolve(&self, variable: Variable) -> Result<VarAssignment, AssignmentError> {
+    fn resolve(&self, variable: Variable) -> Result<Sign, AssignmentError> {
         self.assignment
             .get(variable)
             .map_err(|_| AssignmentError::InvalidVariable)
@@ -106,7 +106,7 @@ impl Model {
 }
 
 impl<'a> IntoIterator for &'a Model {
-    type Item = (Variable, VarAssignment);
+    type Item = (Variable, Sign);
     type IntoIter = ModelIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -115,7 +115,7 @@ impl<'a> IntoIterator for &'a Model {
 }
 
 pub struct ModelIter<'a> {
-    iter: iter::Enumerate<bounded_bitmap::Iter<'a, Variable, VarAssignment>>,
+    iter: iter::Enumerate<bounded_bitmap::Iter<'a, Variable, Sign>>,
 }
 
 impl<'a> ModelIter<'a> {
@@ -127,7 +127,7 @@ impl<'a> ModelIter<'a> {
 }
 
 impl<'a> Iterator for ModelIter<'a> {
-    type Item = (Variable, VarAssignment);
+    type Item = (Variable, Sign);
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {

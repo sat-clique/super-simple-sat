@@ -1,7 +1,7 @@
 use crate::{
     Error,
     Literal,
-    VarAssignment,
+    Sign,
     Variable,
 };
 
@@ -49,7 +49,7 @@ impl LiteralChunk {
         Some(
             Variable::from_index(self.start_index + n)
                 .expect("encountered unexpected out of bounds variable index")
-                .into_literal(VarAssignment::True),
+                .into_literal(Sign::True),
         )
     }
 }
