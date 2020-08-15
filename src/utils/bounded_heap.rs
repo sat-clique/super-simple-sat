@@ -268,6 +268,15 @@ where
     ///
     /// The heap properties must be satisfied after the transformation.
     ///
+    /// # Note
+    ///
+    /// This also transforms priorities of keys that are uncontained in the heap.
+    ///
+    /// # Example
+    ///
+    /// An example use case is to divide the priorities of all keys in the heap
+    /// by some positive number which conserves the heap property for all keys.
+    ///
     /// # Panics
     ///
     /// If the heap properties are not satisfied after the transformation.
