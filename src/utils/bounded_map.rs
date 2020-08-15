@@ -36,12 +36,8 @@ impl<K, V> BoundedMap<K, V> {
     ///
     /// A capacity of N means that the bounded map may store up to N different
     /// mappings and will error otherwise.
-    pub fn increase_capacity_to(&mut self, new_len: usize) -> Result<(), Error> {
-        if new_len < self.capacity() {
-            return Err(Error::InvalidSizeIncrement)
-        }
+    pub fn resize(&mut self, new_len: usize) {
         self.slots.resize_with(new_len, Default::default);
-        Ok(())
     }
 
     /// Returns the current length of the bounded map.
@@ -335,7 +331,7 @@ mod tests {
         assert_eq!(map.into_iter().next(), None);
         assert_eq!(map.get(0), Err(Error::OutOfBoundsAccess));
         // Now increase size to 3:
-        assert!(map.increase_capacity_to(3).is_ok());
+        map.resize(3);
         assert!(map.is_empty());
         assert!(!map.is_full());
         assert_eq!(map.len(), 0);
@@ -343,15 +339,14 @@ mod tests {
         assert_eq!(map.into_iter().next(), None);
         assert_eq!(map.get(0), Ok(None));
         // Increase to same size works, too.
-        assert!(map.increase_capacity_to(3).is_ok());
+        map.resize(3);
     }
 
     #[test]
-    fn shrink_size_fails() {
+    fn shrink_size_works() {
         let mut map = <BoundedMap<usize, u8>>::with_capacity(3);
-        assert_eq!(
-            map.increase_capacity_to(2),
-            Err(Error::InvalidSizeIncrement)
-        );
+        map.resize(2);
+        assert_eq!(map.len(), 0);
+        assert_eq!(map.capacity(), 2);
     }
 }

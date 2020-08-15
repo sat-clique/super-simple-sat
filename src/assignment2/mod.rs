@@ -113,8 +113,7 @@ impl VariableAssignment {
     pub fn register_new_variables(&mut self, new_variables: usize) {
         let new_len = self.len() + new_variables;
         self.assignment
-            .increase_capacity_to(new_len)
-            .expect("encountered unexpected invalid size increment");
+            .resize(new_len);
     }
 
     /// Returns the assignment for the given variable.
