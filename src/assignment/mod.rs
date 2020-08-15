@@ -21,6 +21,7 @@ use crate::{
         bounded_map,
         BoundedMap,
     },
+    Bool,
     ClauseDb,
     Literal,
     Sign,
@@ -137,7 +138,7 @@ impl VariableAssignment {
     /// If the variable is invalid and cannot be resolved.
     pub fn is_satisfied(&self, literal: Literal) -> Option<bool> {
         self.get(literal.variable())
-            .map(Sign::to_bool)
+            .map(Sign::into_bool)
             .map(|assignment| {
                 literal.is_positive() && assignment
                     || literal.is_negative() && !assignment

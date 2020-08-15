@@ -8,6 +8,7 @@ use crate::{
         bounded_bitmap,
         BoundedBitmap,
     },
+    Bool,
     Literal,
     Sign,
     Variable,
@@ -55,7 +56,7 @@ impl Display for Model {
         writeln!(f, "Model (#vars = {})", self.len())?;
         for (variable, assignment) in self {
             let index = variable.into_index();
-            let assignment = assignment.to_bool().to_string();
+            let assignment = assignment.into_bool().to_string();
             writeln!(f, " - var({:3}) = {}", index, assignment)?;
         }
         Ok(())
@@ -98,7 +99,7 @@ impl Model {
 
     /// Returns `true` if the given literal is satisfied under this model.
     pub fn is_satisfied(&self, literal: Literal) -> Result<bool, AssignmentError> {
-        let assignment = self.resolve(literal.variable())?.to_bool();
+        let assignment = self.resolve(literal.variable())?.into_bool();
         let result =
             literal.is_positive() && assignment || literal.is_negative() && !assignment;
         Ok(result)

@@ -11,23 +11,18 @@ use core::{
     ops::Not,
 };
 
+/// The sign of a literal.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Sign {
     True,
     False,
 }
 
-impl Sign {
-    #[inline]
-    pub fn to_bool(self) -> bool {
-        match self {
-            Self::True => true,
-            Self::False => false,
-        }
-    }
-}
-
 impl Bool for Sign {
+    /// Creates a sign from the given `bool` value.
+    ///
+    /// - `false` becomes `Sign::False`
+    /// - `true` becomes `Sign::True`
     fn from_bool(value: bool) -> Self {
         match value {
             true => Self::True,
@@ -35,6 +30,10 @@ impl Bool for Sign {
         }
     }
 
+    /// Converts the sign into a `bool` value.
+    ///
+    /// - `Sign::True` becomes `true`
+    /// - `Sign::False` becomes `false`
     fn into_bool(self) -> bool {
         match self {
             Self::True => true,
