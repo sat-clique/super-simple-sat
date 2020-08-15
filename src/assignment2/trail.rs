@@ -107,8 +107,7 @@ impl Trail {
     /// Pushes a new decision level and returns it.
     pub fn bump_decision_level(&mut self) -> DecisionLevel {
         let limit = TrailLimit::from_index(self.decisions_and_implications.len());
-        let index = self.limits.push(limit);
-        index
+        self.limits.push(limit)
     }
 
     /// Returns the current decision level.

@@ -41,7 +41,7 @@ pub enum AssignmentError {
 
 impl AssignmentError {
     /// Returns `true` if the assignment error was caused by a conflict.
-    pub fn is_conflict(self) -> bool {
+    pub fn is_conflict(&self) -> bool {
         matches!(self, Self::Conflict)
     }
 }
