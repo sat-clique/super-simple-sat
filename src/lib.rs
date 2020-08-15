@@ -123,7 +123,7 @@ impl<'a> SatResult<'a> {
 pub struct Solver {
     len_variables: usize,
     clauses: ClauseDb,
-    assignment2: Assignment2,
+    assignment: Assignment2,
     decider: Decider,
     last_model2: LastModel2,
 }
@@ -153,10 +153,10 @@ impl Solver {
     pub fn consume_clause(&mut self, clause: Clause) -> Result<(), Error> {
         match self.clauses.push_get(clause) {
             Ok(clause) => {
-                self.assignment2.initialize_watchers(clause);
+                self.assignment.initialize_watchers(clause);
             }
             Err(unit_clause) => {
-                self.assignment2
+                self.assignment
                     .enqueue_assumption(unit_clause.literal)
                     .map_err(|_| Error::Conflict)?;
             }
@@ -166,7 +166,7 @@ impl Solver {
 
     /// Returns the next variable.
     fn new_variable(&mut self) -> Variable {
-        self.assignment2.register_new_variables(1);
+        self.assignment.register_new_variables(1);
         self.decider.register_new_variables(1);
         let next_id = self.len_variables();
         let variable =
@@ -201,14 +201,14 @@ impl Solver {
         let new_len = self.len_variables() + amount;
         let chunk = LiteralChunk::new(old_len, new_len)
             .expect("encountered unexpected invalid literal chunk");
-        self.assignment2.register_new_variables(amount);
+        self.assignment.register_new_variables(amount);
         self.decider.register_new_variables(amount);
         self.len_variables += amount;
         chunk
     }
 
     fn solve_for_decision(&mut self, decision: Literal) -> Result<DecisionResult, Error> {
-        match self.assignment2.enqueue_assumption(decision) {
+        match self.assignment.enqueue_assumption(decision) {
             Err(AssignmentError::Conflict) => return Ok(DecisionResult::Conflict),
             Err(AssignmentError::AlreadyAssigned) => {
                 panic!("decision heuristic unexpectedly proposed already assigned variable for propagation")
@@ -216,7 +216,7 @@ impl Solver {
             Err(_) => panic!("encountered unexpected or unknown enqueue error"),
             Ok(_) => (),
         }
-        let propagation_result = self.assignment2.propagate(&mut self.clauses);
+        let propagation_result = self.assignment.propagate(&mut self.clauses);
         match propagation_result {
             PropagationResult2::Conflict => Ok(DecisionResult::Conflict),
             PropagationResult2::Consistent => {
@@ -229,16 +229,16 @@ impl Solver {
     fn decide_and_propagate(&mut self) -> Result<DecisionResult, Error> {
         let next_variable = self
             .decider
-            .next_unassigned(self.assignment2.variable_assignment());
+            .next_unassigned(self.assignment.variable_assignment());
         match next_variable {
             None => {
                 self.last_model2
-                    .update(self.assignment2.variable_assignment())
+                    .update(self.assignment.variable_assignment())
                     .expect("encountered unexpected indeterminate variable assignment");
                 Ok(DecisionResult::Sat)
             }
             Some(unassigned_variable) => {
-                let level = self.assignment2.bump_decision_level();
+                let level = self.assignment.bump_decision_level();
                 if self
                     .solve_for_decision(
                         unassigned_variable.into_literal(VarAssignment::True),
@@ -252,7 +252,7 @@ impl Solver {
                 {
                     Ok(DecisionResult::Sat)
                 } else {
-                    self.assignment2.pop_decision_level(level);
+                    self.assignment.pop_decision_level(level);
                     Ok(DecisionResult::Conflict)
                 }
             }
@@ -269,24 +269,24 @@ impl Solver {
         }
         // Propagate in case the set of clauses contained unit clauses.
         // Bail out if the instance is already in conflict with itself.
-        let _root_level = self.assignment2.bump_decision_level();
-        if self.assignment2.propagate(&mut self.clauses).is_conflict() {
+        let _root_level = self.assignment.bump_decision_level();
+        if self.assignment.propagate(&mut self.clauses).is_conflict() {
             return Ok(SolveResult::Unsat)
         }
         // Enqueue assumptions and propagate them afterwards.
         // Bail out if the provided assumptions are in conflict with the instance.
-        let _assumptions_level = self.assignment2.bump_decision_level();
+        let _assumptions_level = self.assignment.bump_decision_level();
         for assumption in assumptions {
             if let Err(AssignmentError::Conflict) =
-                self.assignment2.enqueue_assumption(assumption)
+                self.assignment.enqueue_assumption(assumption)
             {
                 return Ok(SolveResult::Unsat)
             }
         }
-        if self.assignment2.propagate(&mut self.clauses).is_conflict() {
+        if self.assignment.propagate(&mut self.clauses).is_conflict() {
             return Ok(SolveResult::Unsat)
         }
-        let _constraints_level = self.assignment2.bump_decision_level();
+        let _constraints_level = self.assignment.bump_decision_level();
         let result = match self.decide_and_propagate()? {
             DecisionResult::Conflict => SolveResult::Unsat,
             DecisionResult::Sat => {
