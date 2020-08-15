@@ -60,23 +60,23 @@ impl Index for HeapPosition {
     }
 }
 
-/// A bounded binary max-heap that supports update of key weights.
+/// A bounded binary max-heap that supports update of key priorities.
 #[derive(Debug, Clone)]
 pub struct BoundedHeap<K, W> {
     /// The number of current elements.
     len: usize,
     /// The actual heap storing the keys according to heap properties.
     ///
-    /// The keys are used to refer to their underlying weights via the
-    /// associated `weights` array.
+    /// The keys are used to refer to their underlying priorities via the
+    /// associated `priorities` array.
     ///
     /// If the heap position of a key changes the `positions` array needs
     /// to be updated.
     heap: BoundedArray<HeapPosition, K>,
     /// The current index in the `heap` array for every key.
     positions: BoundedArray<K, Option<HeapPosition>>,
-    /// The weight for every key.
-    weights: BoundedArray<K, W>,
+    /// The priority for every key.
+    priorities: BoundedArray<K, W>,
 }
 
 impl<K, W> Default for BoundedHeap<K, W>
@@ -89,7 +89,7 @@ where
             len: 0,
             heap: BoundedArray::default(),
             positions: BoundedArray::default(),
-            weights: BoundedArray::default(),
+            priorities: BoundedArray::default(),
         }
     }
 }
@@ -111,7 +111,7 @@ where
 
     /// Returns the capacity of the bounded heap.
     pub fn capacity(&self) -> usize {
-        self.weights.len()
+        self.priorities.len()
     }
 
     /// Returns `Ok` if the key is without bounds for the bounded heap.
@@ -158,7 +158,7 @@ where
         self.heap
             .increase_len_to_with(new_cap, || K::from_index(0))?;
         self.positions.increase_len_to(new_cap)?;
-        self.weights.increase_len_to(new_cap)?;
+        self.priorities.increase_len_to(new_cap)?;
         Ok(())
     }
 
@@ -186,18 +186,18 @@ where
         last_position
     }
 
-    /// Inserts a new key/weight pair into the heap or updates the weight of an existing key.
+    /// Inserts a new key/priority pair into the heap or updates the priority of an existing key.
     ///
     /// Increases the length of the heap if the key was not contained before.
     ///
     /// # Note
     ///
-    /// Restore a key and its old weight by using the identify function for `eval_new_weight`.
+    /// Restore a key and its old priority by using the identify function for `eval_new_priority`.
     ///
     /// # Errors
     ///
     /// If the key index is out of bounds.
-    pub fn push_or_update<F>(&mut self, key: K, eval_new_weight: F) -> Result<(), Error>
+    pub fn push_or_update<F>(&mut self, key: K, eval_new_priority: F) -> Result<(), Error>
     where
         F: FnOnce(W) -> W,
     {
@@ -208,55 +208,55 @@ where
         if !already_contained {
             self.push_heap_position(key);
         }
-        let is_weight_increased = {
-            let old_weight = self.get_weight(key);
-            let new_weight = eval_new_weight(old_weight);
-            self.weights
-                .update(key, new_weight)
-                .expect("unexpected invalid key (update weight)");
-            !already_contained || old_weight <= new_weight
+        let is_priority_increased = {
+            let old_priority = self.get_priority(key);
+            let new_priority = eval_new_priority(old_priority);
+            self.priorities
+                .update(key, new_priority)
+                .expect("unexpected invalid key (update priority)");
+            !already_contained || old_priority <= new_priority
         };
         let position = self
             .get_position(key)
             .expect("unexpected uncontained key (push or update)");
-        match is_weight_increased {
+        match is_priority_increased {
             true => self.sift_up(position),
             false => self.sift_down(position),
         }
         Ok(())
     }
 
-    /// Updates the weight of a key.
+    /// Updates the priority of a key.
     ///
     /// If the key is contained in the heap this will also adjust the heap structure.
-    /// In case the key is not contained the weight will still be adjusted. This is
+    /// In case the key is not contained the priority will still be adjusted. This is
     /// useful in case the key is going to be restored in the future to its former
-    /// weight.
+    /// priority.
     ///
     /// # Errors
     ///
     /// If the given key is out of bounds for the bounded heap.
-    pub fn update_weight<F>(&mut self, key: K, eval_new_weight: F) -> Result<(), Error>
+    pub fn update_priority<F>(&mut self, key: K, eval_new_priority: F) -> Result<(), Error>
     where
         F: FnOnce(W) -> W,
     {
         self.ensure_valid_key(key)?;
-        let is_weight_increased = {
-            let old_weight = self.get_weight(key);
-            let new_weight = eval_new_weight(old_weight);
-            self.weights
-                .update(key, new_weight)
-                .expect("unexpected out of bounds key (weight update)");
-            old_weight <= new_weight
+        let is_priority_increased = {
+            let old_priority = self.get_priority(key);
+            let new_priority = eval_new_priority(old_priority);
+            self.priorities
+                .update(key, new_priority)
+                .expect("unexpected out of bounds key (priority update)");
+            old_priority <= new_priority
         };
         let position = self
             .get_position(key)
-            .expect("unexpected uncontained key (update weight)");
+            .expect("unexpected uncontained key (update priority)");
         if self
             .contains(key)
             .expect("encountered unexpected invalid key (contains query)")
         {
-            match is_weight_increased {
+            match is_priority_increased {
                 true => self.sift_up(position),
                 false => self.sift_down(position),
             }
@@ -264,7 +264,7 @@ where
         Ok(())
     }
 
-    /// Transforms the weights of all valid keys using the given closure.
+    /// Transforms the priorities of all valid keys using the given closure.
     ///
     /// The heap properties must be satisfied after the transformation.
     ///
@@ -275,36 +275,36 @@ where
     /// This panics instead of returning an error since the heap is in an
     /// unresolvable inconsistent state if a call to this method invalidates
     /// its heap properties.
-    pub fn transform_weights<F>(&mut self, mut new_weight_eval: F)
+    pub fn transform_priorities<F>(&mut self, mut new_priority_eval: F)
     where
         F: FnMut(W) -> W,
     {
-        for weight in &mut self.weights {
-            *weight = new_weight_eval(*weight);
+        for priority in &mut self.priorities {
+            *priority = new_priority_eval(*priority);
         }
         assert!(self.satisfies_heap_property());
     }
 
-    /// Compares the weights of the given keys.
+    /// Compares the priorities of the given keys.
     ///
     /// # Panics
     ///
     /// If any of the given keys is out of bounds for the bounded heap.
-    fn cmp_weights(&self, lhs: K, rhs: K) -> Ordering {
+    fn cmp_priorities(&self, lhs: K, rhs: K) -> Ordering {
         if lhs == rhs {
             return Ordering::Equal
         }
-        let lhs_weight = self.get_weight(lhs);
-        let rhs_weight = self.get_weight(rhs);
-        lhs_weight.cmp(&rhs_weight)
+        let lhs_priority = self.get_priority(lhs);
+        let rhs_priority = self.get_priority(rhs);
+        lhs_priority.cmp(&rhs_priority)
     }
 
     /// Adjusts the heap ordering for the given pivot element.
     ///
     /// # Note
     ///
-    /// Used if the weight of the pivot element has been increased or after
-    /// a new key weight pair has been inserted into the heap.
+    /// Used if the priority of the pivot element has been increased or after
+    /// a new key priority pair has been inserted into the heap.
     ///
     /// # Panics
     ///
@@ -321,7 +321,7 @@ where
         let mut cursor = pivot;
         'perculate: while let Some(parent) = cursor.parent() {
             let parent_key = self.heap_entry(parent);
-            match self.cmp_weights(pivot_key, parent_key) {
+            match self.cmp_priorities(pivot_key, parent_key) {
                 Ordering::Greater => {
                     // Child is greater than the current parent -> move down the parent.
                     self.update_position(parent_key, cursor);
@@ -337,7 +337,7 @@ where
     ///
     /// # Note
     ///
-    /// Used of the weight of the pivot element has been decreased or the root
+    /// Used of the priority of the pivot element has been decreased or the root
     /// element has been popped.
     ///
     /// # Panics
@@ -359,7 +359,7 @@ where
                 Some(right_child) => {
                     let left_child_key = self.heap_entry(left_child);
                     let right_child_key = self.heap_entry(right_child);
-                    match self.cmp_weights(left_child_key, right_child_key) {
+                    match self.cmp_priorities(left_child_key, right_child_key) {
                         Ordering::Less | Ordering::Equal => right_child,
                         Ordering::Greater => left_child,
                     }
@@ -367,7 +367,7 @@ where
                 None => left_child,
             };
             let max_child_key = self.heap_entry(max_child);
-            if self.cmp_weights(pivot_key, max_child_key) == Ordering::Less {
+            if self.cmp_priorities(pivot_key, max_child_key) == Ordering::Less {
                 // Child is greater than element -> move it upwards.
                 self.update_position(max_child_key, cursor);
                 cursor = max_child;
@@ -378,7 +378,7 @@ where
         self.update_position(pivot_key, cursor);
     }
 
-    /// Returns a shared reference to the current maximum key and its weight.
+    /// Returns a shared reference to the current maximum key and its priority.
     ///
     /// This does not pop the maximum element from the bounded heap.
     pub fn peek(&self) -> Option<(K, W)> {
@@ -386,11 +386,11 @@ where
             return None
         }
         let key = self.heap_entry(HeapPosition::root());
-        let weight = self.get_weight(key);
-        Some((key, weight))
+        let priority = self.get_priority(key);
+        Some((key, priority))
     }
 
-    /// Pops the current maximum key and its weight from the bounded heap.
+    /// Pops the current maximum key and its priority from the bounded heap.
     pub fn pop(&mut self) -> Option<(K, W)> {
         if self.is_empty() {
             return None
@@ -399,7 +399,7 @@ where
         self.positions
             .update(key, None)
             .expect("invalid root key of non-empty heap");
-        let weight = self.get_weight(key);
+        let priority = self.get_priority(key);
         if self.len == 1 {
             // No need to adjust heap properties.
             self.len = 0;
@@ -410,7 +410,7 @@ where
             self.len -= 1;
             self.sift_down(HeapPosition::root());
         }
-        Some((key, weight))
+        Some((key, priority))
     }
 
     /// Updates the keys heap position.
@@ -428,16 +428,16 @@ where
             .expect("unexpected out of bounds key (heap update)");
     }
 
-    /// Returns the weight associated with the given key.
+    /// Returns the priority associated with the given key.
     ///
     /// # Panics
     ///
     /// If the key is out of bounds for the bounded heap.
-    fn get_weight(&self, key: K) -> W {
+    fn get_priority(&self, key: K) -> W {
         *self
-            .weights
+            .priorities
             .get(key)
-            .expect("unexpected out of bounds key (get weight)")
+            .expect("unexpected out of bounds key (get priority)")
     }
 
     /// Returns the heap position of the given key.
@@ -471,8 +471,8 @@ where
     ///
     /// # Note
     ///
-    /// The heap property is that the weight of parent nodes is always greater than or equal
-    /// to the weight of their children.
+    /// The heap property is that the priority of parent nodes is always greater than or equal
+    /// to the priority of their children.
     ///
     /// This is a test-only API and generally not available.
     fn satisfies_heap_property(&self) -> bool {
@@ -481,7 +481,7 @@ where
             let parent = child.parent().expect("encountered missing parent");
             let child_key = self.heap_entry(child);
             let parent_key = self.heap_entry(parent);
-            if self.cmp_weights(parent_key, child_key) != Ordering::Greater {
+            if self.cmp_priorities(parent_key, child_key) != Ordering::Greater {
                 return false
             }
         }
@@ -553,14 +553,14 @@ mod tests {
 
     #[test]
     fn satisfies_heap_property_after_insertion() {
-        let test_weights = [3, 9, 1, -5, -10, -9, 10, 0, -1, 7];
-        let size = test_weights.len();
+        let test_priorities = [3, 9, 1, -5, -10, -9, 10, 0, -1, 7];
+        let size = test_priorities.len();
         let mut heap = <BoundedHeap<usize, i32>>::default();
         heap.increase_capacity_to(size).unwrap();
-        for (k, w) in test_weights.iter().copied().enumerate() {
+        for (k, w) in test_priorities.iter().copied().enumerate() {
             heap.push_or_update(k, |_| w).unwrap();
         }
-        assert_eq!(heap.len(), test_weights.len());
+        assert_eq!(heap.len(), test_priorities.len());
         assert!(heap.satisfies_heap_property());
     }
 
@@ -588,11 +588,11 @@ mod tests {
 
     #[test]
     fn has_descending_removal_sequence() {
-        let test_weights = [3, 9, 1, -5, -10, -9, 10, 0, -1, 7];
-        let len = test_weights.len();
+        let test_priorities = [3, 9, 1, -5, -10, -9, 10, 0, -1, 7];
+        let len = test_priorities.len();
         let mut heap = BoundedHeap::default();
         heap.increase_capacity_to(len).unwrap();
-        for (k, w) in test_weights.iter().copied().enumerate() {
+        for (k, w) in test_priorities.iter().copied().enumerate() {
             heap.push_or_update(k, |_| w).unwrap();
         }
         assert!(heap.satisfies_heap_property());
@@ -606,9 +606,9 @@ mod tests {
             );
         }
         let expected_sequence = {
-            let mut weights = test_weights.to_vec();
-            weights.sort_by_key(|k| core::cmp::Reverse(*k));
-            weights
+            let mut priorities = test_priorities.to_vec();
+            priorities.sort_by_key(|k| core::cmp::Reverse(*k));
+            priorities
         };
         assert_eq!(removed_sequence, expected_sequence);
         assert!(heap.is_empty());
