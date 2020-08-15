@@ -104,7 +104,7 @@ where
 impl<Idx, T> BoundedBitmap<Idx, T> {
     pub fn with_len(len: usize) -> Self {
         Self {
-            chunks: BoundedArray::with_len(len),
+            chunks: BoundedArray::with_len(len, |_| Default::default()),
             len,
             marker: Default::default(),
         }

@@ -30,20 +30,6 @@ impl<K, V> Default for BoundedMap<K, V> {
 }
 
 impl<K, V> BoundedMap<K, V> {
-    /// Creates a new bounded map with the given capacity.
-    ///
-    /// # Note
-    ///
-    /// A capacity of N means that the bounded map may store up to N different
-    /// mappings and will error otherwise.
-    pub fn with_capacity(len: usize) -> Self {
-        Self {
-            len: 0,
-            slots: BoundedArray::with_len(len),
-            marker: Default::default(),
-        }
-    }
-
     /// Increases the capacaity of the bounded map to the new value.
     ///
     /// # Note
@@ -83,6 +69,20 @@ impl<K, V> BoundedMap<K, V>
 where
     K: Index,
 {
+    /// Creates a new bounded map with the given capacity.
+    ///
+    /// # Note
+    ///
+    /// A capacity of N means that the bounded map may store up to N different
+    /// mappings and will error otherwise.
+    pub fn with_capacity(len: usize) -> Self {
+        Self {
+            len: 0,
+            slots: BoundedArray::with_len(len, |_| Default::default()),
+            marker: Default::default(),
+        }
+    }
+
     /// Inserts the given value for the key and returns the old value if any.
     ///
     /// # Error

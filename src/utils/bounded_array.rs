@@ -116,14 +116,19 @@ impl<Idx, T> BoundedArray<Idx, T> {
 
 impl<Idx, T> BoundedArray<Idx, T>
 where
-    T: Default,
+    Idx: Index,
 {
     /// Creates a new bounded array with the given length.
     ///
     /// Initializes all slots of the array with default values.
-    pub fn with_len(len: usize) -> Self {
+    pub fn with_len<F>(len: usize, mut placeholder: F) -> Self
+    where
+        F: FnMut(Idx) -> T,
+    {
         Self {
-            values: (0..len).map(|_| Default::default()).collect(),
+            values: (0..len)
+                .map(|idx| placeholder(Idx::from_index(idx)))
+                .collect(),
             marker: Default::default(),
         }
     }
