@@ -1,11 +1,11 @@
 use crate::{
     Clause,
+    Error,
     Literal,
+    SolveResult,
     Solver,
     VarAssignment,
     Variable,
-    SolveResult,
-    Error,
 };
 use std::{
     fs,

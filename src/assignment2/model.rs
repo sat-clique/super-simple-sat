@@ -80,8 +80,7 @@ impl Model {
         if !assignment.is_complete() {
             return Err(AssignmentError::UnexpectedIndeterminateAssignment)
         }
-        self.assignment
-            .resize_with(assignment.len());
+        self.assignment.resize_with(assignment.len());
         for (variable, var_assignment) in assignment {
             self.assignment
                 .set(variable, var_assignment)

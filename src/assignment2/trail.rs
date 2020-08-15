@@ -148,12 +148,8 @@ impl Trail {
         assignment: &mut VariableAssignment,
     ) -> Result<(), AssignmentError> {
         match assignment.is_conflicting(literal) {
-            Some(true) => {
-                return Err(AssignmentError::Conflict)
-            }
-            Some(false) => {
-                return Err(AssignmentError::AlreadyAssigned)
-            }
+            Some(true) => return Err(AssignmentError::Conflict),
+            Some(false) => return Err(AssignmentError::AlreadyAssigned),
             None => (),
         }
         self.decisions_and_implications

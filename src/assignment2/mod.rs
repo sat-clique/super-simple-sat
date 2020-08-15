@@ -112,8 +112,7 @@ impl VariableAssignment {
     /// If the number of total variables is out of supported bounds.
     pub fn register_new_variables(&mut self, new_variables: usize) {
         let new_len = self.len() + new_variables;
-        self.assignment
-            .resize_capacity(new_len);
+        self.assignment.resize_capacity(new_len);
     }
 
     /// Returns the assignment for the given variable.
@@ -297,9 +296,7 @@ impl Assignment {
     /// This also unassigned all variables assigned in the given decision level.
     pub fn pop_decision_level(&mut self, level: DecisionLevel) {
         let Self {
-            assignments,
-            trail,
-            ..
+            assignments, trail, ..
         } = self;
         trail.pop_to_level(level, |unassigned| {
             assignments.unassign(unassigned.variable());

@@ -1,6 +1,6 @@
 use super::{
-    OutOfBoundsAccess,
     Index,
+    OutOfBoundsAccess,
 };
 use core::{
     iter::FromIterator,

@@ -86,11 +86,7 @@ impl<T> BoundedStack<T> {
     /// # Panics
     ///
     /// If the new length is larger than the current length.
-    pub fn pop_to<F>(
-        &mut self,
-        new_len: usize,
-        mut observer: F,
-    )
+    pub fn pop_to<F>(&mut self, new_len: usize, mut observer: F)
     where
         F: FnMut(&T),
     {

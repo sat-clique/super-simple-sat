@@ -1,18 +1,18 @@
 pub mod bounded_array;
 pub mod bounded_bitmap;
+pub mod bounded_heap;
 pub mod bounded_map;
 pub mod bounded_stack;
-pub mod bounded_heap;
 
 pub use self::{
     bounded_array::BoundedArray,
-    bounded_stack::BoundedStack,
     bounded_bitmap::{
         Bool,
         BoundedBitmap,
     },
-    bounded_map::BoundedMap,
     bounded_heap::BoundedHeap,
+    bounded_map::BoundedMap,
+    bounded_stack::BoundedStack,
 };
 
 /// Errors that may occure when operating on a bounded data structure.

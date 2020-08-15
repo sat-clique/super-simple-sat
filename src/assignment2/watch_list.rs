@@ -117,8 +117,7 @@ impl WatchList {
     /// If the number of total variables is out of supported bounds.
     pub fn register_new_variables(&mut self, new_variables: usize) {
         let total_variables = self.len_variables() + new_variables;
-        self.watchers
-            .resize_with(total_variables, Default::default);
+        self.watchers.resize_with(total_variables, Default::default);
     }
 
     /// Registers the clause identifier for the given literal.

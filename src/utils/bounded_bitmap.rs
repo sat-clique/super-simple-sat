@@ -1,7 +1,7 @@
 use super::{
     BoundedArray,
-    OutOfBoundsAccess,
     Index,
+    OutOfBoundsAccess,
 };
 use core::marker::PhantomData;
 

@@ -1,9 +1,7 @@
 use super::OutOfBoundsAccess;
-use crate::{
-    utils::{
-        BoundedArray,
-        Index,
-    },
+use crate::utils::{
+    BoundedArray,
+    Index,
 };
 use core::{
     cmp::Ordering,
@@ -594,10 +592,7 @@ mod tests {
         let len = 10;
         let mut heap = BoundedHeap::default();
         heap.resize_capacity(len);
-        assert_eq!(
-            heap.push_or_update(10, |_| 42),
-            Err(OutOfBoundsAccess)
-        );
+        assert_eq!(heap.push_or_update(10, |_| 42), Err(OutOfBoundsAccess));
     }
 
     #[test]
@@ -657,10 +652,7 @@ mod tests {
             heap.push_or_update(k, |_| w).unwrap();
         }
         assert_eq!(heap.len(), len);
-        assert_eq!(
-            heap.push_or_update(len, |_| 40),
-            Err(OutOfBoundsAccess)
-        );
+        assert_eq!(heap.push_or_update(len, |_| 40), Err(OutOfBoundsAccess));
         heap.resize_capacity(len + 1);
         heap.push_or_update(len, |_| 40).unwrap();
         assert_eq!(heap.len(), len + 1);
