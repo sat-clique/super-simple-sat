@@ -191,13 +191,22 @@ where
     /// # Errors
     ///
     /// If the key index is out of bounds.
-    pub fn push_or_update(&mut self, key: K, new_weight: W) -> Result<(), Error> {
-        let already_contained = self.contains(key)?;
+    pub fn push_or_update<F>(&mut self, key: K, eval_new_weight: F) -> Result<(), Error>
+    where
+        F: FnOnce(W) -> W,
+    {
         if !already_contained {
             self.push_heap_position(key)?;
         }
         let is_weight_increased = {
-            let old_weight = mem::replace(self.weights.get_mut(key)?, new_weight);
+            let old_weight = *self
+                .weights
+                .get(key)
+                .expect("unexpected invalid key (get weight)");
+            let new_weight = eval_new_weight(old_weight);
+            self.weights
+                .update(key, new_weight)
+                .expect("unexpected invalid key (update weight)");
             !already_contained || old_weight <= new_weight
         };
         let position = self.heap_position(key)?;
@@ -402,7 +411,7 @@ mod tests {
         let size = 10;
         let mut heap = <BoundedHeap<usize, i32>>::default();
         heap.increase_capacity_to(size).unwrap();
-        heap.push_or_update(5, 42).unwrap();
+        heap.push_or_update(5, |_| 42).unwrap();
         assert!(!heap.is_empty());
         assert_eq!(heap.len(), 1);
         for i in 0..10 {
@@ -415,8 +424,8 @@ mod tests {
         let size = 10;
         let mut heap = <BoundedHeap<usize, i32>>::default();
         heap.increase_capacity_to(size).unwrap();
-        heap.push_or_update(5, 42).unwrap();
-        heap.push_or_update(5, 42).unwrap();
+        heap.push_or_update(5, |_| 42).unwrap();
+        heap.push_or_update(5, |_| 42).unwrap();
         assert_eq!(heap.len(), 1);
         assert_eq!(heap.pop(), Some((5, 42)));
         assert!(heap.is_empty());
@@ -427,7 +436,7 @@ mod tests {
         let size = 10;
         let mut heap = <BoundedHeap<usize, i32>>::default();
         heap.increase_capacity_to(size).unwrap();
-        heap.push_or_update(5, 42).unwrap();
+        heap.push_or_update(5, |_| 42).unwrap();
         assert_eq!(heap.len(), 1);
         assert_eq!(heap.pop(), Some((5, 42)));
         assert!(heap.is_empty());
@@ -440,7 +449,7 @@ mod tests {
         let mut heap = <BoundedHeap<usize, i32>>::default();
         heap.increase_capacity_to(size).unwrap();
         for (k, w) in test_weights.iter().copied().enumerate() {
-            heap.push_or_update(k, w).unwrap();
+            heap.push_or_update(k, |_| w).unwrap();
         }
         assert_eq!(heap.len(), test_weights.len());
         assert!(heap.satisfies_heap_property());
@@ -452,7 +461,7 @@ mod tests {
         let mut heap = BoundedHeap::default();
         heap.increase_capacity_to(len).unwrap();
         for (k, w) in (0..len).map(|i| i * 10).enumerate() {
-            heap.push_or_update(k, w).unwrap();
+            heap.push_or_update(k, |_| w).unwrap();
         }
         assert_eq!(heap.len(), 10);
     }
@@ -463,7 +472,7 @@ mod tests {
         let mut heap = BoundedHeap::default();
         heap.increase_capacity_to(len).unwrap();
         assert_eq!(
-            heap.push_or_update(10, 42),
+            heap.push_or_update(10, |_| 42),
             Err(Error::Bounded(BoundedError::OutOfBoundsAccess))
         );
     }
@@ -475,7 +484,7 @@ mod tests {
         let mut heap = BoundedHeap::default();
         heap.increase_capacity_to(len).unwrap();
         for (k, w) in test_weights.iter().copied().enumerate() {
-            heap.push_or_update(k, w).unwrap();
+            heap.push_or_update(k, |_| w).unwrap();
         }
         assert!(heap.satisfies_heap_property());
         let mut removed_sequence = Vec::new();
@@ -503,13 +512,13 @@ mod tests {
         let mut heap = BoundedHeap::default();
         heap.increase_capacity_to(10).unwrap();
         for (k, w) in test_weights.iter().copied().enumerate() {
-            heap.push_or_update(k, w).unwrap();
+            heap.push_or_update(k, |_| w).unwrap();
         }
         assert_eq!(heap.pop(), Some((1, 9)));
         assert_eq!(heap.pop(), Some((0, 3)));
-        heap.push_or_update(len, 2).unwrap();
+        heap.push_or_update(len, |_| 2).unwrap();
         assert_eq!(heap.pop(), Some((len, 2)));
-        heap.push_or_update(len + 1, -3).unwrap();
+        heap.push_or_update(len + 1, |_| -3).unwrap();
         assert_eq!(heap.pop(), Some((2, 1)));
         assert_eq!(heap.pop(), Some((len + 1, -3)));
         assert_eq!(heap.pop(), Some((3, -5)));
@@ -522,15 +531,15 @@ mod tests {
         let mut heap = BoundedHeap::default();
         heap.increase_capacity_to(len).unwrap();
         for (k, w) in test_weights.iter().copied().enumerate() {
-            heap.push_or_update(k, w).unwrap();
+            heap.push_or_update(k, |_| w).unwrap();
         }
         assert_eq!(heap.len(), len);
         assert_eq!(
-            heap.push_or_update(len, 40),
+            heap.push_or_update(len, |_| 40),
             Err(Error::Bounded(BoundedError::OutOfBoundsAccess))
         );
         heap.increase_capacity_to(len + 1).unwrap();
-        heap.push_or_update(len, 40).unwrap();
+        heap.push_or_update(len, |_| 40).unwrap();
         assert_eq!(heap.len(), len + 1);
         assert_eq!(heap.pop(), Some((len, 40)));
     }
