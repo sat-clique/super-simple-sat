@@ -21,19 +21,16 @@ impl<T> Default for BoundedStack<T> {
 }
 
 impl<T> BoundedStack<T> {
-    /// Increases the capacity of the bounded stack to the new capacity.
+    /// Resizes the capacity of the bounded stack.
     ///
-    /// # Errors
+    /// # Note
     ///
-    /// If the new capacity is less than the current capacity.
-    pub fn increase_capacity_to(&mut self, new_cap: usize) -> Result<(), Error> {
-        if self.capacity() > new_cap {
-            return Err(Error::InvalidSizeIncrement)
-        }
+    /// A capacity of N means that the bounded stack may use indices up to N-1
+    /// and will bail out errors if used with higher indices.
+    pub fn resize_capacity(&mut self, new_cap: usize) {
         let additional = new_cap - self.capacity();
         self.stack.reserve(additional);
         self.capacity += additional;
-        Ok(())
     }
 
     /// Returns the length of the bounded stack.

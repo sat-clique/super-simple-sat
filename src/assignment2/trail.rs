@@ -8,7 +8,6 @@ use crate::{
         Index,
     },
     Literal,
-    VarAssignment,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -102,8 +101,7 @@ impl Trail {
     pub fn register_new_variables(&mut self, new_variables: usize) {
         let total_variables = self.len_variables() + new_variables;
         self.decisions_and_implications
-            .increase_capacity_to(total_variables)
-            .expect("encountered unexpected invalid size increment");
+            .resize_capacity(total_variables);
     }
 
     /// Pushes a new decision level and returns it.
