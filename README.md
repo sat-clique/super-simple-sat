@@ -4,7 +4,13 @@ A super simple SAT solver implementation.
 
 ## Credits
 
-Heavily inspired by [PyCSCL's trivial SAT solver][trivial-sat-solver].
+Heavily inspired by
+
+- [PyCSCL's trivial SAT solver][trivial-sat-solver] (initial draft)
+- [JamSAT solver][jamsat-solver]
+- [Candy solver][candy-solver]
+
+Thanks to their authors for the inspiration!
 
 ## Usage
 
@@ -65,3 +71,5 @@ additional terms or conditions.
 [license-apache-badge]: https://img.shields.io/badge/license-APACHE-orange.svg
 
 [trivial-sat-solver]: https://github.com/fkutzner/PyCSCL/blob/master/cscl_tests/testutils/trivial_sat_solver.py
+[jamsat-solver]: https://github.com/fkutzner/jamsat
+[candy-solver]: https://github.com/Udopia/candy-kingdom
