@@ -282,7 +282,7 @@ fn test_3sat_v100_c430_sat() {
         assert_eq!(
             result.as_ref().map(|res| res.is_sat()),
             Ok(true),
-            "failed at unsat uf100-430/{}",
+            "failed at sat 3-sat with 100 variables and 430 clauses ({})",
             n
         );
     }
@@ -298,7 +298,9 @@ fn test_3sat_v100_c430_unsat() {
         assert_eq!(
             solver.solve(vec![]).map(|res| res.is_sat()),
             Ok(false),
-            "failed at unsat uf100-430/{}",
+            "failed at unsat 3-sat with 100 variables and 430 clauses ({})",
+            n
+        );
             n
         );
     }
