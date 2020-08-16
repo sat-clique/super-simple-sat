@@ -159,8 +159,8 @@ impl WatchList {
                     }
                 },
             );
-        for deferred in self.deferred_inserts.drain(..) {
-            self.watchers
+        for deferred in deferred_inserts.drain(..) {
+            watchers
                 .get_mut(deferred.literal.variable())
                 .expect("encountered unexpected invalid variable")
                 .register_for_lit(deferred.literal, deferred.watched_by);
