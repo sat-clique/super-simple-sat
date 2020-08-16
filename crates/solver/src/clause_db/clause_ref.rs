@@ -78,8 +78,6 @@ pub struct ClauseRefMut<'a> {
 /// Result returned from clause local propagation.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum PropagationResult {
-    /// The clause is already satisfied under the current assignment.
-    AlreadySatisfied,
     /// The clause chose a new watched literal.
     NewWatchedLiteral {
         new_watched: Literal,
@@ -111,13 +109,6 @@ impl<'a> ClauseRefMut<'a> {
         // Make sure the false literal is in the second [1] position.
         if self.literals[0] == !propagated_lit {
             self.literals.swap(0, 1);
-        }
-        // If 0-th watch is true, then clause is already satisfied.
-        if assignment
-            .is_satisfied(self.literals[0])
-            .unwrap_or_else(|| false)
-        {
-            return PropagationResult::AlreadySatisfied
         }
         // Look for new literal to watch:
         for i in 2..self.literals.len() {
