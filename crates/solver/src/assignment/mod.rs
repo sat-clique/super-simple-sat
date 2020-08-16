@@ -195,7 +195,6 @@ impl VariableAssignment {
 /// - Propagation queue
 #[derive(Debug, Default, Clone)]
 pub struct Assignment {
-    num_variables: usize,
     trail: Trail,
     assignments: VariableAssignment,
     watchers: WatchList,
@@ -219,21 +218,6 @@ impl Assignment {
         &self.assignments
     }
 
-    /// Returns the current number of variables.
-    fn len_variables(&self) -> usize {
-        self.num_variables
-    }
-
-    /// Returns the number of currently assigned variables.
-    fn assigned_variables(&self) -> usize {
-        self.assignments.len_assigned()
-    }
-
-    /// Returns `true` if the assignment is complete.
-    fn is_complete(&self) -> bool {
-        self.assignments.is_complete()
-    }
-
     /// Registers the given number of additional variables.
     ///
     /// # Panics
@@ -243,7 +227,6 @@ impl Assignment {
         self.trail.register_new_variables(new_variables);
         self.assignments.register_new_variables(new_variables);
         self.watchers.register_new_variables(new_variables);
-        self.num_variables += new_variables;
     }
 
     /// Resets the assignment to the given decision level.
