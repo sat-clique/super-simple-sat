@@ -18,21 +18,25 @@ struct HeapPosition(NonZeroUsize);
 
 impl HeapPosition {
     /// Returns the root heap position.
+    #[inline]
     pub fn root() -> Self {
         Self::from_index(0)
     }
 
     /// Returns the heap position of the left child in relation to self.
+    #[inline]
     pub fn left_child(self) -> Self {
         Self::from_index(self.into_index() * 2 + 1)
     }
 
     /// Returns the heap position of the right child in relation to self.
+    #[inline]
     pub fn right_child(self) -> Self {
         Self::from_index(self.into_index() * 2 + 2)
     }
 
     /// Returns `true` if the heap position refers to the root, e.g. maximum element.
+    #[inline]
     fn is_root(self) -> bool {
         self.into_index() == 0
     }
@@ -40,6 +44,7 @@ impl HeapPosition {
     /// Returns the heap position of the parent in relation to self.
     ///
     /// Returns `None` if self is the root.
+    #[inline]
     pub fn parent(self) -> Option<Self> {
         if self.is_root() {
             return None
@@ -49,6 +54,7 @@ impl HeapPosition {
 }
 
 impl Index for HeapPosition {
+    #[inline]
     fn from_index(index: usize) -> Self {
         Self(
             NonZeroUsize::new(index.wrapping_add(1))
@@ -56,6 +62,7 @@ impl Index for HeapPosition {
         )
     }
 
+    #[inline]
     fn into_index(self) -> usize {
         self.0.get().wrapping_sub(1)
     }

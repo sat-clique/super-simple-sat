@@ -36,6 +36,7 @@ impl<K, V> BoundedMap<K, V> {
     ///
     /// A capacity of N means that the bounded map may use indices up to N-1
     /// and will bail out errors if used with higher indices.
+    #[inline]
     pub fn resize_capacity(&mut self, new_len: usize) {
         self.slots.resize_with(new_len, Default::default);
     }
@@ -164,11 +165,13 @@ where
     }
 
     /// Returns an iterator yielding shared references to the key and value pairs.
+    #[inline]
     pub fn iter(&self) -> Iter<K, V> {
         Iter::new(self)
     }
 
     /// Returns an iterator yielding exclusive references to the key and value pairs.
+    #[inline]
     pub fn iter_mut(&mut self) -> IterMut<K, V> {
         IterMut::new(self)
     }
@@ -181,6 +184,7 @@ where
     type Item = (K, &'a V);
     type IntoIter = Iter<'a, K, V>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -193,6 +197,7 @@ where
     type Item = (K, &'a mut V);
     type IntoIter = IterMut<'a, K, V>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
     }
@@ -218,6 +223,7 @@ where
 {
     type Item = (K, &'a V);
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         'find: loop {
             match self.iter.next() {
@@ -249,6 +255,7 @@ where
 {
     type Item = (K, &'a mut V);
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         'find: loop {
             match self.iter.next() {

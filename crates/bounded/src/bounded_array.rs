@@ -99,6 +99,7 @@ where
     /// # Errors
     ///
     /// If any of the given indices is out of bounds for the bounded array.
+    #[inline]
     pub fn swap(&mut self, lhs: Idx, rhs: Idx) -> Result<(), OutOfBoundsAccess> {
         let lhs = self.ensure_valid_index(lhs)?;
         let rhs = self.ensure_valid_index(rhs)?;
@@ -147,6 +148,7 @@ impl<Idx, T> BoundedArray<Idx, T> {
     /// Truncates the bounded array if the new length is less than the current.
     /// Fills all additional array entries with values evaluated by the given
     /// closure.
+    #[inline]
     pub fn resize_with<F>(&mut self, new_len: usize, placeholder: F)
     where
         F: FnMut() -> T,
@@ -159,6 +161,7 @@ impl<'a, Idx, T> IntoIterator for &'a BoundedArray<Idx, T> {
     type Item = &'a T;
     type IntoIter = core::slice::Iter<'a, T>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -168,6 +171,7 @@ impl<'a, Idx, T> IntoIterator for &'a mut BoundedArray<Idx, T> {
     type Item = &'a mut T;
     type IntoIter = core::slice::IterMut<'a, T>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
     }

@@ -28,6 +28,7 @@ impl<T> BoundedStack<T> {
     ///
     /// A capacity of N means that the bounded stack may use indices up to N-1
     /// and will bail out errors if used with higher indices.
+    #[inline]
     pub fn resize_capacity(&mut self, new_cap: usize) {
         let additional = new_cap - self.capacity();
         self.stack.reserve(additional);
@@ -115,11 +116,13 @@ impl<T> BoundedStack<T> {
     }
 
     /// Returns an iterator yielding shared references to the values of the bounded stack.
+    #[inline]
     pub fn iter(&self) -> slice::Iter<T> {
         self.stack.iter()
     }
 
     /// Returns an iterator yielding exclusive references to the values of the bounded stack.
+    #[inline]
     pub fn iter_mut(&mut self) -> slice::IterMut<T> {
         self.stack.iter_mut()
     }
@@ -155,6 +158,7 @@ impl<'a, T> IntoIterator for &'a BoundedStack<T> {
     type Item = &'a T;
     type IntoIter = slice::Iter<'a, T>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter()
     }
@@ -164,6 +168,7 @@ impl<'a, T> IntoIterator for &'a mut BoundedStack<T> {
     type Item = &'a mut T;
     type IntoIter = slice::IterMut<'a, T>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         self.iter_mut()
     }
