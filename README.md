@@ -6,11 +6,14 @@ A super simple SAT solver implementation.
 
 Heavily inspired by
 
-- [PyCSCL's trivial SAT solver][trivial-sat-solver] (initial draft)
-- [JamSAT solver][jamsat-solver]
-- [Candy solver][candy-solver]
+- [PyCSCL's trivial SAT solver][trivial-sat-solver] and [JamSAT solver][jamsat-solver]
+  by Felix Kutzner
+- [Candy solver][candy-solver] by Markus Iser (udopia)
 
 Thanks to their authors for the inspiration!
+
+Also thanks to Holger H. Hoos for providing many useful `.cnf`
+problems for benchmarks and tests [here][holger-h-hoos-benchmarks].
 
 ## Usage
 
@@ -73,3 +76,4 @@ additional terms or conditions.
 [trivial-sat-solver]: https://github.com/fkutzner/PyCSCL/blob/master/cscl_tests/testutils/trivial_sat_solver.py
 [jamsat-solver]: https://github.com/fkutzner/jamsat
 [candy-solver]: https://github.com/Udopia/candy-kingdom
+[holger-h-hoos-benchmarks]: https://www.cs.ubc.ca/~hoos/SATLIB/benchm.html
