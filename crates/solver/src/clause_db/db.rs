@@ -18,6 +18,7 @@ pub struct ClauseId(NonZeroU32);
 
 impl Index for ClauseId {
     /// Creates a new clause identifier from the given index.
+    #[inline]
     fn from_index(id: usize) -> Self {
         Self(
             NonZeroU32::new((id as u32).wrapping_add(1))
@@ -26,12 +27,14 @@ impl Index for ClauseId {
     }
 
     /// Returns the index of the clause identifier.
+    #[inline]
     fn into_index(self) -> usize {
         self.0.get().wrapping_sub(1) as usize
     }
 }
 
 #[derive(Debug, Copy, Clone)]
+#[repr(transparent)]
 pub struct LiteralsEnd(usize);
 
 impl LiteralsEnd {
