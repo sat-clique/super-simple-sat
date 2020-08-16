@@ -24,7 +24,6 @@ use crate::{
     clause_db::ClauseDb,
     decider::{
         Decider,
-        InformDecider,
     },
 };
 pub use crate::{

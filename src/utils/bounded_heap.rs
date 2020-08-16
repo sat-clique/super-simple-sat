@@ -8,6 +8,10 @@ use core::{
     num::NonZeroUsize,
 };
 
+/// Internal index into the heap structure of the bounded heap.
+///
+/// This is never used publicly and provides space optimizations to be used
+/// compactly inside an `Option`.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 struct HeapPosition(NonZeroUsize);

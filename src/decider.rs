@@ -77,9 +77,9 @@ impl Decider {
     ///
     /// If too many variables have been registered in total.
     pub fn register_new_variables(&mut self, new_variables: usize) {
-        let total_variables = self.len_variables + new_variables;
+        let total_variables = self.len_variables() + new_variables;
         self.priorities.resize_capacity(total_variables);
-        for i in self.len_variables..total_variables {
+        for i in self.len_variables()..total_variables {
             let variable =
                 Variable::from_index(i).expect("unexpected variable index out of bounds");
             self.priorities
