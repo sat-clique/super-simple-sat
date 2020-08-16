@@ -301,6 +301,37 @@ fn test_3sat_v100_c430_unsat() {
             "failed at unsat 3-sat with 100 variables and 430 clauses ({})",
             n
         );
+    }
+}
+
+#[test]
+fn test_3sat_v150_c645_sat() {
+    for (n, input) in collect_tests_in_path("cnf/uf150-645/sat/")
+        .into_iter()
+        .enumerate()
+    {
+        let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
+        let result = solver.solve(vec![]);
+        assert_eq!(
+            result.as_ref().map(|res| res.is_sat()),
+            Ok(true),
+            "failed at sat 3-sat with 150 variables and 645 clauses ({})",
+            n
+        );
+    }
+}
+
+#[test]
+fn test_3sat_v150_c645_unsat() {
+    for (n, input) in collect_tests_in_path("cnf/uf150-645/unsat/")
+        .into_iter()
+        .enumerate()
+    {
+        let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
+        assert_eq!(
+            solver.solve(vec![]).map(|res| res.is_sat()),
+            Ok(false),
+            "failed at unsat 3-sat with 150 variables and 645 clauses ({})",
             n
         );
     }
