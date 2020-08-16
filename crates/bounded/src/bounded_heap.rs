@@ -7,7 +7,6 @@ use core::{
     cmp::Ordering,
     num::NonZeroUsize,
 };
-use alloc::vec::Vec;
 
 /// Internal index into the heap structure of the bounded heap.
 ///
@@ -509,6 +508,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use alloc::vec::Vec;
 
     #[test]
     fn empty_heap_is_marked_as_empty() {
