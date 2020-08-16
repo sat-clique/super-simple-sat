@@ -35,31 +35,37 @@ impl<T> BoundedStack<T> {
     }
 
     /// Returns the length of the bounded stack.
+    #[inline]
     pub fn len(&self) -> usize {
         self.stack.len()
     }
 
     /// Returns the capacity of the bounded stack.
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.capacity
     }
 
     /// Returns `true` if the bounded stack is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// Returns `true` if the bounded stack is full.
+    #[inline]
     pub fn is_full(&self) -> bool {
         self.len() == self.capacity()
     }
 
     /// Returns a shared reference to the last value of the stack if any.
+    #[inline]
     pub fn last(&self) -> Option<&T> {
         self.stack.last()
     }
 
     /// Returns an exclusive reference to the last value of the stack if any.
+    #[inline]
     pub fn last_mut(&mut self) -> Option<&mut T> {
         self.stack.last_mut()
     }
@@ -69,6 +75,7 @@ impl<T> BoundedStack<T> {
     /// # Errors
     ///
     /// If the bounded stack is full already.
+    #[inline]
     pub fn push(&mut self, new_value: T) -> Result<(), OutOfBoundsAccess> {
         if self.len() == self.capacity() {
             return Err(OutOfBoundsAccess)
@@ -78,6 +85,7 @@ impl<T> BoundedStack<T> {
     }
 
     /// Pops the last value from the bounded stack if any.
+    #[inline]
     pub fn pop(&mut self) -> Option<T> {
         self.stack.pop()
     }
@@ -87,6 +95,7 @@ impl<T> BoundedStack<T> {
     /// # Panics
     ///
     /// If the new length is larger than the current length.
+    #[inline]
     pub fn pop_to<F>(&mut self, new_len: usize, mut observer: F)
     where
         F: FnMut(&T),
@@ -128,12 +137,14 @@ impl<T> BoundedStack<T> {
     }
 
     /// Returns a shared reference to the element at the given index.
+    #[inline]
     pub fn get(&self, index: usize) -> Result<&T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| &self.stack[index])
     }
 
     /// Returns an exclusive reference to the element at the given index.
+    #[inline]
     pub fn get_mut(&mut self, index: usize) -> Result<&mut T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| &mut self.stack[index])
@@ -166,6 +177,7 @@ impl<T> ops::Index<usize> for BoundedStack<T> {
     /// # Panics
     ///
     /// Returns an error if the index is out of bounds.
+    #[inline]
     fn index(&self, index: usize) -> &Self::Output {
         self.get(index).expect("encountered out of bounds index")
     }
@@ -177,6 +189,7 @@ impl<T> ops::IndexMut<usize> for BoundedStack<T> {
     /// # Panics
     ///
     /// Returns an error if the index is out of bounds.
+    #[inline]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.get_mut(index)
             .expect("encountered out of bounds index")

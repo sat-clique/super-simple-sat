@@ -11,10 +11,12 @@ pub trait Bool {
 }
 
 impl Bool for bool {
+    #[inline(always)]
     fn from_bool(value: bool) -> Self {
         value
     }
 
+    #[inline(always)]
     fn into_bool(self) -> bool {
         self
     }
@@ -120,6 +122,7 @@ impl<Idx, T> BoundedBitmap<Idx, T> {
         0x01 << ((CHUNK_LEN - 1) - index.into_index())
     }
 
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
@@ -147,6 +150,7 @@ where
         )
     }
 
+    #[inline]
     pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
         let (chunk_idx, bit_idx) = Self::split_index(index);
         let chunk = self.chunks.get(chunk_idx)?;
@@ -154,6 +158,7 @@ where
         Ok(T::from_bool(value != 0))
     }
 
+    #[inline]
     pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
         let new_value = new_value.into_bool();
         let (chunk_idx, bit_idx) = Self::split_index(index);

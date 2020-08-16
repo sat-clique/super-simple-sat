@@ -41,21 +41,25 @@ impl<K, V> BoundedMap<K, V> {
     }
 
     /// Returns the current length of the bounded map.
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
 
     /// Returns `true` if the bounded map is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// Returns `true` if the bounded map is full.
+    #[inline]
     pub fn is_full(&self) -> bool {
         self.len() == self.capacity()
     }
 
     /// Returns the total capacity of the bounded map.
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.slots.len()
     }
@@ -84,6 +88,7 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
+    #[inline]
     pub fn insert(
         &mut self,
         index: K,
@@ -101,6 +106,7 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
+    #[inline]
     pub fn take(&mut self, index: K) -> Result<Option<V>, OutOfBoundsAccess> {
         let old_value = self.slots.get_mut(index)?.take();
         if old_value.is_some() {
@@ -142,6 +148,7 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
+    #[inline]
     pub fn get(&self, index: K) -> Result<Option<&V>, OutOfBoundsAccess> {
         self.get_impl(index).map(Into::into)
     }
@@ -151,6 +158,7 @@ where
     /// # Error
     ///
     /// Returns an error if the key's index is out of bounds.
+    #[inline]
     pub fn get_mut(&mut self, index: K) -> Result<Option<&mut V>, OutOfBoundsAccess> {
         self.get_mut_impl(index).map(Into::into)
     }
@@ -263,6 +271,7 @@ where
     /// # Panics
     ///
     /// Returns an error if the key's index is out of bounds.
+    #[inline]
     fn index(&self, index: K) -> &Self::Output {
         self.get_impl(index)
             .expect("encountered out of bounds index")
@@ -278,6 +287,7 @@ where
     /// # Panics
     ///
     /// Returns an error if the key's index is out of bounds.
+    #[inline]
     fn index_mut(&mut self, index: K) -> &mut Self::Output {
         self.get_mut_impl(index)
             .expect("encountered out of bounds index")

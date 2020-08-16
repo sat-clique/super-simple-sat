@@ -101,16 +101,19 @@ where
     W: Default + Ord + Copy,
 {
     /// Returns the number of elements stored in the bounded heap.
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
 
     /// Returns `true` if the bounded heap is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// Returns the capacity of the bounded heap.
+    #[inline]
     pub fn capacity(&self) -> usize {
         self.priorities.len()
     }
@@ -128,6 +131,7 @@ where
     }
 
     /// Returns `true` if the element associated with the given key is contained.
+    #[inline]
     pub fn contains(&self, key: K) -> Result<bool, OutOfBoundsAccess> {
         Ok(self.positions.get(key)?.is_some())
     }

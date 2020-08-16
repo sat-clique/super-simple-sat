@@ -38,6 +38,7 @@ impl<Idx, T> FromIterator<T> for BoundedArray<Idx, T> {
 
 impl<Idx, T> BoundedArray<Idx, T> {
     /// Returns the current length of the bounded array.
+    #[inline]
     pub fn len(&self) -> usize {
         self.values.len()
     }
@@ -65,6 +66,7 @@ where
     /// # Errors
     ///
     /// If the given index is out of bounds for the bounded array.
+    #[inline]
     pub fn update(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| self.values[index] = new_value)
@@ -75,6 +77,7 @@ where
     /// # Errors
     ///
     /// If the given index is out of bounds for the bounded array.
+    #[inline]
     pub fn get(&self, index: Idx) -> Result<&T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| &self.values[index])
@@ -85,6 +88,7 @@ where
     /// # Errors
     ///
     /// If the given index is out of bounds for the bounded array.
+    #[inline]
     pub fn get_mut(&mut self, index: Idx) -> Result<&mut T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)
             .map(move |index| &mut self.values[index])
@@ -105,11 +109,13 @@ where
 
 impl<Idx, T> BoundedArray<Idx, T> {
     /// Returns an iterator yielding shared references over the array values.
+    #[inline]
     pub fn iter(&self) -> core::slice::Iter<T> {
         self.values.iter()
     }
 
     /// Returns an iterator yielding exclusive references over the array values.
+    #[inline]
     pub fn iter_mut(&mut self) -> core::slice::IterMut<T> {
         self.values.iter_mut()
     }
@@ -178,6 +184,7 @@ where
     /// # Panics
     ///
     /// Returns an error if the index is out of bounds.
+    #[inline]
     fn index(&self, index: Idx) -> &Self::Output {
         self.get(index).expect("encountered out of bounds index")
     }
@@ -192,6 +199,7 @@ where
     /// # Panics
     ///
     /// Returns an error if the index is out of bounds.
+    #[inline]
     fn index_mut(&mut self, index: Idx) -> &mut Self::Output {
         self.get_mut(index)
             .expect("encountered out of bounds index")
