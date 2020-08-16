@@ -1,8 +1,8 @@
 use crate::{
     assignment::VariableAssignment,
-    utils::BoundedHeap,
     Variable,
 };
+use bounded::BoundedHeap;
 use core::ops::Add;
 
 /// The priority of a variable used for branching decisions.

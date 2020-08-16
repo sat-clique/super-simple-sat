@@ -2,12 +2,10 @@ use super::{
     AssignmentError,
     VariableAssignment,
 };
-use crate::{
-    utils::{
-        BoundedStack,
-        Index,
-    },
-    Literal,
+use crate::Literal;
+use bounded::{
+    BoundedStack,
+    Index,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]

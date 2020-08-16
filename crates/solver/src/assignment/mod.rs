@@ -14,13 +14,13 @@ use self::{
     },
     watch_list::WatchList,
 };
+use bounded::{
+    bounded_map,
+    BoundedMap,
+};
 use crate::{
     clause_db::ClauseRef,
     decider::InformDecider,
-    utils::{
-        bounded_map,
-        BoundedMap,
-    },
     Bool,
     ClauseDb,
     Literal,

@@ -1,3 +1,7 @@
+#![no_std]
+
+extern crate alloc;
+
 pub mod bounded_array;
 pub mod bounded_bitmap;
 pub mod bounded_heap;

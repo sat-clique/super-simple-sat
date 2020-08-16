@@ -9,12 +9,12 @@ use crate::{
         ClauseId,
         PropagationResult as ClausePropagationResult,
     },
-    utils::BoundedArray,
     ClauseDb,
     Literal,
     Sign,
     Variable,
 };
+use bounded::BoundedArray;
 
 /// The watchers of a single variable.
 ///

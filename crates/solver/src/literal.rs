@@ -1,4 +1,4 @@
-use crate::utils::{
+use bounded::{
     Bool,
     Index,
 };

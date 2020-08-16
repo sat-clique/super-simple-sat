@@ -1,5 +1,5 @@
 [workspace]
 members = [
-    # "crates/bounded",
+    "crates/bounded",
     "crates/solver",
 ]

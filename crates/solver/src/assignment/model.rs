@@ -3,11 +3,11 @@ pub use super::{
     AssignmentError,
     VariableAssignment,
 };
+use bounded::{
+    bounded_bitmap,
+    BoundedBitmap,
+};
 use crate::{
-    utils::{
-        bounded_bitmap,
-        BoundedBitmap,
-    },
     Bool,
     Literal,
     Sign,

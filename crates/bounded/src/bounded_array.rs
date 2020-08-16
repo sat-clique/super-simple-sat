@@ -7,6 +7,7 @@ use core::{
     marker::PhantomData,
     ops,
 };
+use alloc::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoundedArray<Idx, T> {

@@ -1,0 +1,12 @@
+[package]
+name = "bounded_collections"
+version = "0.1.0"
+authors = ["Robin Freyler <robin.freyler@gmail.com>"]
+edition = "2018"
+license = "MIT/Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/robbepop/s3-sat-solver"
+documentation = "https://docs.rs/s3-sat-solver"
+keywords = ["data structures"]
+description = """Data structures for bounded access and finite indices."""
+categories = ["data structures", "science"]

@@ -7,7 +7,6 @@ mod clause_db;
 mod decider;
 mod literal;
 mod literal_chunk;
-mod utils;
 
 #[cfg(test)]
 mod tests;
@@ -37,8 +36,8 @@ pub use crate::{
         LiteralChunk,
         LiteralChunkIter,
     },
-    utils::Bool,
 };
+use bounded::Bool;
 use cnf_parser::{
     Error as CnfError,
     Input,
@@ -48,7 +47,7 @@ use cnf_parser::{
 pub enum Error {
     Other(&'static str),
     Assignment(AssignmentError),
-    Bounded(utils::OutOfBoundsAccess),
+    Bounded(bounded::OutOfBoundsAccess),
     Conflict,
     InvalidLiteralChunkRange,
     InvalidLiteralChunkStart,
@@ -60,8 +59,8 @@ pub enum Error {
     InvalidSizeIncrement,
 }
 
-impl From<utils::OutOfBoundsAccess> for Error {
-    fn from(err: utils::OutOfBoundsAccess) -> Self {
+impl From<bounded::OutOfBoundsAccess> for Error {
+    fn from(err: bounded::OutOfBoundsAccess) -> Self {
         Self::Bounded(err)
     }
 }

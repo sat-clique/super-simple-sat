@@ -12,6 +12,7 @@ description = """A super simple implementation of a SAT solver."""
 categories = ["algorithms", "science"]
 
 [dependencies]
+bounded = { version = "0.1.0", path = "../bounded/", package = "bounded_collections" }
 cnf-parser = "0.1"
 
 [dev-dependencies]

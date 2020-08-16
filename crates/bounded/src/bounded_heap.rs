@@ -1,5 +1,5 @@
 use super::OutOfBoundsAccess;
-use crate::utils::{
+use crate::{
     BoundedArray,
     Index,
 };
@@ -7,6 +7,7 @@ use core::{
     cmp::Ordering,
     num::NonZeroUsize,
 };
+use alloc::vec::Vec;
 
 /// Internal index into the heap structure of the bounded heap.
 ///
