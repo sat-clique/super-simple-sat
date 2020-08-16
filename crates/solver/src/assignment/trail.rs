@@ -2,35 +2,42 @@ use super::{
     AssignmentError,
     VariableAssignment,
 };
-use crate::Literal;
+use crate::{
+    Literal,
+    Variable,
+};
 use bounded::{
     BoundedStack,
     Index,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct TrailLimit(usize);
+#[repr(transparent)]
+pub struct TrailLimit(u32);
 
 impl Index for TrailLimit {
     fn from_index(index: usize) -> Self {
-        Self(index)
+        assert!(index <= Variable::MAX_LEN);
+        Self(index as u32)
     }
 
     fn into_index(self) -> usize {
-        self.0
+        self.0 as usize
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct DecisionLevel(usize);
+#[repr(transparent)]
+pub struct DecisionLevel(u32);
 
 impl Index for DecisionLevel {
     fn from_index(index: usize) -> Self {
-        Self(index)
+        assert!(index <= Variable::MAX_LEN);
+        Self(index as u32)
     }
 
     fn into_index(self) -> usize {
-        self.0
+        self.0 as usize
     }
 }
 

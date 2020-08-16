@@ -127,6 +127,9 @@ impl From<Literal> for Variable {
 }
 
 impl Variable {
+    /// The maximum supported number of unique variables.
+    pub const MAX_LEN: usize = (u32::MAX - 1) as usize;
+
     /// Returns `true` if the given index is a valid variable index.
     #[inline]
     pub(crate) fn is_valid_index(index: usize) -> bool {
