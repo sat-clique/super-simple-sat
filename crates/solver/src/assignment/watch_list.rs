@@ -74,17 +74,14 @@ impl VariableWatchers {
     ///
     /// Returns a propagation result that either tells that the propagation
     /// yielded a consistent assignemnt or a conflict.
-    fn propagate<F>(
+    fn propagate(
         &mut self,
         literal: Literal,
         clause_db: &mut ClauseDb,
         assignment: &mut VariableAssignment,
         queue: &mut PropagationEnqueuer,
-        mut for_watcher: F,
-    ) -> PropagationResult
-    where
-        F: FnMut(ClauseId, ClausePropagationResult),
-    {
+        mut watcher_enqueue: EnqueueWatcher,
+    ) -> PropagationResult {
         let mut seen_conflict = false;
         let watchers = self.literal_watchers_mut(literal);
         watchers.retain(|&watcher| {
@@ -93,7 +90,7 @@ impl VariableWatchers {
                 return true
             }
             if let Some(true) = assignment.is_satisfied(watcher.blocker) {
-                // Do nothing if the blocker is already satisfied.
+                // Skip clause look-up if the blocker is already satisfied.
                 return true
             }
             let watcher = watcher.watcher;
@@ -101,16 +98,22 @@ impl VariableWatchers {
                 .resolve_mut(watcher)
                 .expect("encountered unexpected invalid clause ID")
                 .propagate(literal, &assignment);
-            if let ClausePropagationResult::UnitUnderAssignment(unit_literal) = result {
-                let enqueue_result = queue.push(unit_literal, assignment);
-                if let Err(AssignmentError::Conflict) = enqueue_result {
-                    seen_conflict = true;
+            match result {
+                ClausePropagationResult::UnitUnderAssignment(unit_literal) => {
+                    let enqueue_result = queue.push(unit_literal, assignment);
+                    if let Err(AssignmentError::Conflict) = enqueue_result {
+                        seen_conflict = true;
+                    }
+                    true
+                }
+                ClausePropagationResult::NewWatchedLiteral {
+                    new_watched,
+                    new_blocker,
+                } => {
+                    watcher_enqueue.enqueue(new_watched, new_blocker, watcher);
+                    false
                 }
             }
-            let remove_watcher =
-                matches!(result, ClausePropagationResult::NewWatchedLiteral { .. });
-            for_watcher(watcher, result);
-            !remove_watcher
         });
         match seen_conflict {
             true => PropagationResult::Conflict,
@@ -128,6 +131,27 @@ struct DeferredWatcherInsert {
     blocker: Literal,
     /// The clause that watches the literal.
     watched_by: ClauseId,
+}
+
+/// Wrapper around the deferred watcher insertions.
+struct EnqueueWatcher<'a> {
+    queue: &'a mut Vec<DeferredWatcherInsert>,
+}
+
+impl<'a> EnqueueWatcher<'a> {
+    /// Creates a new enqueue watcher for the given queue.
+    fn new(queue: &'a mut Vec<DeferredWatcherInsert>) -> Self {
+        Self { queue }
+    }
+
+    /// Enqueues another new watched literal insertion into the queue.
+    pub fn enqueue(&mut self, watched: Literal, blocker: Literal, watcher: ClauseId) {
+        self.queue.push(DeferredWatcherInsert {
+            watched,
+            blocker,
+            watched_by: watcher,
+        });
+    }
 }
 
 /// The watch list monitoring which clauses are watching which literals.
@@ -186,19 +210,7 @@ impl WatchList {
                 clause_db,
                 assignment,
                 &mut queue,
-                |watcher, result| {
-                    if let ClausePropagationResult::NewWatchedLiteral {
-                        new_watched,
-                        new_blocker,
-                    } = result
-                    {
-                        deferred_inserts.push(DeferredWatcherInsert {
-                            watched: new_watched,
-                            blocker: new_blocker,
-                            watched_by: watcher,
-                        });
-                    }
-                },
+                EnqueueWatcher::new(deferred_inserts),
             );
         for deferred in deferred_inserts.drain(..) {
             watchers
