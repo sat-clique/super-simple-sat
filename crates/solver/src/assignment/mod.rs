@@ -14,10 +14,6 @@ use self::{
     },
     watch_list::WatchList,
 };
-use bounded::{
-    bounded_map,
-    BoundedMap,
-};
 use crate::{
     clause_db::ClauseRef,
     decider::InformDecider,
@@ -27,6 +23,11 @@ use crate::{
     Sign,
     Variable,
 };
+use bounded::{
+    bounded_map,
+    BoundedMap,
+};
+use core::ops::Not;
 
 /// Errors that may be encountered when operating on the assignment.
 #[derive(Debug, PartialEq, Eq)]
@@ -139,10 +140,7 @@ impl VariableAssignment {
     pub fn is_satisfied(&self, literal: Literal) -> Option<bool> {
         self.get(literal.variable())
             .map(Sign::into_bool)
-            .map(|assignment| {
-                literal.is_positive() && assignment
-                    || literal.is_negative() && !assignment
-            })
+            .map(|assignment| literal.assignment().into_bool() == assignment)
     }
 
     /// Returns `true` if the given literal is conflicting with the current assignment.
@@ -153,7 +151,7 @@ impl VariableAssignment {
     ///
     /// If the variable is invalid and cannot be resolved.
     pub fn is_conflicting(&self, literal: Literal) -> Option<bool> {
-        self.is_satisfied(literal).map(|is_satisfied| !is_satisfied)
+        self.is_satisfied(literal).map(Not::not)
     }
 
     /// Updates the assignment of the variable.
