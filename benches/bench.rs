@@ -13,8 +13,8 @@ use super_simple_sat::Solver;
 
 criterion_group!(
     bench_solve,
-    bench_3sat_v100_c430_sat,
-    bench_3sat_v100_c430_unsat
+    bench_3sat_v150_c645_sat,
+    bench_3sat_v150_c645_unsat,
 );
 criterion_main!(bench_solve);
 
@@ -57,10 +57,10 @@ where
         .collect::<Vec<_>>()
 }
 
-fn bench_3sat_v100_c430_sat(c: &mut Criterion) {
-    let mut g = c.benchmark_group("3sat_v100_c430 (sat)");
+fn bench_3sat_v150_c645_sat(c: &mut Criterion) {
+    let mut g = c.benchmark_group("3sat_v150_c645 (sat)");
     g.sample_size(10);
-    for (n, input) in collect_benchmarks_in_path("cnf/uf100-430/sat/")
+    for (n, input) in collect_benchmarks_in_path("cnf/uf150-645/sat/")
         .into_iter()
         .enumerate()
     {
@@ -78,10 +78,10 @@ fn bench_3sat_v100_c430_sat(c: &mut Criterion) {
     }
 }
 
-fn bench_3sat_v100_c430_unsat(c: &mut Criterion) {
-    let mut g = c.benchmark_group("3sat_v100_c430 (unsat)");
+fn bench_3sat_v150_c645_unsat(c: &mut Criterion) {
+    let mut g = c.benchmark_group("3sat_v150_c645 (unsat)");
     g.sample_size(10);
-    for (n, input) in collect_benchmarks_in_path("cnf/uf100-430/unsat/")
+    for (n, input) in collect_benchmarks_in_path("cnf/uf150-645/unsat/")
         .into_iter()
         .enumerate()
     {
