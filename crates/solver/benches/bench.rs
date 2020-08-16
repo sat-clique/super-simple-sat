@@ -60,7 +60,7 @@ where
 fn bench_3sat_v150_c645_sat(c: &mut Criterion) {
     let mut g = c.benchmark_group("3sat_v150_c645 (sat)");
     g.sample_size(10);
-    for (n, input) in collect_benchmarks_in_path("cnf/uf150-645/sat/")
+    for (n, input) in collect_benchmarks_in_path("../../cnf/uf150-645/sat/")
         .into_iter()
         .enumerate()
     {
@@ -81,7 +81,7 @@ fn bench_3sat_v150_c645_sat(c: &mut Criterion) {
 fn bench_3sat_v150_c645_unsat(c: &mut Criterion) {
     let mut g = c.benchmark_group("3sat_v150_c645 (unsat)");
     g.sample_size(10);
-    for (n, input) in collect_benchmarks_in_path("cnf/uf150-645/unsat/")
+    for (n, input) in collect_benchmarks_in_path("../../cnf/uf150-645/unsat/")
         .into_iter()
         .enumerate()
     {

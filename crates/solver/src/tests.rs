@@ -273,7 +273,7 @@ where
 
 #[test]
 fn test_3sat_v100_c430_sat() {
-    for (n, input) in collect_tests_in_path("cnf/uf100-430/sat/")
+    for (n, input) in collect_tests_in_path("../../cnf/uf100-430/sat/")
         .into_iter()
         .enumerate()
     {
@@ -290,7 +290,7 @@ fn test_3sat_v100_c430_sat() {
 
 #[test]
 fn test_3sat_v100_c430_unsat() {
-    for (n, input) in collect_tests_in_path("cnf/uf100-430/unsat/")
+    for (n, input) in collect_tests_in_path("../../cnf/uf100-430/unsat/")
         .into_iter()
         .enumerate()
     {
@@ -306,7 +306,7 @@ fn test_3sat_v100_c430_unsat() {
 
 #[test]
 fn test_3sat_v150_c645_sat() {
-    for (n, input) in collect_tests_in_path("cnf/uf150-645/sat/")
+    for (n, input) in collect_tests_in_path("../../cnf/uf150-645/sat/")
         .into_iter()
         .enumerate()
     {
@@ -323,7 +323,7 @@ fn test_3sat_v150_c645_sat() {
 
 #[test]
 fn test_3sat_v150_c645_unsat() {
-    for (n, input) in collect_tests_in_path("cnf/uf150-645/unsat/")
+    for (n, input) in collect_tests_in_path("../../cnf/uf150-645/unsat/")
         .into_iter()
         .enumerate()
     {
