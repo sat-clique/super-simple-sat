@@ -2,4 +2,5 @@
 members = [
     "crates/bounded",
     "crates/solver",
+    "crates/driver",
 ]
