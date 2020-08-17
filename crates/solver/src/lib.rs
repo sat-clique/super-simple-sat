@@ -37,6 +37,8 @@ pub use crate::{
         LiteralChunkIter,
     },
 };
+use core::fmt::Display;
+use core::fmt;
 use bounded::Bool;
 use cnf_parser::{
     Error as CnfError,
@@ -112,6 +114,12 @@ impl<'a> SolveResult<'a> {
 #[derive(Debug)]
 pub struct SatResult<'a> {
     model: &'a Model,
+}
+
+impl<'a> Display for SatResult<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.model.fmt(f)
+    }
 }
 
 impl<'a> SatResult<'a> {
