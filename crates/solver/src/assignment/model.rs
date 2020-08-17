@@ -53,11 +53,21 @@ pub struct Model {
 
 impl Display for Model {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Model (#vars = {})", self.len())?;
-        for (variable, assignment) in self {
-            let index = variable.into_index();
-            let assignment = assignment.into_bool().to_string();
-            writeln!(f, " - var({:3}) = {}", index, assignment)?;
+        if f.alternate() {
+            writeln!(f, "Model (#vars = {})", self.len())?;
+            for (variable, assignment) in self {
+                let index = variable.into_index();
+                let assignment = assignment.into_bool().to_string();
+                writeln!(f, " - var({:3}) = {}", index, assignment)?;
+            }
+        } else {
+            for (variable, assignment) in self {
+                if assignment == Sign::False {
+                    write!(f, "-")?;
+                }
+                write!(f, "{}", variable.into_index())?;
+                write!(f, " ")?;
+            }
         }
         Ok(())
     }

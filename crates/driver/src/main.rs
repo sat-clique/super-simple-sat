@@ -19,7 +19,7 @@ fn main() {
     let result = solver.solve(vec![]).expect("encountered errors during solving");
     match result {
         SolveResult::Sat(model) => {
-            println!("SAT model = {}", model);
+            println!("SAT\nmodel = {}", model);
         }
         SolveResult::Unsat => {
             println!("UNSAT");
