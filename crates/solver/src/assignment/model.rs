@@ -56,6 +56,7 @@ impl Display for Model {
         for (variable, assignment) in self {
             let index = variable.into_index() + 1;
             if f.alternate() {
+                writeln!(f, "model #var: {}", self.len())?;
                 let assignment = assignment.into_bool().to_string();
                 writeln!(f, " - var({:3}) = {}", index, assignment)?;
             } else {
