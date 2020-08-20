@@ -9,7 +9,7 @@ use std::{
     fs,
     path::Path,
 };
-use super_simple_sat::Solver;
+use s3sat_solver::Solver;
 
 criterion_group!(
     bench_solve,
