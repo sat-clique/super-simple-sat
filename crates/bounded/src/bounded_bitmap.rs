@@ -48,7 +48,7 @@ struct BitIndex {
 
 impl Index for BitIndex {
     fn from_index(index: usize) -> Self {
-        BitIndex {
+        Self {
             value: index % CHUNK_LEN,
         }
     }
@@ -118,13 +118,13 @@ impl<Idx, T> BoundedBitmap<Idx, T> {
         self.len = new_len;
     }
 
-    fn bit_index_to_mask(index: BitIndex) -> Chunk {
-        0x01 << ((CHUNK_LEN - 1) - index.into_index())
-    }
-
     #[inline]
     pub fn len(&self) -> usize {
         self.len
+    }
+
+    fn bit_index_to_mask(index: BitIndex) -> Chunk {
+        0x01 << ((CHUNK_LEN - 1) - index.into_index())
     }
 }
 
