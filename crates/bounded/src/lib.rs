@@ -7,6 +7,7 @@ pub mod bounded_bitmap;
 pub mod bounded_heap;
 pub mod bounded_map;
 pub mod bounded_stack;
+pub mod bounded_quadmap;
 
 pub use self::{
     bounded_array::BoundedArray,
@@ -17,6 +18,10 @@ pub use self::{
     bounded_heap::BoundedHeap,
     bounded_map::BoundedMap,
     bounded_stack::BoundedStack,
+    bounded_quadmap::{
+        BoundedQuadmap,
+        Quad,
+    },
 };
 
 /// Errors that may occure when operating on a bounded data structure.
