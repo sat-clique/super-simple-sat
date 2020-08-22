@@ -193,6 +193,9 @@ where
 
     #[inline]
     pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
+        if index.into_index() >= self.len() {
+            return Err(OutOfBoundsAccess)
+        }
         let (chunk_idx, quad_idx) = Self::split_index(index);
         let chunk = self.chunks.get(chunk_idx)?;
         let mask = Self::quad_index_to_mask(quad_idx);
@@ -204,6 +207,9 @@ where
 
     #[inline]
     pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
+        if index.into_index() >= self.len() {
+            return Err(OutOfBoundsAccess)
+        }
         let (chunk_idx, quad_idx) = Self::split_index(index);
         let chunk = self.chunks.get_mut(chunk_idx)?;
         // Empty bits before eventually writing the new bit pattern.
