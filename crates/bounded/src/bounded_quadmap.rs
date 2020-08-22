@@ -225,10 +225,68 @@ mod tests {
     use super::*;
 
     #[test]
+    fn default_works() {
+        let map = <BoundedQuadmap<usize, quad>>::default();
+        assert_eq!(map.len(), 0);
+        assert!(map.is_empty());
+    }
+
+    #[test]
+    fn with_len_works() {
+        let map = <BoundedQuadmap<usize, quad>>::with_len(10);
+        assert_eq!(map.len(), 10);
+        assert!(!map.is_empty());
+        for i in 0..10 {
+            assert_eq!(map.get(i), Ok(quad::B00));
+        }
+    }
+
+    #[test]
     fn set_works() {
         let mut map = <BoundedQuadmap<usize, quad>>::default();
         map.resize_to_len(10);
-        map.set(0, quad::B11).unwrap();
+        assert_eq!(map.get(0), Ok(quad::B00));
+        map.set(0, quad::B01).unwrap();
         assert_eq!(map.get(0), Ok(quad::B01));
+        map.set(0, quad::B10).unwrap();
+        assert_eq!(map.get(0), Ok(quad::B10));
+        map.set(0, quad::B11).unwrap();
+        assert_eq!(map.get(0), Ok(quad::B11));
+    }
+
+    #[test]
+    fn get_out_of_bounds_fails() {
+        let map = <BoundedQuadmap<usize, quad>>::with_len(3);
+        assert!(map.get(0).is_ok());
+        assert!(map.get(1).is_ok());
+        assert!(map.get(2).is_ok());
+        assert_eq!(map.get(3), Err(OutOfBoundsAccess));
+    }
+
+    #[test]
+    fn set_out_of_bounds_fails() {
+        let mut map = <BoundedQuadmap<usize, quad>>::with_len(3);
+        assert!(map.set(0, quad::B01).is_ok());
+        assert!(map.set(1, quad::B10).is_ok());
+        assert!(map.set(2, quad::B11).is_ok());
+        assert_eq!(map.set(3, quad::B11), Err(OutOfBoundsAccess));
+    }
+
+    #[test]
+    fn set_all_multiword_works() {
+        let len = 100;
+        let mut map = <BoundedQuadmap<usize, quad>>::with_len(len);
+        for i in 0..len {
+            assert_eq!(map.get(i), Ok(quad::B00));
+            let set_to = match i % 4 {
+                0 => quad::B00,
+                1 => quad::B01,
+                2 => quad::B10,
+                3 => quad::B11,
+                _ => unreachable!(),
+            };
+            map.set(i, set_to).unwrap();
+            assert_eq!(map.get(i), Ok(set_to));
+        }
     }
 }
