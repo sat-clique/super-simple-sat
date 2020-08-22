@@ -123,6 +123,11 @@ impl<Idx, T> BoundedBitmap<Idx, T> {
         self.len
     }
 
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     fn bit_index_to_mask(index: BitIndex) -> Chunk {
         0x01 << ((CHUNK_LEN - 1) - index.into_index())
     }
