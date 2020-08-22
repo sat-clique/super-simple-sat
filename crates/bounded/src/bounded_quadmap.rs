@@ -149,7 +149,8 @@ where
     }
 
     pub fn resize_to_len(&mut self, new_len: usize) {
-        self.chunks.resize_with(new_len, || Default::default());
+        self.chunks.resize_with(new_len, Default::default);
+        self.len = new_len;
     }
 }
 
@@ -162,8 +163,13 @@ where
         self.len
     }
 
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     fn quad_index_to_mask(index: QuadIndex) -> Chunk {
-        0x11 << ((CHUNK_LEN - BITS_PER_QUAD) - (BITS_PER_QUAD * index.into_index()))
+        (0b11 as Chunk) << (CHUNK_LEN - (BITS_PER_QUAD * (1 + index.into_index())))
     }
 }
 
@@ -174,7 +180,7 @@ where
 {
     fn quad_index_to_mask_using(index: QuadIndex, flag: T) -> Chunk {
         (u8::from(flag.into_quad()) as Chunk)
-            << ((CHUNK_LEN - BITS_PER_QUAD) - (BITS_PER_QUAD * index.into_index()))
+            << (CHUNK_LEN - (BITS_PER_QUAD * (1 + index.into_index())))
     }
 
     fn split_index(idx: Idx) -> (ChunkIndex, QuadIndex) {
@@ -189,7 +195,9 @@ where
     pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
         let (chunk_idx, quad_idx) = Self::split_index(index);
         let chunk = self.chunks.get(chunk_idx)?;
-        let value = chunk & Self::quad_index_to_mask(quad_idx);
+        let mask = Self::quad_index_to_mask(quad_idx);
+        let value =
+            (chunk & mask) >> (CHUNK_LEN - (BITS_PER_QUAD * (1 + quad_idx.into_index())));
         debug_assert!(value <= 0b11);
         Ok(T::from_quad(quad::from(value as u8)))
     }
@@ -199,6 +207,7 @@ where
         let (chunk_idx, quad_idx) = Self::split_index(index);
         let chunk = self.chunks.get_mut(chunk_idx)?;
         // Empty bits before eventually writing the new bit pattern.
+        // If there are bit access patterns that can combine these two steps we should do them instead.
         *chunk &= !Self::quad_index_to_mask(quad_idx);
         *chunk |= Self::quad_index_to_mask_using(quad_idx, new_value);
         Ok(())
