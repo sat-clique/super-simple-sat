@@ -36,16 +36,14 @@ pub trait Index: Copy + Clone {
     fn into_index(self) -> usize;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+impl Index for usize {
+    #[inline]
+    fn from_index(index: usize) -> Self {
+        index
+    }
 
-    impl Index for usize {
-        fn from_index(index: usize) -> Self {
-            index
-        }
-        fn into_index(self) -> usize {
-            self
-        }
+    #[inline]
+    fn into_index(self) -> usize {
+        self
     }
 }
