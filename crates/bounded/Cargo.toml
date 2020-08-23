@@ -10,3 +10,14 @@ documentation = "https://docs.rs/s3-sat-solver"
 keywords = ["data structures"]
 description = """Data structures for bounded access and finite indices."""
 categories = ["data structures", "science"]
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "bench"
+harness = false
+
+[profile.bench]
+lto = true
+codegen-units = 1
