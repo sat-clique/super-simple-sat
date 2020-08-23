@@ -112,7 +112,7 @@ impl<Idx, T> BoundedBitmap<Idx, T> {
         }
     }
 
-    pub fn resize_with(&mut self, new_len: usize) {
+    pub fn resize_to_len(&mut self, new_len: usize) {
         self.chunks
             .resize_with((new_len / CHUNK_LEN) + 1, Default::default);
         self.len = new_len;
@@ -262,7 +262,7 @@ mod tests {
     #[test]
     fn set_works() {
         let mut map = <BoundedBitmap<usize, bool>>::default();
-        map.resize_with(3);
+        map.resize_to_len(3);
         assert_eq!(map.get(0), Ok(false));
         map.set(0, true).unwrap();
         assert_eq!(map.get(0), Ok(true));
