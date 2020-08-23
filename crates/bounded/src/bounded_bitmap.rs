@@ -157,6 +157,9 @@ where
 
     #[inline]
     pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
+        if index.into_index() >= self.len() {
+            return Err(OutOfBoundsAccess)
+        }
         let (chunk_idx, bit_idx) = Self::split_index(index);
         let chunk = self.chunks.get(chunk_idx)?;
         let value = chunk & Self::bit_index_to_mask(bit_idx);
@@ -165,6 +168,9 @@ where
 
     #[inline]
     pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
+        if index.into_index() >= self.len() {
+            return Err(OutOfBoundsAccess)
+        }
         let new_value = new_value.into_bool();
         let (chunk_idx, bit_idx) = Self::split_index(index);
         let chunk = self.chunks.get_mut(chunk_idx)?;
