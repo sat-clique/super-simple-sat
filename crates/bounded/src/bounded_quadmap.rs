@@ -158,16 +158,24 @@ impl<Idx, T> BoundedQuadmap<Idx, T>
 where
     Idx: Index,
 {
+    /// Returns the number of quads that are stored in the bounded quad map.
     #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
 
+    /// Returns `true` if the bounded quad map is empty.
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Returns the bit mask for the quad at the given index.
+    ///
+    /// # Note
+    ///
+    /// The bit mask shadows all but the necessary bits for the quad to exact the quad
+    /// information that the given index refers to.
     fn quad_index_to_mask(index: QuadIndex) -> Chunk {
         (0b11 as Chunk) << (CHUNK_LEN - (BITS_PER_QUAD * (1 + index.into_index())))
     }
@@ -191,11 +199,19 @@ where
     Idx: Index,
     T: Quad,
 {
+    /// Returns the bit mask for the quad at the given index using another quad.
+    ///
+    /// # Note
+    ///
+    /// The bit mask shadows all but the necessary bits for the quad to exact the quad
+    /// information that the given index refers to.
+    /// The given quad's bit representation will be used at the bitmask for shadowing.
     fn quad_index_to_mask_using(index: QuadIndex, flag: T) -> Chunk {
         (u8::from(flag.into_quad()) as Chunk)
             << (CHUNK_LEN - (BITS_PER_QUAD * (1 + index.into_index())))
     }
 
+    /// Splits the given index into chunk and quad indices.
     fn split_index(idx: Idx) -> (ChunkIndex, QuadIndex) {
         let raw_index = idx.into_index();
         (
@@ -204,6 +220,11 @@ where
         )
     }
 
+    /// Returns the quad at the given index.
+    ///
+    /// # Errors
+    ///
+    /// If the given index is out of bounds for the bounded array.
     #[inline]
     pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)?;
@@ -216,6 +237,11 @@ where
         Ok(T::from_quad(quad::from(value as u8)))
     }
 
+    /// Sets the value of the quad at the given index.
+    ///
+    /// # Errors
+    ///
+    /// If the given index is out of bounds for the bounded array.
     #[inline]
     pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
         self.ensure_valid_index(index)?;
