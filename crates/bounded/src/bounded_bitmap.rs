@@ -29,12 +29,14 @@ struct ChunkIndex {
 }
 
 impl Index for ChunkIndex {
+    #[inline]
     fn from_index(index: usize) -> Self {
         ChunkIndex {
             value: index / CHUNK_LEN,
         }
     }
 
+    #[inline]
     fn into_index(self) -> usize {
         self.value
     }
@@ -47,12 +49,14 @@ struct BitIndex {
 }
 
 impl Index for BitIndex {
+    #[inline]
     fn from_index(index: usize) -> Self {
         Self {
             value: index % CHUNK_LEN,
         }
     }
 
+    #[inline]
     fn into_index(self) -> usize {
         self.value
     }
