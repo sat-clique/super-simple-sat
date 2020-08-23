@@ -172,7 +172,7 @@ where
         (0b11 as Chunk) << (CHUNK_LEN - (BITS_PER_QUAD * (1 + index.into_index())))
     }
 
-    /// Ensures that the given index is valid for the bounded array.
+    /// Ensures that the given index is valid for the bounded quad map.
     ///
     /// # Errors
     ///

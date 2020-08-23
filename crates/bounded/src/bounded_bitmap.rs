@@ -146,7 +146,7 @@ impl<Idx, T> BoundedBitmap<Idx, T>
 where
     Idx: Index,
 {
-    /// Ensures that the given index is valid for the bounded array.
+    /// Ensures that the given index is valid for the bounded bit map.
     ///
     /// # Errors
     ///
