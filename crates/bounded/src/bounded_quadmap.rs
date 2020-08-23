@@ -171,6 +171,19 @@ where
     fn quad_index_to_mask(index: QuadIndex) -> Chunk {
         (0b11 as Chunk) << (CHUNK_LEN - (BITS_PER_QUAD * (1 + index.into_index())))
     }
+
+    /// Ensures that the given index is valid for the bounded array.
+    ///
+    /// # Errors
+    ///
+    /// If the given index is out of bounds.
+    fn ensure_valid_index(&self, index: Idx) -> Result<usize, OutOfBoundsAccess> {
+        let index = index.into_index();
+        if index >= self.len() {
+            return Err(OutOfBoundsAccess)
+        }
+        Ok(index)
+    }
 }
 
 impl<Idx, T> BoundedQuadmap<Idx, T>
@@ -193,9 +206,7 @@ where
 
     #[inline]
     pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
-        if index.into_index() >= self.len() {
-            return Err(OutOfBoundsAccess)
-        }
+        self.ensure_valid_index(index)?;
         let (chunk_idx, quad_idx) = Self::split_index(index);
         let chunk = self.chunks.get(chunk_idx)?;
         let mask = Self::quad_index_to_mask(quad_idx);
@@ -207,9 +218,7 @@ where
 
     #[inline]
     pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
-        if index.into_index() >= self.len() {
-            return Err(OutOfBoundsAccess)
-        }
+        self.ensure_valid_index(index)?;
         let (chunk_idx, quad_idx) = Self::split_index(index);
         let chunk = self.chunks.get_mut(chunk_idx)?;
         // Empty bits before eventually writing the new bit pattern.
