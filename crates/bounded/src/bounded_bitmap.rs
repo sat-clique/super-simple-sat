@@ -188,7 +188,10 @@ where
     pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
         self.ensure_valid_index(index)?;
         let (chunk_idx, bit_idx) = Self::split_index(index);
-        let chunk = self.chunks.get(chunk_idx)?;
+        let chunk = self
+            .chunks
+            .get(chunk_idx)
+            .expect("unexpected out of bounds chunk");
         let value = chunk & Self::bit_index_to_mask(bit_idx);
         Ok(T::from_bool(value != 0))
     }
@@ -197,7 +200,10 @@ where
     pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
         self.ensure_valid_index(index)?;
         let (chunk_idx, bit_idx) = Self::split_index(index);
-        let chunk = self.chunks.get_mut(chunk_idx)?;
+        let chunk = self
+            .chunks
+            .get_mut(chunk_idx)
+            .expect("unexpected out of bounds chunk");
         // Empty bits before eventually writing the new bit pattern.
         // If there are bit access patterns that can combine these two steps we should do them instead.
         *chunk &= !Self::bit_index_to_mask(bit_idx);
