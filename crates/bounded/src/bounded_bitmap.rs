@@ -155,11 +155,22 @@ where
         )
     }
 
-    #[inline]
-    pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
-        if index.into_index() >= self.len() {
+    /// Ensures that the given index is valid for the bounded array.
+    ///
+    /// # Errors
+    ///
+    /// If the given index is out of bounds.
+    fn ensure_valid_index(&self, index: Idx) -> Result<usize, OutOfBoundsAccess> {
+        let index = index.into_index();
+        if index >= self.len() {
             return Err(OutOfBoundsAccess)
         }
+        Ok(index)
+    }
+
+    #[inline]
+    pub fn get(&self, index: Idx) -> Result<T, OutOfBoundsAccess> {
+        self.ensure_valid_index(index)?;
         let (chunk_idx, bit_idx) = Self::split_index(index);
         let chunk = self.chunks.get(chunk_idx)?;
         let value = chunk & Self::bit_index_to_mask(bit_idx);
@@ -168,9 +179,7 @@ where
 
     #[inline]
     pub fn set(&mut self, index: Idx, new_value: T) -> Result<(), OutOfBoundsAccess> {
-        if index.into_index() >= self.len() {
-            return Err(OutOfBoundsAccess)
-        }
+        self.ensure_valid_index(index)?;
         let new_value = new_value.into_bool();
         let (chunk_idx, bit_idx) = Self::split_index(index);
         let chunk = self.chunks.get_mut(chunk_idx)?;
