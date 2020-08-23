@@ -78,6 +78,7 @@ const BITS_PER_QUAD: usize = 2;
 /// The number of bits in a single chunk of the [`BoundedQuadmap`].
 const CHUNK_LEN: usize = core::mem::size_of::<Chunk>() * 8;
 
+/// An internal chunk index within the bounded quad map.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(transparent)]
 struct ChunkIndex {
@@ -98,6 +99,7 @@ impl Index for ChunkIndex {
     }
 }
 
+/// An internal quad index within a chunk of the bounded quad map.
 #[derive(Debug, Copy, Clone)]
 #[repr(transparent)]
 struct QuadIndex {
@@ -140,6 +142,10 @@ where
     Idx: Index,
     T: Default,
 {
+
+    /// Creates a new bounded quad map with the given length.
+    ///
+    /// All elements are initialized with their default values.
     pub fn with_len(len: usize) -> Self {
         Self {
             len,
@@ -148,6 +154,11 @@ where
         }
     }
 
+    /// Resizes the bounded quad map to the new length.
+    ///
+    /// Shrinks the size if the new length is lower than the current length.
+    /// If the length is increased all new elements are initialized with their
+    /// default values.
     pub fn resize_to_len(&mut self, new_len: usize) {
         self.chunks.resize_with(new_len, Default::default);
         self.len = new_len;
