@@ -67,8 +67,8 @@ const CHUNK_LEN: usize = core::mem::size_of::<Chunk>() * 8;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoundedBitmap<Idx, T> {
-    chunks: BoundedArray<ChunkIndex, Chunk>,
     len: usize,
+    chunks: BoundedArray<ChunkIndex, Chunk>,
     marker: PhantomData<fn() -> (Idx, T)>,
 }
 
