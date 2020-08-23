@@ -142,14 +142,19 @@ where
     Idx: Index,
     T: Default,
 {
+    /// Returns the number of required chunks for the given amount of required quads.
+    fn required_chunks(required_quads: usize) -> usize {
+        required_quads.saturating_sub(1) * BITS_PER_QUAD / CHUNK_LEN + 1
+    }
 
     /// Creates a new bounded quad map with the given length.
     ///
     /// All elements are initialized with their default values.
     pub fn with_len(len: usize) -> Self {
+        let len_chunks = Self::required_chunks(len);
         Self {
             len,
-            chunks: BoundedArray::with_len(len, |_| Default::default()),
+            chunks: BoundedArray::with_len(len_chunks, |_| Default::default()),
             marker: Default::default(),
         }
     }
@@ -160,7 +165,8 @@ where
     /// If the length is increased all new elements are initialized with their
     /// default values.
     pub fn resize_to_len(&mut self, new_len: usize) {
-        self.chunks.resize_with(new_len, Default::default);
+        let len_chunks = Self::required_chunks(new_len);
+        self.chunks.resize_with(len_chunks, Default::default);
         self.len = new_len;
     }
 }
