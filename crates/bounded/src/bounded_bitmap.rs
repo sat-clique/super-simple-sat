@@ -145,16 +145,7 @@ where
 impl<Idx, T> BoundedBitmap<Idx, T>
 where
     Idx: Index,
-    T: Bool,
 {
-    fn split_index(idx: Idx) -> (ChunkIndex, BitIndex) {
-        let raw_index = idx.into_index();
-        (
-            ChunkIndex::from_index(raw_index),
-            BitIndex::from_index(raw_index),
-        )
-    }
-
     /// Ensures that the given index is valid for the bounded array.
     ///
     /// # Errors
@@ -166,6 +157,20 @@ where
             return Err(OutOfBoundsAccess)
         }
         Ok(index)
+    }
+}
+
+impl<Idx, T> BoundedBitmap<Idx, T>
+where
+    Idx: Index,
+    T: Bool,
+{
+    fn split_index(idx: Idx) -> (ChunkIndex, BitIndex) {
+        let raw_index = idx.into_index();
+        (
+            ChunkIndex::from_index(raw_index),
+            BitIndex::from_index(raw_index),
+        )
     }
 
     #[inline]
