@@ -237,3 +237,72 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn default_works() {
+        let map = <BoundedBitmap<usize, bool>>::default();
+        assert_eq!(map.len(), 0);
+        assert!(map.is_empty());
+    }
+
+    #[test]
+    fn with_len_works() {
+        let map = <BoundedBitmap<usize, bool>>::with_len(10);
+        assert_eq!(map.len(), 10);
+        assert!(!map.is_empty());
+        for i in 0..10 {
+            assert_eq!(map.get(i), Ok(false));
+        }
+    }
+
+    #[test]
+    fn set_works() {
+        let mut map = <BoundedBitmap<usize, bool>>::default();
+        map.resize_with(3);
+        assert_eq!(map.get(0), Ok(false));
+        map.set(0, true).unwrap();
+        assert_eq!(map.get(0), Ok(true));
+        map.set(0, false).unwrap();
+        assert_eq!(map.get(0), Ok(false));
+    }
+
+    #[test]
+    fn get_out_of_bounds_fails() {
+        let map = <BoundedBitmap<usize, bool>>::with_len(3);
+        assert!(map.get(0).is_ok());
+        assert!(map.get(1).is_ok());
+        assert!(map.get(2).is_ok());
+        assert_eq!(map.get(3), Err(OutOfBoundsAccess));
+    }
+
+    #[test]
+    fn set_out_of_bounds_fails() {
+        let mut map = <BoundedBitmap<usize, bool>>::with_len(3);
+        assert!(map.set(0, false).is_ok());
+        assert!(map.set(1, true).is_ok());
+        assert!(map.set(2, false).is_ok());
+        assert_eq!(map.set(3, true), Err(OutOfBoundsAccess));
+    }
+
+    #[test]
+    fn set_all_multiword_works() {
+        let len = 100;
+        let mut map = <BoundedBitmap<usize, bool>>::with_len(len);
+        // false -> true
+        for i in 0..len {
+            assert_eq!(map.get(i), Ok(false));
+            map.set(i, true).unwrap();
+            assert_eq!(map.get(i), Ok(true));
+        }
+        // true -> false
+        for i in 0..len {
+            assert_eq!(map.get(i), Ok(true));
+            map.set(i, false).unwrap();
+            assert_eq!(map.get(i), Ok(false));
+        }
+    }
+}
