@@ -251,8 +251,8 @@ where
             .get(chunk_idx)
             .expect("unexpected out of bounds chunk");
         let mask = Self::quad_index_to_mask(quad_idx);
-        let value =
-            (chunk & mask) >> (CHUNK_LEN - (BITS_PER_QUAD * (1 + quad_idx.into_index())));
+        let shift_len = CHUNK_LEN - (BITS_PER_QUAD * (1 + quad_idx.into_index()));
+        let value = (chunk & mask) >> shift_len;
         debug_assert!(value <= 0b11);
         Ok(T::from_quad(quad::from(value as u8)))
     }
