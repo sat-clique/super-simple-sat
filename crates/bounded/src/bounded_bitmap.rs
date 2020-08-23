@@ -124,8 +124,7 @@ impl<Idx, T> BoundedBitmap<Idx, T> {
 
     pub fn resize_to_len(&mut self, new_len: usize) {
         let len_chunks = Self::required_chunks(new_len);
-        self.chunks
-            .resize_with(len_chunks, Default::default);
+        self.chunks.resize_with(len_chunks, Default::default);
         self.len = new_len;
     }
 
