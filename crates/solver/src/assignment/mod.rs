@@ -15,7 +15,10 @@ use self::{
     watch_list::WatchList,
 };
 use crate::{
-    clause_db::ClauseRef,
+    clause_db::{
+        ClauseId,
+        ClauseRef,
+    },
     decider::InformDecider,
     Bool,
     ClauseDb,
@@ -183,6 +186,99 @@ impl VariableAssignment {
     }
 }
 
+/// Decision level of a variable assignment and its reason if any.
+#[derive(Debug, Copy, Clone)]
+pub struct DecisionLevelAndReason {
+    /// The decision the variable was last assigned on.
+    level: DecisionLevel,
+    /// The reason the variable was last inferred from (by unit propagation) if any.
+    reason: Option<ClauseId>,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct DecisionLevelsAndReasons {
+    level_and_reason: BoundedMap<Variable, DecisionLevelAndReason>,
+}
+
+impl DecisionLevelsAndReasons {
+    /// Registers the given number of additional variables.
+    ///
+    /// # Panics
+    ///
+    /// If the number of total variables is out of supported bounds.
+    pub fn register_new_variables(&mut self, new_variables: usize) {
+        let total_capacity = self.level_and_reason.capacity() + new_variables;
+        self.level_and_reason.resize_capacity(total_capacity);
+    }
+
+    /// Updates the decision level and reason clause ID for the given variable.
+    ///
+    /// # Panics
+    ///
+    /// If the given variable ID is out of bounds.
+    pub fn update(
+        &mut self,
+        variable: Variable,
+        level: DecisionLevel,
+        reason: Option<ClauseId>,
+    ) {
+        self.level_and_reason
+            .insert(variable, DecisionLevelAndReason { level, reason })
+            .expect("encountered unexpected invalid variable");
+    }
+
+    /// Returns the decision level and reason tuple for the given variable if any.
+    ///
+    /// # Panics
+    ///
+    /// If the given variable ID is out of bounds.
+    fn get(&self, variable: Variable) -> Option<(DecisionLevel, Option<ClauseId>)> {
+        self.level_and_reason
+            .get(variable)
+            .expect("encountered unexpected invalid variable")
+            .map(|level_and_reason| (level_and_reason.level, level_and_reason.reason))
+    }
+
+    /// Returns the reason clause ID of the given variable if any.
+    ///
+    /// # Note
+    ///
+    /// This returns `None` if the variable has never been assigned or is unassigned
+    /// or if it is assigned by the trail but has no reason clause. Users can differentiate
+    /// between both states using the [`get_level`] which only returns `None` if the
+    /// variable has never been assigned.
+    ///
+    /// # Panics
+    ///
+    /// If the given variable ID is out of bounds.
+    pub fn get_reason(&self, variable: Variable) -> Option<ClauseId> {
+        self.get(variable)
+            .map(|(_, reason)| reason)
+            .flatten()
+    }
+
+    /// Returns the decision level of the given variable if it has been assigned already.
+    ///
+    /// # Panics
+    ///
+    /// If the given variable ID is out of bounds.
+    pub fn get_level(&self, variable: Variable) -> Option<DecisionLevel> {
+        self.get(variable)
+            .map(|(level, _)| level)
+    }
+
+    /// Returns `true` if the given variable assignment was forced by the trail.
+    ///
+    /// # Panics
+    ///
+    /// If the given variable ID is out of bounds.
+    pub fn is_forced(&self, variable: Variable) -> bool {
+        self.get(variable)
+            .map(|(_, reason)| reason.is_some())
+            .unwrap_or_else(|| false)
+    }
+}
+
 /// The database combining everything that is realted to variable assignment.
 ///
 /// This holds and organizes data flows through:
@@ -196,6 +292,7 @@ pub struct Assignment {
     trail: Trail,
     assignments: VariableAssignment,
     watchers: WatchList,
+    level_and_reason: DecisionLevelsAndReasons,
 }
 
 impl Assignment {
@@ -226,6 +323,7 @@ impl Assignment {
         self.trail.register_new_variables(new_variables);
         self.assignments.register_new_variables(new_variables);
         self.watchers.register_new_variables(new_variables);
+        self.level_and_reason.register_new_variables(new_variables);
     }
 
     /// Resets the assignment to the given decision level.
