@@ -3,6 +3,7 @@ use super::{
     VariableAssignment,
 };
 use crate::{
+    decider::InformDecider,
     Literal,
     Variable,
 };
@@ -164,14 +165,20 @@ impl Trail {
     }
 
     /// Backjumps the trail to the given decision level.
-    pub fn pop_to_level<F>(&mut self, level: DecisionLevel, mut observer: F)
-    where
-        F: FnMut(Literal),
-    {
+    pub fn pop_to_level(
+        &mut self,
+        level: DecisionLevel,
+        assignments: &mut VariableAssignment,
+        mut inform_decider: InformDecider,
+    ) {
         let level = DecisionLevel::from_index(level.into_index() - 1);
         let limit = self.limits.pop_to_level(level);
         self.propagate_head = limit.into_index();
         self.decisions_and_implications
-            .pop_to(limit.into_index(), |popped| observer(*popped));
+            .pop_to(limit.into_index(), |popped| {
+                let variable = popped.variable();
+                assignments.unassign(variable);
+                inform_decider.restore_variable(variable)
+            });
     }
 }

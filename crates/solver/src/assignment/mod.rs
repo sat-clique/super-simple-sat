@@ -232,16 +232,9 @@ impl Assignment {
     pub fn reset_to_level(
         &mut self,
         level: DecisionLevel,
-        mut inform_decider: InformDecider,
+        inform_decider: InformDecider,
     ) {
-        let Self {
-            trail, assignments, ..
-        } = self;
-        trail.pop_to_level(level, |unassigned| {
-            let variable = unassigned.variable();
-            assignments.unassign(variable);
-            inform_decider.restore_variable(variable)
-        })
+        self.trail.pop_to_level(level, &mut self.assignments, inform_decider)
     }
 
     /// Enqueues a propagation literal.
@@ -289,21 +282,14 @@ impl Assignment {
         level: DecisionLevel,
         mut inform_decider: InformDecider,
     ) {
-        let Self {
-            assignments, trail, ..
-        } = self;
-        trail.pop_to_level(level, |unassigned| {
-            let variable = unassigned.variable();
-            assignments.unassign(variable);
-            inform_decider.restore_variable(variable)
-        });
+        self.trail.pop_to_level(level, &mut self.assignments, inform_decider)
     }
 
     /// Propagates the enqueued assumptions.
     pub fn propagate(
         &mut self,
         clause_db: &mut ClauseDb,
-        mut inform_decider: InformDecider,
+        inform_decider: InformDecider,
     ) -> PropagationResult {
         let Self {
             watchers,
@@ -320,11 +306,7 @@ impl Assignment {
                 PropagationEnqueuer::new(trail),
             );
             if result.is_conflict() {
-                trail.pop_to_level(level, |unassigned| {
-                    let variable = unassigned.variable();
-                    assignments.unassign(variable);
-                    inform_decider.restore_variable(variable)
-                });
+                trail.pop_to_level(level, assignments, inform_decider);
                 return result
             }
         }
