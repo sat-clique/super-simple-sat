@@ -27,6 +27,7 @@ impl Index for TrailLimit {
     }
 }
 
+/// A concrete decision level in the trail.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
 pub struct DecisionLevel(u32);
