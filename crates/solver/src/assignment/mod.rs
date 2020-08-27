@@ -326,15 +326,6 @@ impl Assignment {
         self.level_and_reason.register_new_variables(new_variables);
     }
 
-    /// Resets the assignment to the given decision level.
-    pub fn reset_to_level(
-        &mut self,
-        level: DecisionLevel,
-        inform_decider: InformDecider,
-    ) {
-        self.trail.pop_to_level(level, &mut self.assignments, inform_decider)
-    }
-
     /// Enqueues a propagation literal.
     ///
     /// This does not yet perform the actual unit propagation.
@@ -378,7 +369,7 @@ impl Assignment {
     pub fn pop_decision_level(
         &mut self,
         level: DecisionLevel,
-        mut inform_decider: InformDecider,
+        inform_decider: InformDecider,
     ) {
         self.trail.pop_to_level(level, &mut self.assignments, inform_decider)
     }
