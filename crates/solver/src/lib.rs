@@ -1,7 +1,6 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::len_without_is_empty)]
 #![cfg_attr(not(test), no_std)]
-#![feature(slice_partition_dedup)]
 
 extern crate alloc;
 
