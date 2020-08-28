@@ -38,7 +38,7 @@ impl Clause {
         }
         literals.sort_unstable();
         literals.dedup();
-        let mut occurences = HashSet::new();
+        let mut occurences = HashSet::with_capacity(literals.len());
         for &literal in &literals {
             if occurences.contains(&!literal) {
                 return Err(Error::SelfConflictingClause)
