@@ -1,6 +1,7 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::len_without_is_empty)]
 #![cfg_attr(not(test), no_std)]
+#![feature(slice_partition_dedup)]
 
 extern crate alloc;
 
@@ -29,7 +30,7 @@ use crate::{
     },
 };
 pub use crate::{
-    clause_db::Clause,
+    clause_db::{Clause, ClauseDbError},
     literal::{
         Literal,
         Sign,
@@ -51,6 +52,7 @@ use cnf_parser::{
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
     Other(&'static str),
+    ClauseDb(ClauseDbError),
     Assignment(AssignmentError),
     Bounded(bounded::OutOfBoundsAccess),
     Conflict,
@@ -73,6 +75,12 @@ impl From<bounded::OutOfBoundsAccess> for Error {
 impl From<AssignmentError> for Error {
     fn from(err: AssignmentError) -> Self {
         Self::Assignment(err)
+    }
+}
+
+impl From<ClauseDbError> for Error {
+    fn from(err: ClauseDbError) -> Self {
+        Self::ClauseDb(err)
     }
 }
 
@@ -162,8 +170,11 @@ impl Solver {
     /// If the clause is unit and is in conflict with the current assignment.
     /// This is mostly encountered upon consuming two conflicting unit clauses.
     /// In this case the clause will not be added as new constraint.
-    pub fn consume_clause(&mut self, clause: Clause) -> Result<(), Error> {
-        match self.clauses.push_get(clause) {
+    pub fn consume_clause<L>(&mut self, literals: L) -> Result<(), Error>
+    where
+        L: IntoIterator<Item = Literal>,
+    {
+        match self.clauses.push_literals(literals) {
             Ok(clause) => {
                 self.assignment.initialize_watchers(clause);
                 for literal in clause {
@@ -171,11 +182,12 @@ impl Solver {
                     self.decider.bump_priority_by(variable, 1);
                 }
             }
-            Err(unit_clause) => {
+            Err(ClauseDbError::UnitClause(unit_clause)) => {
                 self.assignment
                     .enqueue_assumption(unit_clause.literal)
                     .map_err(|_| Error::Conflict)?;
             }
+            err => return err.map(|_| ()).map_err(Into::into),
         }
         Ok(())
     }

@@ -1,5 +1,4 @@
 use super::{
-    Clause,
     ClauseRef,
     ClauseRefMut,
 };
@@ -49,10 +48,14 @@ impl LiteralsEnd {
     }
 }
 
+/// Efficiently stores clauses and their literals.
+///
+/// Allows to access stored clauses via their associated clause identifiers.
 #[derive(Debug, Default, Clone)]
 pub struct ClauseDb {
     ends: Vec<LiteralsEnd>,
     literals: Vec<Literal>,
+    occurrences: HashSet<Literal>,
 }
 
 /// A unit clause that cannot be stored in the clause data base.
@@ -60,10 +63,17 @@ pub struct ClauseDb {
 /// # Note
 ///
 /// Unit clauses are instead turned into problem instance assumptions.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct UnitClause {
     /// The unit literal of the unit clause.
     pub literal: Literal,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum Error {
+    SelfConflictingClause,
+    EmptyClause,
+    UnitClause(UnitClause),
 }
 
 impl ClauseDb {
@@ -77,53 +87,62 @@ impl ClauseDb {
         self.ends.is_empty()
     }
 
-    /// Pushes another clause to the clause database, returns its identifier.
-    ///
-    /// # Note
-    ///
-    /// The identifier can be used to resolve the clause again.
+    /// Pushes another clause to the database and returns a reference to it.
     ///
     /// # Errors
     ///
-    /// If the given clause is a unit clause. In this case the clause is
-    /// returned as unit clause for further processing.
-    pub fn push(&mut self, clause: Clause) -> Result<ClauseId, UnitClause> {
-        match clause.unit_literal() {
-            Some(literal) => Err(UnitClause { literal }),
-            None => {
-                let id = self.len();
-                self.literals.extend(&clause);
-                let end = self.literals.len();
-                self.ends.push(LiteralsEnd::from_index(end));
-                Ok(ClauseId::from_index(id))
-            }
+    /// - If the given literal sequence is empty.
+    /// - If the given literal sequence represents a unit clause.
+    /// - If the given literal sequence is self contradicting.
+    pub fn push_literals<L>(&mut self, literals: L) -> Result<ClauseRef, Error>
+    where
+        L: IntoIterator<Item = Literal>,
+    {
+        fn resize_literals(literals: &mut Vec<Literal>, new_len: usize) {
+            assert!(new_len <= literals.len());
+            literals.resize_with(new_len, || {
+                unreachable!("shrinking must not require a placeholder")
+            });
         }
-    }
-
-    /// Pushes another clause to the clause database, returns its identifier.
-    ///
-    /// # Note
-    ///
-    /// The identifier can be used to resolve the clause again.
-    ///
-    /// # Errors
-    ///
-    /// If the given clause is a unit clause. In this case the clause is
-    /// returned as unit clause for further processing.
-    pub fn push_get(&mut self, clause: Clause) -> Result<ClauseRef, UnitClause> {
-        match clause.unit_literal() {
-            Some(literal) => Err(UnitClause { literal }),
-            None => {
-                let id = ClauseId::from_index(self.len());
-                let start = self.literals.len();
-                self.literals.extend(&clause);
-                let end = self.literals.len();
-                self.ends.push(LiteralsEnd::from_index(end));
-                let clause_ref = ClauseRef::new(id, &self.literals[start..end])
-                    .expect("encountered unexpected invalid shared clause reference");
-                Ok(clause_ref)
-            }
+        let id = self.len();
+        let start = self.literals.len();
+        self.literals.extend(literals);
+        let end = self.literals.len();
+        let clause_literals = &mut self.literals[start..end];
+        if clause_literals.is_empty() {
+            // Empty clause: Return error.
+            return Err(Error::EmptyClause)
         }
+        clause_literals.sort_unstable();
+        let (deduped, _duplicates) = clause_literals.partition_dedup();
+        let clause_len = deduped.len();
+        if clause_literals.len() == 1 {
+            // Unit clause: Revert changes and return error.
+            let literal = self.literals[start];
+            resize_literals(&mut self.literals, start);
+            return Err(Error::UnitClause(UnitClause { literal }))
+        }
+        let clause_end = start + clause_len;
+        resize_literals(&mut self.literals, clause_end);
+        fn is_self_conflicting(occurrences: &mut HashSet<Literal>, literals: &[Literal]) -> bool {
+            occurrences.clear();
+            for &literal in literals {
+                if occurrences.contains(&!literal) {
+                    return true
+                }
+                occurrences.insert(literal);
+            }
+            false
+        }
+        if is_self_conflicting(&mut self.occurrences, &self.literals[start..clause_end]) {
+            // Clause is self conflicting: Revert changes and return error.
+            resize_literals(&mut self.literals, start);
+            return Err(Error::SelfConflictingClause)
+        }
+        self.ends.push(LiteralsEnd::from_index(clause_end));
+        let clause_id = ClauseId::from_index(id);
+        let clause_ref = ClauseRef::new(clause_id, &self.literals[start..clause_end]);
+        Ok(clause_ref)
     }
 
     /// Converts the clause identifier into the range of its literals.
@@ -143,9 +162,7 @@ impl ClauseDb {
         if id.into_index() >= self.len() {
             return None
         }
-        ClauseRef::new(id, &self.literals[self.clause_id_to_literals_range(id)])
-            .expect("encountered invalid clause literals")
-            .into()
+        ClauseRef::new(id, &self.literals[self.clause_id_to_literals_range(id)]).into()
     }
 
     /// Returns the clause associated with the given clause identifier if any.
@@ -154,9 +171,7 @@ impl ClauseDb {
             return None
         }
         let literals_range = self.clause_id_to_literals_range(id);
-        ClauseRefMut::new(&mut self.literals[literals_range])
-            .expect("encountered invalid clause literals")
-            .into()
+        ClauseRefMut::new(&mut self.literals[literals_range]).into()
     }
 }
 
@@ -201,8 +216,7 @@ impl<'a> Iterator for ClauseDbIter<'a> {
                 let start = mem::replace(&mut self.last_end, end.into_index());
                 let end = end.into_index();
                 self.current += 1;
-                let clause_ref = ClauseRef::new(id, &self.literals[start..end])
-                    .expect("encountered invalid literals");
+                let clause_ref = ClauseRef::new(id, &self.literals[start..end]);
                 Some((id, clause_ref))
             }
             None => None,

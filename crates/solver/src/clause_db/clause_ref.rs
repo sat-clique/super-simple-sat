@@ -1,7 +1,4 @@
-use super::{
-    ClauseId,
-    Error,
-};
+use super::ClauseId;
 use crate::{
     assignment::VariableAssignment,
     Literal,
@@ -26,12 +23,12 @@ impl<'a> ClauseRef<'a> {
     /// # Panics
     ///
     /// If there are less than 2 literals in the literal slice.
-    pub fn new(id: ClauseId, literals: &'a [Literal]) -> Result<Self, Error> {
+    pub(crate) fn new(id: ClauseId, literals: &'a [Literal]) -> Self {
         assert!(
             literals.len() >= 2,
             "expected at least 2 literals in a shared clause reference"
         );
-        Ok(Self { id, literals })
+        Self { id, literals }
     }
 
     /// Returns the identifier of the referenced clause.
@@ -93,12 +90,12 @@ impl<'a> ClauseRefMut<'a> {
     /// # Panics
     ///
     /// If there are less than 2 literals in the literal slice.
-    pub fn new(literals: &'a mut [Literal]) -> Result<Self, Error> {
+    pub(crate) fn new(literals: &'a mut [Literal]) -> Self {
         assert!(
             literals.len() >= 2,
             "expected at least 2 literals in an exclusive clause reference"
         );
-        Ok(Self { literals })
+        Self { literals }
     }
 
     pub fn propagate(

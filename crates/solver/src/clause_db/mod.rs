@@ -5,7 +5,7 @@ mod db;
 pub use self::{
     clause::{
         Clause,
-        Error,
+        Error as ClauseError,
     },
     clause_ref::{
         ClauseRef,
@@ -16,5 +16,6 @@ pub use self::{
         ClauseDb,
         ClauseDbIter,
         ClauseId,
+        Error as ClauseDbError,
     },
 };

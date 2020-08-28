@@ -1,5 +1,4 @@
 use crate::{
-    Clause,
     Error,
     Literal,
     SolveResult,
@@ -82,8 +81,8 @@ fn solve_empty_problem_works() {
     assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(true));
 }
 
-fn clause(lits: &[Literal]) -> Clause {
-    Clause::new(lits.into_iter().copied()).unwrap()
+fn clause<'a>(lits: &'a [Literal]) -> impl Iterator<Item = Literal> + 'a {
+    lits.iter().copied()
 }
 
 #[test]

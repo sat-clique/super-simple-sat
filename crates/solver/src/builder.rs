@@ -1,5 +1,4 @@
 use crate::{
-    clause_db::Clause,
     Error,
     Literal,
     Solver,
@@ -20,9 +19,7 @@ impl SolverBuilder {
             return Err("missing problem line before clause inputs".into())
         }
         let accumulated_lits = core::mem::take(&mut self.current_clause);
-        let clause = Clause::new(accumulated_lits)
-            .map_err(|_| "encountered empty or self conflicting clause")?;
-        self.solver.consume_clause(clause)?;
+        self.solver.consume_clause(accumulated_lits)?;
         Ok(())
     }
 
