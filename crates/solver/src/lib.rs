@@ -42,6 +42,7 @@ pub use crate::{
         LiteralChunkIter,
     },
 };
+use alloc::vec::Vec;
 use bounded::Bool;
 use cnf_parser::{
     Error as CnfError,
@@ -150,6 +151,8 @@ pub struct Solver {
     assignment: Assignment,
     decider: Decider,
     last_model2: LastModel,
+    hard_facts: Vec<Literal>,
+    encountered_empty_clause: bool,
 }
 
 impl Solver {
@@ -171,10 +174,9 @@ impl Solver {
     ///
     /// # Errors
     ///
-    /// If the clause is unit and is in conflict with the current assignment.
-    /// This is mostly encountered upon consuming two conflicting unit clauses.
-    /// In this case the clause will not be added as new constraint.
-    pub fn consume_clause<L>(&mut self, literals: L) -> Result<(), Error>
+    /// If the consumed clause is the empty clause.
+    /// In this case the clause will be ignored.
+    pub fn consume_clause<L>(&mut self, literals: L)
     where
         L: IntoIterator<Item = Literal>,
     {
@@ -188,14 +190,13 @@ impl Solver {
                 }
             }
             Err(ClauseDbError::UnitClause { literal }) => {
-                self.assignment
-                    .enqueue_assumption(literal)
-                    .map_err(|_| Error::Conflict)?
+                self.hard_facts.push(literal);
             }
             Err(ClauseDbError::TautologicClause) => (),
-            Err(err @ ClauseDbError::EmptyClause) => return Err(Error::ClauseDb(err)),
+            Err(ClauseDbError::EmptyClause) => {
+                self.encountered_empty_clause = true;
+            },
         }
-        Ok(())
     }
 
     /// Returns the next variable.
@@ -299,8 +300,30 @@ impl Solver {
         L: IntoIterator<Item = Literal>,
     {
         // If the set of clauses contain the empty clause: UNSAT
+        if self.encountered_empty_clause {
+            return Ok(SolveResult::Unsat)
+        }
+        // IF the problem contains no variables the solution is trivial: SAT
         if self.len_variables() == 0 {
             return Ok(SolveResult::sat(self.last_model2.get()))
+        }
+        // Propagate known hard facts (unit clauses).
+        for &hard_fact in &self.hard_facts {
+            match self.assignment.enqueue_assumption(hard_fact) {
+                Ok(()) => (),
+                Err(AssignmentError::AlreadyAssigned) => (),
+                Err(AssignmentError::Conflict) => return Ok(SolveResult::Unsat),
+                _unexpected_error => {
+                    panic!("encountered unexpected error while propagating hard facts")
+                }
+            }
+        }
+        if self
+            .assignment
+            .propagate(&mut self.clauses, self.decider.informer())
+            .is_conflict()
+        {
+            return Ok(SolveResult::Unsat)
         }
         // Propagate in case the set of clauses contained unit clauses.
         // Bail out if the instance is already in conflict with itself.

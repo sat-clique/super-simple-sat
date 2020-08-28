@@ -19,7 +19,7 @@ impl SolverBuilder {
             return Err("missing problem line before clause inputs".into())
         }
         let accumulated_lits = core::mem::take(&mut self.current_clause);
-        self.solver.consume_clause(accumulated_lits)?;
+        self.solver.consume_clause(accumulated_lits);
         Ok(())
     }
 
