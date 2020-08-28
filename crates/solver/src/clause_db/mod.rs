@@ -1,11 +1,12 @@
-mod clause;
+mod clause_builder;
 mod clause_ref;
 mod db;
 
 pub use self::{
-    clause::{
-        Clause,
-        Error as ClauseError,
+    clause_builder::{
+        ClauseBuilder,
+        Error as ClauseDbError,
+        VerifiedClause,
     },
     clause_ref::{
         ClauseRef,
@@ -16,6 +17,5 @@ pub use self::{
         ClauseDb,
         ClauseDbIter,
         ClauseId,
-        Error as ClauseDbError,
     },
 };

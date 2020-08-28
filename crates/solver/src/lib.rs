@@ -24,13 +24,14 @@ use crate::{
         PropagationResult,
     },
     builder::SolverBuilder,
-    clause_db::ClauseDb,
-    decider::{
-        Decider,
+    clause_db::{
+        ClauseBuilder,
+        ClauseDb,
     },
+    decider::Decider,
 };
 pub use crate::{
-    clause_db::{Clause, ClauseDbError},
+    clause_db::ClauseDbError,
     literal::{
         Literal,
         Sign,
@@ -41,12 +42,14 @@ pub use crate::{
         LiteralChunkIter,
     },
 };
-use core::fmt::Display;
-use core::fmt;
 use bounded::Bool;
 use cnf_parser::{
     Error as CnfError,
     Input,
+};
+use core::{
+    fmt,
+    fmt::Display,
 };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -142,6 +145,7 @@ impl<'a> SatResult<'a> {
 #[derive(Debug, Default, Clone)]
 pub struct Solver {
     len_variables: usize,
+    clause_builder: ClauseBuilder,
     clauses: ClauseDb,
     assignment: Assignment,
     decider: Decider,
@@ -174,18 +178,19 @@ impl Solver {
     where
         L: IntoIterator<Item = Literal>,
     {
-        match self.clauses.push_literals(literals) {
-            Ok(clause) => {
+        match self.clause_builder.build(literals) {
+            Ok(verified_clause) => {
+                let clause = self.clauses.push_clause(verified_clause);
                 self.assignment.initialize_watchers(clause);
                 for literal in clause {
                     let variable = literal.variable();
                     self.decider.bump_priority_by(variable, 1);
                 }
             }
-            Err(ClauseDbError::UnitClause(unit_clause)) => {
+            Err(ClauseDbError::UnitClause { literal }) => {
                 self.assignment
-                    .enqueue_assumption(unit_clause.literal)
-                    .map_err(|_| Error::Conflict)?;
+                    .enqueue_assumption(literal)
+                    .map_err(|_| Error::Conflict)?
             }
             err => return err.map(|_| ()).map_err(Into::into),
         }

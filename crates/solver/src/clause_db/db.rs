@@ -11,7 +11,7 @@ use core::{
     ops::Range,
     slice,
 };
-use hashbrown::HashSet;
+use super::VerifiedClause;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
@@ -55,25 +55,6 @@ impl LiteralsEnd {
 pub struct ClauseDb {
     ends: Vec<LiteralsEnd>,
     literals: Vec<Literal>,
-    occurrences: HashSet<Literal>,
-}
-
-/// A unit clause that cannot be stored in the clause data base.
-///
-/// # Note
-///
-/// Unit clauses are instead turned into problem instance assumptions.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct UnitClause {
-    /// The unit literal of the unit clause.
-    pub literal: Literal,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Error {
-    SelfConflictingClause,
-    EmptyClause,
-    UnitClause(UnitClause),
 }
 
 impl ClauseDb {
@@ -87,62 +68,19 @@ impl ClauseDb {
         self.ends.is_empty()
     }
 
-    /// Pushes another clause to the database and returns a reference to it.
+    /// Pushes an already verified clause to the database and returns a reference to it.
     ///
-    /// # Errors
+    /// # Note
     ///
-    /// - If the given literal sequence is empty.
-    /// - If the given literal sequence represents a unit clause.
-    /// - If the given literal sequence is self contradicting.
-    pub fn push_literals<L>(&mut self, literals: L) -> Result<ClauseRef, Error>
-    where
-        L: IntoIterator<Item = Literal>,
-    {
-        fn resize_literals(literals: &mut Vec<Literal>, new_len: usize) {
-            assert!(new_len <= literals.len());
-            literals.resize_with(new_len, || {
-                unreachable!("shrinking must not require a placeholder")
-            });
-        }
-        let id = self.len();
+    /// Since the clause has already been verified no further checks are required.
+    pub fn push_clause(&mut self, clause: VerifiedClause) -> ClauseRef {
+        let id = ClauseId::from_index(self.len());
         let start = self.literals.len();
-        self.literals.extend(literals);
+        self.literals.extend_from_slice(clause.literals);
         let end = self.literals.len();
+        self.ends.push(LiteralsEnd::from_index(end));
         let clause_literals = &mut self.literals[start..end];
-        if clause_literals.is_empty() {
-            // Empty clause: Return error.
-            return Err(Error::EmptyClause)
-        }
-        clause_literals.sort_unstable();
-        let (deduped, _duplicates) = clause_literals.partition_dedup();
-        let clause_len = deduped.len();
-        if clause_literals.len() == 1 {
-            // Unit clause: Revert changes and return error.
-            let literal = self.literals[start];
-            resize_literals(&mut self.literals, start);
-            return Err(Error::UnitClause(UnitClause { literal }))
-        }
-        let clause_end = start + clause_len;
-        resize_literals(&mut self.literals, clause_end);
-        fn is_self_conflicting(occurrences: &mut HashSet<Literal>, literals: &[Literal]) -> bool {
-            occurrences.clear();
-            for &literal in literals {
-                if occurrences.contains(&!literal) {
-                    return true
-                }
-                occurrences.insert(literal);
-            }
-            false
-        }
-        if is_self_conflicting(&mut self.occurrences, &self.literals[start..clause_end]) {
-            // Clause is self conflicting: Revert changes and return error.
-            resize_literals(&mut self.literals, start);
-            return Err(Error::SelfConflictingClause)
-        }
-        self.ends.push(LiteralsEnd::from_index(clause_end));
-        let clause_id = ClauseId::from_index(id);
-        let clause_ref = ClauseRef::new(clause_id, &self.literals[start..clause_end]);
-        Ok(clause_ref)
+        ClauseRef::new(id, clause_literals)
     }
 
     /// Converts the clause identifier into the range of its literals.
