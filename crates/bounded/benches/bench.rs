@@ -13,6 +13,7 @@ use rand::{
     rngs::SmallRng,
     SeedableRng,
 };
+use bitvec::bitvec;
 
 criterion_group!(bench_solve, bench_bounded_bitwise_map_set, bench_bounded_bitwise_map_get);
 criterion_main!(bench_solve);
@@ -23,6 +24,7 @@ fn bench_bounded_bitwise_map_get(c: &mut Criterion) {
     let quad_map = <BoundedQuadmap<usize, quad>>::with_len(len);
     let bit_map = <BoundedBitmap<usize, bool>>::with_len(len);
     let vec_bool = vec![false; len];
+    let bit_vec = bitvec![0; len];
     g.bench_function("BoundedQuadmap", |bencher| {
         bencher.iter(|| {
             let mut rng = SmallRng::seed_from_u64(0);
@@ -47,6 +49,14 @@ fn bench_bounded_bitwise_map_get(c: &mut Criterion) {
             }
         })
     });
+    g.bench_function("BitVec (competition)", |bencher| {
+        bencher.iter(|| {
+            let mut rng = SmallRng::seed_from_u64(0);
+            for _ in 0..len {
+                assert_eq!(bit_vec.get(rng.gen_range(0, len)), Some(&false));
+            }
+        })
+    });
 }
 
 fn bench_bounded_bitwise_map_set(c: &mut Criterion) {
@@ -55,6 +65,7 @@ fn bench_bounded_bitwise_map_set(c: &mut Criterion) {
     let mut quad_map = <BoundedQuadmap<usize, quad>>::with_len(len);
     let mut bit_map = <BoundedBitmap<usize, bool>>::with_len(len);
     let mut vec_bool = vec![false; len];
+    let mut bit_vec = bitvec![0; len];
     g.bench_function("BoundedQuadmap", |bencher| {
         bencher.iter(|| {
             let mut rng = SmallRng::seed_from_u64(0);
@@ -76,6 +87,14 @@ fn bench_bounded_bitwise_map_set(c: &mut Criterion) {
             let mut rng = SmallRng::seed_from_u64(0);
             for _ in 0..len {
                 vec_bool[rng.gen_range(0, len)] = true;
+            }
+        })
+    });
+    g.bench_function("Bitvec (competition)", |bencher| {
+        bencher.iter(|| {
+            let mut rng = SmallRng::seed_from_u64(0);
+            for _ in 0..len {
+                bit_vec.set(rng.gen_range(0, len), true);
             }
         })
     });

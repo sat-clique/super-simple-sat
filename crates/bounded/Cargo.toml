@@ -14,6 +14,7 @@ categories = ["data structures", "science"]
 [dev-dependencies]
 criterion = "0.3"
 rand = { version = "0.7", features = ["small_rng"] }
+bitvec = "0.17"
 
 [[bench]]
 name = "bench"
