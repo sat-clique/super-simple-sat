@@ -3,7 +3,8 @@ use core::{
     iter,
     slice,
 };
-use std::collections::HashSet;
+use hashbrown::HashSet;
+use alloc::vec::Vec;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {

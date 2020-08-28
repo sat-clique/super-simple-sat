@@ -5,6 +5,7 @@ use crate::{
     Solver,
 };
 use cnf_parser::Output;
+use alloc::vec::Vec;
 
 #[derive(Debug, Default)]
 pub struct SolverBuilder {

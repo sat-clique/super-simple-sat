@@ -7,6 +7,10 @@ use crate::{
     Literal,
     Variable,
 };
+use alloc::{
+    vec,
+    vec::Vec,
+};
 use bounded::{
     BoundedStack,
     Index,

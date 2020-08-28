@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
 #![allow(clippy::len_without_is_empty)]
+#![cfg_attr(not(test), no_std)]
+
+extern crate alloc;
 
 mod assignment;
 mod builder;

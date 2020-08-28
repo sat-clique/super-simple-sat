@@ -18,6 +18,7 @@ use core::{
     fmt::Display,
     iter,
 };
+use alloc::string::ToString;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct LastModel {

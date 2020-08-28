@@ -15,6 +15,7 @@ use crate::{
     Variable,
 };
 use bounded::BoundedArray;
+use alloc::vec::Vec;
 
 /// Registered watcher for a single literal with a blocker literal.
 ///

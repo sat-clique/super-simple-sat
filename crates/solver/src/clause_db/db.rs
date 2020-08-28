@@ -4,6 +4,7 @@ use super::{
     ClauseRefMut,
 };
 use crate::Literal;
+use alloc::vec::Vec;
 use bounded::Index;
 use core::{
     mem,
@@ -11,6 +12,7 @@ use core::{
     ops::Range,
     slice,
 };
+use hashbrown::HashSet;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
