@@ -2,8 +2,9 @@
 
 A super simple SAT solver implementation.
 
-- Implemented in 100% safe Rust!
-- Runs on stable Rust channel.
+- Implemented in 100% safe Rust
+- Compilable for `no_std` environments
+- Runs on stable Rust channel
 
 ## Credits
 
