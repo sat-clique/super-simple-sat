@@ -18,8 +18,11 @@ pub struct ClauseBuilder {
 pub enum Error {
     /// The clause contain no literals.
     EmptyClause,
-    /// The clause literals contradict each other.
-    SelfConflictingClause,
+    /// The clause is a tautology and can be ignored by the solver.
+    ///
+    /// This happens whenever a clause contains the same literal twice
+    /// but with different polarities.
+    TautologicClause,
     /// The clause is a unit clause with exactly one literal.
     UnitClause { literal: Literal },
 }
@@ -77,7 +80,7 @@ impl ClauseBuilder {
         occurrences.clear();
         for &literal in literals.iter() {
             if occurrences.contains(&!literal) {
-                return Err(Error::SelfConflictingClause)
+                return Err(Error::TautologicClause)
             }
             occurrences.insert(literal);
         }

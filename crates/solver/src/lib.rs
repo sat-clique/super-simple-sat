@@ -192,7 +192,8 @@ impl Solver {
                     .enqueue_assumption(literal)
                     .map_err(|_| Error::Conflict)?
             }
-            err => return err.map(|_| ()).map_err(Into::into),
+            Err(ClauseDbError::TautologicClause) => (),
+            Err(err @ ClauseDbError::EmptyClause) => return Err(Error::ClauseDb(err)),
         }
         Ok(())
     }
