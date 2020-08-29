@@ -149,6 +149,66 @@ fn test_minimal_unsatisfiable_2sat_problem() {
 
 #[test]
 #[rustfmt::skip]
+fn test_minimal_unsatisfiable_4sat_problem() {
+    let mut solver = Solver::default();
+    let vars = (0..4).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    solver.consume_clause(clause(&[ vars[0],  vars[1],  vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[ vars[0],  vars[1],  vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[ vars[0],  vars[1], !vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[ vars[0],  vars[1], !vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[ vars[0], !vars[1],  vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[ vars[0], !vars[1],  vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[ vars[0], !vars[1], !vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[ vars[0], !vars[1], !vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[!vars[0],  vars[1],  vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[!vars[0],  vars[1],  vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[!vars[0],  vars[1], !vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[!vars[0],  vars[1], !vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[!vars[0], !vars[1],  vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[!vars[0], !vars[1],  vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[!vars[0], !vars[1], !vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[!vars[0], !vars[1], !vars[2], !vars[3]]));
+    let result = solver.solve(vec![]);
+    assert_eq!(result.map(|res| res.is_sat()), Ok(false));
+}
+
+#[test]
+#[rustfmt::skip]
+fn test_minimal_satisfiable_4sat_problem() {
+    let mut solver = Solver::default();
+    let vars = (0..4).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    // The below constraints are satisfied for an assignment of: -1 2 3 4
+    solver.consume_clause(clause(&[ vars[0],  vars[1],  vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[ vars[0],  vars[1],  vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[ vars[0],  vars[1], !vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[ vars[0],  vars[1], !vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[ vars[0], !vars[1],  vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[ vars[0], !vars[1],  vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[ vars[0], !vars[1], !vars[2],  vars[3]]));
+    // solver.consume_clause(clause(&[ vars[0], !vars[1], !vars[2], !vars[3]])); // purposely removed
+    solver.consume_clause(clause(&[!vars[0],  vars[1],  vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[!vars[0],  vars[1],  vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[!vars[0],  vars[1], !vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[!vars[0],  vars[1], !vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[!vars[0], !vars[1],  vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[!vars[0], !vars[1],  vars[2], !vars[3]]));
+    solver.consume_clause(clause(&[!vars[0], !vars[1], !vars[2],  vars[3]]));
+    solver.consume_clause(clause(&[!vars[0], !vars[1], !vars[2], !vars[3]]));
+    let result = solver.solve(vec![]);
+    assert_eq!(result.as_ref().map(|res| res.is_sat()), Ok(true));
+    let model = match result.unwrap() {
+        SolveResult::Sat(sat_result) => sat_result.model(),
+        _ => panic!("expected satisfied solve result"),
+    };
+    println!("{}", model);
+    assert_eq!(model.is_satisfied(!vars[0]), Ok(true));
+    assert_eq!(model.is_satisfied( vars[1]), Ok(true));
+    assert_eq!(model.is_satisfied( vars[2]), Ok(true));
+    assert_eq!(model.is_satisfied( vars[3]), Ok(true));
+}
+
+#[test]
+#[rustfmt::skip]
 fn test_unsatisfiable_2sat_problem() {
     let mut solver = Solver::default();
     let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
