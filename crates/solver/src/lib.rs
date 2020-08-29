@@ -194,7 +194,7 @@ impl Solver {
             Err(ClauseDbError::TautologicClause) => (),
             Err(ClauseDbError::EmptyClause) => {
                 self.encountered_empty_clause = true;
-            },
+            }
         }
     }
 
@@ -242,7 +242,7 @@ impl Solver {
     }
 
     fn solve_for_decision(&mut self, decision: Literal) -> Result<DecisionResult, Error> {
-        match self.assignment.enqueue_assumption(decision, None) {
+        match self.assignment.enqueue_assumption(decision) {
             Err(AssignmentError::Conflict) => return Ok(DecisionResult::Conflict),
             Err(AssignmentError::AlreadyAssigned) => {
                 panic!("decision heuristic unexpectedly proposed already assigned variable for propagation")
@@ -308,7 +308,7 @@ impl Solver {
         }
         // Propagate known hard facts (unit clauses).
         for &hard_fact in &self.hard_facts {
-            match self.assignment.enqueue_assumption(hard_fact, None) {
+            match self.assignment.enqueue_assumption(hard_fact) {
                 Ok(()) => (),
                 Err(AssignmentError::AlreadyAssigned) => (),
                 Err(AssignmentError::Conflict) => return Ok(SolveResult::Unsat),
@@ -339,7 +339,7 @@ impl Solver {
         let _assumptions_level = self.assignment.bump_decision_level();
         for assumption in assumptions {
             if let Err(AssignmentError::Conflict) =
-                self.assignment.enqueue_assumption(assumption, None)
+                self.assignment.enqueue_assumption(assumption)
             {
                 return Ok(SolveResult::Unsat)
             }

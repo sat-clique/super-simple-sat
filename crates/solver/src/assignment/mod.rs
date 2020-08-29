@@ -337,11 +337,10 @@ impl Assignment {
     pub fn enqueue_assumption(
         &mut self,
         assumption: Literal,
-        reason: Option<ClauseId>,
     ) -> Result<(), AssignmentError> {
         self.trail.push(
             assumption,
-            reason,
+            None,
             &mut self.assignments,
             &mut self.level_and_reason,
         )
