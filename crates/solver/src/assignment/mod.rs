@@ -74,9 +74,12 @@ impl<'a> PropagationEnqueuer<'a> {
     pub fn push(
         &mut self,
         literal: Literal,
+        reason: Option<ClauseId>,
         assignment: &mut VariableAssignment,
+        level_and_decision: &mut DecisionLevelsAndReasons,
     ) -> Result<(), AssignmentError> {
-        self.queue.push(literal, assignment)
+        self.queue
+            .push(literal, reason, assignment, level_and_decision)
     }
 }
 
@@ -252,9 +255,7 @@ impl DecisionLevelsAndReasons {
     ///
     /// If the given variable ID is out of bounds.
     pub fn get_reason(&self, variable: Variable) -> Option<ClauseId> {
-        self.get(variable)
-            .map(|(_, reason)| reason)
-            .flatten()
+        self.get(variable).map(|(_, reason)| reason).flatten()
     }
 
     /// Returns the decision level of the given variable if it has been assigned already.
@@ -263,8 +264,7 @@ impl DecisionLevelsAndReasons {
     ///
     /// If the given variable ID is out of bounds.
     pub fn get_level(&self, variable: Variable) -> Option<DecisionLevel> {
-        self.get(variable)
-            .map(|(level, _)| level)
+        self.get(variable).map(|(level, _)| level)
     }
 
     /// Returns `true` if the given variable assignment was forced by the trail.
@@ -337,8 +337,14 @@ impl Assignment {
     pub fn enqueue_assumption(
         &mut self,
         assumption: Literal,
+        reason: Option<ClauseId>,
     ) -> Result<(), AssignmentError> {
-        self.trail.push(assumption, &mut self.assignments)
+        self.trail.push(
+            assumption,
+            reason,
+            &mut self.assignments,
+            &mut self.level_and_reason,
+        )
     }
 }
 
@@ -371,7 +377,8 @@ impl Assignment {
         level: DecisionLevel,
         inform_decider: InformDecider,
     ) {
-        self.trail.pop_to_level(level, &mut self.assignments, inform_decider)
+        self.trail
+            .pop_to_level(level, &mut self.assignments, inform_decider)
     }
 
     /// Propagates the enqueued assumptions.
@@ -383,6 +390,7 @@ impl Assignment {
         let Self {
             watchers,
             assignments,
+            level_and_reason,
             trail,
             ..
         } = self;
@@ -392,6 +400,7 @@ impl Assignment {
                 propagation_literal,
                 clause_db,
                 assignments,
+                level_and_reason,
                 PropagationEnqueuer::new(trail),
             );
             if result.is_conflict() {

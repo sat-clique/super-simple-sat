@@ -1,11 +1,13 @@
 use super::{
     AssignmentError,
     VariableAssignment,
+    DecisionLevelsAndReasons,
 };
 use crate::{
     decider::InformDecider,
     Literal,
     Variable,
+    clause_db::ClauseId,
 };
 use alloc::{
     vec,
@@ -155,7 +157,9 @@ impl Trail {
     pub fn push(
         &mut self,
         literal: Literal,
+        reason: Option<ClauseId>,
         assignment: &mut VariableAssignment,
+        levels_and_reasons: &mut DecisionLevelsAndReasons,
     ) -> Result<(), AssignmentError> {
         match assignment.is_conflicting(literal) {
             Some(true) => return Err(AssignmentError::Conflict),
@@ -166,6 +170,7 @@ impl Trail {
             .push(literal)
             .expect("encountered unexpected invalid variable");
         assignment.assign(literal.variable(), literal.assignment());
+        levels_and_reasons.update(literal.variable(), self.current_decision_level(), reason);
         Ok(())
     }
 

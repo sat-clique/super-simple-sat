@@ -3,6 +3,7 @@ use super::{
     PropagationEnqueuer,
     PropagationResult,
     VariableAssignment,
+    DecisionLevelsAndReasons,
 };
 use crate::{
     clause_db::{
@@ -80,6 +81,7 @@ impl VariableWatchers {
         literal: Literal,
         clause_db: &mut ClauseDb,
         assignment: &mut VariableAssignment,
+        levels_and_decisions: &mut DecisionLevelsAndReasons,
         queue: &mut PropagationEnqueuer,
         mut watcher_enqueue: EnqueueWatcher,
     ) -> PropagationResult {
@@ -101,7 +103,7 @@ impl VariableWatchers {
                 .propagate(literal, &assignment);
             match result {
                 ClausePropagationResult::UnitUnderAssignment(unit_literal) => {
-                    let enqueue_result = queue.push(unit_literal, assignment);
+                    let enqueue_result = queue.push(unit_literal, Some(watcher), assignment, levels_and_decisions);
                     if let Err(AssignmentError::Conflict) = enqueue_result {
                         seen_conflict = true;
                     }
@@ -197,6 +199,7 @@ impl WatchList {
         literal: Literal,
         clause_db: &mut ClauseDb,
         assignment: &mut VariableAssignment,
+        levels_and_reasons: &mut DecisionLevelsAndReasons,
         mut queue: PropagationEnqueuer<'_>,
     ) -> PropagationResult {
         let Self {
@@ -210,6 +213,7 @@ impl WatchList {
                 literal,
                 clause_db,
                 assignment,
+                levels_and_reasons,
                 &mut queue,
                 EnqueueWatcher::new(deferred_inserts),
             );
