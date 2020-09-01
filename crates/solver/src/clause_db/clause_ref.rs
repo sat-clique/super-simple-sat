@@ -36,6 +36,11 @@ impl<'a> ClauseRef<'a> {
         Self { id, literals }
     }
 
+    /// Returns the number of literals of the clause.
+    pub fn len(&self) -> usize {
+        self.literals.len()
+    }
+
     /// Returns the identifier of the referenced clause.
     pub fn id(&self) -> ClauseId {
         self.id
