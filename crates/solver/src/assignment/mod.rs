@@ -351,14 +351,14 @@ impl Assignment {
 pub enum PropagationResult {
     /// Propagation led to a consistent assignment.
     Consistent,
-    /// Propagation led to a conflicting assignment.
-    Conflict,
+    /// Propagation led to a conflicting assignment with the given conflicting clause.
+    Conflict(ClauseId),
 }
 
 impl PropagationResult {
     /// Returns `true` if the propagation yielded a conflict.
     pub fn is_conflict(self) -> bool {
-        matches!(self, Self::Conflict)
+        matches!(self, Self::Conflict(_))
     }
 }
 
@@ -391,7 +391,6 @@ impl Assignment {
             assignments,
             level_and_reason,
             trail,
-            ..
         } = self;
         let level = trail.current_decision_level();
         while let Some(propagation_literal) = trail.pop_enqueued() {
@@ -402,7 +401,7 @@ impl Assignment {
                 level_and_reason,
                 PropagationEnqueuer::new(trail),
             );
-            if result.is_conflict() {
+            if let PropagationResult::Conflict(_conflicting_clause) = result {
                 trail.pop_to_level(level, assignments, inform_decider);
                 return result
             }

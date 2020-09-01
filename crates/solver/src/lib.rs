@@ -254,7 +254,7 @@ impl Solver {
             .assignment
             .propagate(&mut self.clauses, self.decider.informer());
         match propagation_result {
-            PropagationResult::Conflict => Ok(DecisionResult::Conflict),
+            PropagationResult::Conflict(_) => Ok(DecisionResult::Conflict),
             PropagationResult::Consistent => {
                 let result = self.decide_and_propagate()?;
                 Ok(result)

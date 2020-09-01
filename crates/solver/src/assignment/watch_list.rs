@@ -85,11 +85,11 @@ impl VariableWatchers {
         queue: &mut PropagationEnqueuer,
         mut watcher_enqueue: EnqueueWatcher,
     ) -> PropagationResult {
-        let mut seen_conflict = false;
+        let mut conflict_clause = None;
         let watchers = self.literal_watchers_mut(literal);
         watchers.retain(|&watcher| {
             // Closure returns `false` if the watcher needs to be removed.
-            if seen_conflict {
+            if conflict_clause.is_some() {
                 return true
             }
             if let Some(true) = assignment.is_satisfied(watcher.blocker) {
@@ -103,9 +103,14 @@ impl VariableWatchers {
                 .propagate(literal, &assignment);
             match result {
                 ClausePropagationResult::UnitUnderAssignment(unit_literal) => {
-                    let enqueue_result = queue.push(unit_literal, Some(watcher), assignment, levels_and_decisions);
+                    let enqueue_result = queue.push(
+                        unit_literal,
+                        Some(watcher),
+                        assignment,
+                        levels_and_decisions,
+                    );
                     if let Err(AssignmentError::Conflict) = enqueue_result {
-                        seen_conflict = true;
+                        conflict_clause = Some(watcher);
                     }
                     true
                 }
@@ -118,9 +123,9 @@ impl VariableWatchers {
                 }
             }
         });
-        match seen_conflict {
-            true => PropagationResult::Conflict,
-            false => PropagationResult::Consistent,
+        match conflict_clause {
+            Some(conflicting_clause) => PropagationResult::Conflict(conflicting_clause),
+            None => PropagationResult::Consistent,
         }
     }
 }
