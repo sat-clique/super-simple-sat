@@ -1,7 +1,12 @@
+use solver::{
+    SolveResult,
+    Solver,
+};
+use std::{
+    fs,
+    path::PathBuf,
+};
 use structopt::StructOpt;
-use std::path::PathBuf;
-use std::fs;
-use solver::{Solver, SolveResult};
 
 #[derive(StructOpt, Debug)]
 struct Opt {
@@ -11,12 +16,14 @@ struct Opt {
 
 fn main() {
     let opt = Opt::from_args();
-    let cnf_contents = fs::read(opt.input)
-        .expect("couldn't read provided input .cnf file");
+    let cnf_contents =
+        fs::read(opt.input).expect("couldn't read provided input .cnf file");
     let mut solver = Solver::from_cnf(&mut &cnf_contents[..])
         .expect("couldn't properly decode provided input .cnf file");
     println!("start solving ...");
-    let result = solver.solve(vec![]).expect("encountered errors during solving");
+    let result = solver
+        .solve(vec![])
+        .expect("encountered errors during solving");
     match result {
         SolveResult::Sat(model) => {
             println!("SAT\nmodel = {}", model);

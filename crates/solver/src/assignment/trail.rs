@@ -1,13 +1,13 @@
 use super::{
     AssignmentError,
-    VariableAssignment,
     DecisionLevelsAndReasons,
+    VariableAssignment,
 };
 use crate::{
+    clause_db::ClauseId,
     decider::InformDecider,
     Literal,
     Variable,
-    clause_db::ClauseId,
 };
 use alloc::{
     vec,

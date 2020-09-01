@@ -1,9 +1,9 @@
 use super::{
     AssignmentError,
+    DecisionLevelsAndReasons,
     PropagationEnqueuer,
     PropagationResult,
     VariableAssignment,
-    DecisionLevelsAndReasons,
 };
 use crate::{
     clause_db::{
@@ -15,8 +15,8 @@ use crate::{
     Sign,
     Variable,
 };
-use bounded::BoundedArray;
 use alloc::vec::Vec;
+use bounded::BoundedArray;
 
 /// Registered watcher for a single literal with a blocker literal.
 ///

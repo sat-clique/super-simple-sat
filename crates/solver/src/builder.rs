@@ -3,8 +3,8 @@ use crate::{
     Literal,
     Solver,
 };
-use cnf_parser::Output;
 use alloc::vec::Vec;
+use cnf_parser::Output;
 
 #[derive(Debug, Default)]
 pub struct SolverBuilder {

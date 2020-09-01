@@ -1,9 +1,9 @@
 use super::OutOfBoundsAccess;
+use alloc::vec::Vec;
 use core::{
     ops,
     slice,
 };
-use alloc::vec::Vec;
 
 /// A stack that is bound to a given maximum size.
 #[derive(Debug, Clone, PartialEq, Eq)]

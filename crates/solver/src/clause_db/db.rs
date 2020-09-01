@@ -1,6 +1,7 @@
 use super::{
     ClauseRef,
     ClauseRefMut,
+    VerifiedClause,
 };
 use crate::Literal;
 use alloc::vec::Vec;
@@ -11,7 +12,6 @@ use core::{
     ops::Range,
     slice,
 };
-use super::VerifiedClause;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]

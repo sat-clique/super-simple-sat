@@ -2,12 +2,12 @@ use super::{
     Index,
     OutOfBoundsAccess,
 };
+use alloc::vec::Vec;
 use core::{
     iter::FromIterator,
     marker::PhantomData,
     ops,
 };
-use alloc::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoundedArray<Idx, T> {
