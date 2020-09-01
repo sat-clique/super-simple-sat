@@ -18,7 +18,6 @@ use core::{
     fmt::Display,
     iter,
 };
-use alloc::string::ToString;
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct LastModel {
@@ -58,7 +57,7 @@ impl Display for Model {
             let index = variable.into_index() + 1;
             if f.alternate() {
                 writeln!(f, "model #var: {}", self.len())?;
-                let assignment = assignment.into_bool().to_string();
+                let assignment = assignment.into_bool();
                 writeln!(f, " - var({:3}) = {}", index, assignment)?;
             } else {
                 if assignment == Sign::False {
