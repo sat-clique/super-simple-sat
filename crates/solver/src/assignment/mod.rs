@@ -1,3 +1,4 @@
+mod first_uip_learning;
 mod model;
 mod trail;
 mod watch_list;
@@ -8,6 +9,10 @@ pub use self::model::{
     ModelIter,
 };
 use self::{
+    first_uip_learning::{
+        FirstUipLearning,
+        LearnedClauseLiterals,
+    },
     trail::{
         DecisionLevel,
         Trail,
@@ -293,6 +298,7 @@ pub struct Assignment {
     assignments: VariableAssignment,
     watchers: WatchList,
     level_and_reason: DecisionLevelsAndReasons,
+    first_uip_learning: FirstUipLearning,
 }
 
 impl Assignment {
@@ -324,6 +330,8 @@ impl Assignment {
         self.assignments.register_new_variables(new_variables);
         self.watchers.register_new_variables(new_variables);
         self.level_and_reason.register_new_variables(new_variables);
+        self.first_uip_learning
+            .register_new_variables(new_variables);
     }
 
     /// Enqueues a propagation literal.
@@ -391,6 +399,7 @@ impl Assignment {
             assignments,
             level_and_reason,
             trail,
+            first_uip_learning,
         } = self;
         let level = trail.current_decision_level();
         while let Some(propagation_literal) = trail.pop_enqueued() {
@@ -401,7 +410,24 @@ impl Assignment {
                 level_and_reason,
                 PropagationEnqueuer::new(trail),
             );
-            if let PropagationResult::Conflict(_conflicting_clause) = result {
+            if let PropagationResult::Conflict(conflicting_clause) = result {
+                #[cfg(test)]
+                {
+                    let conflicting_clause =
+                        clause_db.resolve(conflicting_clause).expect(
+                            "could not resolve conflicting clause in clause database",
+                        );
+                    let learned_clause = first_uip_learning.compute_conflict_clause(
+                        conflicting_clause,
+                        trail,
+                        level_and_reason,
+                        clause_db,
+                    );
+                    println!(
+                        "learned_clause = {:?}",
+                        learned_clause.collect::<Vec<_>>()
+                    );
+                }
                 trail.pop_to_level(level, assignments, inform_decider);
                 return result
             }
