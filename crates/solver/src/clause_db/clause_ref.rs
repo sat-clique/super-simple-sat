@@ -4,6 +4,11 @@ use crate::{
     Literal,
 };
 use core::{
+    fmt::{
+        Display,
+        Formatter,
+        Result,
+    },
     iter,
     slice,
 };
@@ -54,6 +59,21 @@ impl<'a> ClauseRef<'a> {
     /// at least two literals.
     pub fn second(&self) -> Literal {
         self.literals[1]
+    }
+}
+
+impl<'a> Display for ClauseRef<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "[")?;
+        let mut iter = self.into_iter();
+        if let Some(first) = iter.next() {
+            write!(f, "{}", first)?;
+            for rest in iter {
+                write!(f, ", {}", rest)?;
+            }
+        }
+        write!(f, "]")?;
+        Ok(())
     }
 }
 

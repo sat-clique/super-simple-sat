@@ -4,6 +4,11 @@ use bounded::{
 };
 use core::{
     convert::TryFrom,
+    fmt::{
+        Display,
+        Formatter,
+        Result,
+    },
     num::{
         NonZeroI32,
         NonZeroU32,
@@ -85,6 +90,12 @@ impl Literal {
             true => Sign::True,
             false => Sign::False,
         }
+    }
+}
+
+impl Display for Literal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "{}", self.value.get())
     }
 }
 
