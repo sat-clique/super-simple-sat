@@ -26,7 +26,7 @@ fn main() {
         .expect("encountered errors during solving");
     match result {
         SolveResult::Sat(model) => {
-            println!("SAT\nmodel = {}", model);
+            println!("SAT\n{}", model);
         }
         SolveResult::Unsat => {
             println!("UNSAT");
