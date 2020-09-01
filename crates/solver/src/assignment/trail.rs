@@ -87,12 +87,11 @@ impl TrailLimits {
     }
 
     /// Returns the trail limits for the given decision level.
-    pub fn level_limits(&self, level: DecisionLevel) -> (TrailLimit, TrailLimit) {
+    pub fn level_limits(&self, level: DecisionLevel) -> (TrailLimit, Option<TrailLimit>) {
         let level_index = level.into_index();
-        (
-            self.limits[level_index.saturating_sub(2)],
-            self.limits[level_index.saturating_sub(1)],
-        )
+        let from = self.limits[level_index.saturating_sub(1)];
+        let to = self.limits.get(level_index).copied();
+        (from, to)
     }
 
     /// Returns the current decision level.
@@ -157,6 +156,9 @@ impl Trail {
             limits,
         } = self;
         let (start, end) = limits.level_limits(level);
+        let end = end.unwrap_or_else(|| {
+            TrailLimit::from_index(self.decisions_and_implications.len())
+        });
         &decisions_and_implications[start.into_index()..end.into_index()]
     }
 
