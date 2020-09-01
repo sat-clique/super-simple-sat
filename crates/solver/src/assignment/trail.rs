@@ -86,6 +86,15 @@ impl TrailLimits {
         self.last()
     }
 
+    /// Returns the trail limits for the given decision level.
+    pub fn level_limits(&self, level: DecisionLevel) -> (TrailLimit, TrailLimit) {
+        let level_index = level.into_index();
+        (
+            self.limits[level_index.saturating_sub(2)],
+            self.limits[level_index.saturating_sub(1)],
+        )
+    }
+
     /// Returns the current decision level.
     pub fn current_decision_level(&self) -> DecisionLevel {
         let index = self.limits.len();
@@ -108,7 +117,7 @@ impl Trail {
 
     /// Registers the given number of additional variables.
     ///
-    /// # Errors
+    /// # Panics
     ///
     /// If the number of total variables is out of supported bounds.
     pub fn register_new_variables(&mut self, new_variables: usize) {
@@ -134,6 +143,21 @@ impl Trail {
             return true
         }
         self.propagate_head == self.decisions_and_implications.len()
+    }
+
+    /// Returns all assignments in the given decision level of the trail.
+    ///
+    /// # Panics
+    ///
+    /// If the given decision level is invalid for the trail.
+    pub fn level_assignments(&self, level: DecisionLevel) -> &[Literal] {
+        let Self {
+            propagate_head,
+            decisions_and_implications,
+            limits,
+        } = self;
+        let (start, end) = limits.level_limits(level);
+        &decisions_and_implications[start.into_index()..end.into_index()]
     }
 
     /// Returns the next literal from the propagation queue if any.
@@ -170,7 +194,11 @@ impl Trail {
             .push(literal)
             .expect("encountered unexpected invalid variable");
         assignment.assign(literal.variable(), literal.assignment());
-        levels_and_reasons.update(literal.variable(), self.current_decision_level(), reason);
+        levels_and_reasons.update(
+            literal.variable(),
+            self.current_decision_level(),
+            reason,
+        );
         Ok(())
     }
 
