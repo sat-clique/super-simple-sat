@@ -95,7 +95,7 @@ impl Literal {
 
 impl Display for Literal {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{}", self.value.get())
+        self.value.get().fmt(f)
     }
 }
 
