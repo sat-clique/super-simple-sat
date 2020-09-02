@@ -423,10 +423,23 @@ impl Assignment {
                         level_and_reason,
                         clause_db,
                     );
-                    println!(
-                        "learned_clause = {:?}",
-                        learned_clause.collect::<Vec<_>>()
-                    );
+                    let (s, len) = {
+                        use core::fmt::Write as _;
+                        let mut len = 0;
+                        let mut s = String::from("[");
+                        let mut learned_clause = learned_clause;
+                        if let Some(first) = learned_clause.next() {
+                            len = 1;
+                            write!(&mut s, "{}", first).unwrap();
+                            for rest in learned_clause {
+                                len += 1;
+                                write!(&mut s, ", {}", rest).unwrap();
+                            }
+                        }
+                        s.push(']');
+                        (s, len)
+                    };
+                    println!("learned_clause = {}, len = {}", s, len);
                 }
                 trail.pop_to_level(level, assignments, inform_decider);
                 return result
