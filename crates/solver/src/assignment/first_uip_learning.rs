@@ -31,7 +31,7 @@ pub struct FirstUipLearning {
     /// Thus, `stamps` is used both for keeping track of remaining resolution work, and
     /// for quickly deciding whether a variable already occurs in the result. These two concerns
     /// are handled by the same data structure for memory efficiency.
-    stamps: BoundedBitmap<Variable, bool>,
+    stamps: StampMap,
     /// Temporary buffer to store literals of the learned clauses.
     result: Vec<Option<Literal>>,
 }
@@ -77,7 +77,12 @@ impl<'a> Iterator for LearnedClauseLiterals<'a> {
 
 impl<'a> ExactSizeIterator for LearnedClauseLiterals<'a> {}
 
-impl FirstUipLearning {
+#[derive(Debug, Default, Clone)]
+struct StampMap {
+    stamps: BoundedBitmap<Variable, bool>,
+}
+
+impl StampMap {
     /// Returns the current number of registered variables.
     fn len_variables(&self) -> usize {
         self.stamps.len()
@@ -91,6 +96,46 @@ impl FirstUipLearning {
     pub fn register_new_variables(&mut self, new_variables: usize) {
         let total_variables = self.len_variables() + new_variables;
         self.stamps.resize_to_len(total_variables);
+    }
+
+    /// Stamps the given variable.
+    ///
+    /// # Panics
+    ///
+    /// If the variable is invalid.
+    pub fn stamp(&mut self, variable: Variable) {
+        self.stamps
+            .set(variable, true)
+            .expect("encountered unexpected invalid variable upon stamping");
+    }
+
+    /// Unstamps the given variable.
+    ///
+    /// # Panics
+    ///
+    /// If the variable is invalid.
+    pub fn unstamp(&mut self, variable: Variable) {
+        self.stamps
+            .set(variable, false)
+            .expect("encountered unexpected invalid variable upon unstamping");
+    }
+
+    /// Returns `true` if the variable has been stamped.
+    pub fn is_stamped(&self, variable: Variable) -> bool {
+        self.stamps
+            .get(variable)
+            .expect("encountered unexpected invalid variable upon querying stamp state")
+    }
+}
+
+impl FirstUipLearning {
+    /// Registers the given number of additional variables.
+    ///
+    /// # Panics
+    ///
+    /// If the number of total variables is out of supported bounds.
+    pub fn register_new_variables(&mut self, new_variables: usize) {
+        self.stamps.register_new_variables(new_variables);
     }
 
     /// Given a conflicting clause computes the conflict clause.
@@ -145,9 +190,9 @@ impl FirstUipLearning {
         // imaginary literal is `None`, in this case.
         let count_unresolved =
             self.add_resolvent(conflicting_clause, None, trail, levels_and_reasons);
-        // If unresolvedCount == 1, the single literal on the current decision level
+        // If count_unresolved == 1, the single literal on the current decision level
         // would have gotten a forced assignment on a lower decision level, which
-        // is impossible. If unresolvedCount == 0, the clause has no literals
+        // is impossible. If count_unresolved == 0, the clause has no literals
         // on the current decision level and could not have been part of the
         // conflict in the first place, either.
         assert!(
@@ -188,9 +233,7 @@ impl FirstUipLearning {
         // we need to keep track of the literals already included in the result.
         let current_level = trail.current_decision_level();
         if let Some(resolve_at_lit) = resolve_at_lit {
-            self.stamps
-                .set(resolve_at_lit.variable(), false)
-                .expect("encountered unexpected invalid resolve_at variable");
+            self.stamps.unstamp(resolve_at_lit.variable());
         }
         // Optimization: To avoid pushing into the result buffer we
         // assign it to an expected capacity. In most cases this won't actually cause
@@ -201,14 +244,9 @@ impl FirstUipLearning {
         for reason_literal in reason {
             let reason_variable = reason_literal.variable();
             if Some(reason_literal) != resolve_at_lit
-                && !self
-                    .stamps
-                    .get(reason_variable)
-                    .expect("encountered unexpected invalid variable")
+                && !self.stamps.is_stamped(reason_variable)
             {
-                self.stamps
-                    .set(reason_variable, true)
-                    .expect("encountered unexpected invalid variable");
+                self.stamps.stamp(reason_variable);
                 if levels_and_reasons.get_level(reason_variable).expect(
                     "encountered unexpected missing decision level for reason variable",
                 ) == current_level
@@ -243,10 +281,7 @@ impl FirstUipLearning {
                 .next()
                 .expect("encountered unexpected missing level assignment");
             let resolve_at_var = resolve_at_lit.variable();
-            let is_stamped = self
-                .stamps
-                .get(resolve_at_var)
-                .expect("encountered invalid trail assignment variable");
+            let is_stamped = self.stamps.is_stamped(resolve_at_var);
             if is_stamped {
                 let (level, reason) = levels_and_reasons
                     .get(resolve_at_var)
@@ -272,15 +307,11 @@ impl FirstUipLearning {
         let asserting_literal = *level_assignments
             .find(|literal| {
                 let var = literal.variable();
-                self.stamps
-                    .get(var)
-                    .expect("encountered missing stamp for level assignment literal")
+                self.stamps.is_stamped(var)
             })
             .expect("encountered missing asserting literal");
         self.result[0] = Some(asserting_literal);
-        self.stamps
-            .set(asserting_literal.variable(), false)
-            .expect("encountered unexpected out of bounds asserting literal");
+        self.stamps.unstamp(asserting_literal.variable());
         assert_eq!(
             count_unresolved, 1,
             "reached the end of the decision level assignments without finding the 1-UIP"
@@ -292,9 +323,7 @@ impl FirstUipLearning {
         for literal in &self.result {
             let literal =
                 literal.expect("encountered undefined literal after clause learning");
-            self.stamps
-                .set(literal.variable(), false)
-                .expect("encountered unexpected invalid variable");
+            self.stamps.unstamp(literal.variable());
         }
     }
 }
