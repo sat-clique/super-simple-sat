@@ -12,30 +12,6 @@ use alloc::vec::Vec;
 use bounded::BoundedBitmap;
 use core::slice;
 
-#[derive(Debug, Default, Clone)]
-pub struct FirstUipLearning {
-    /// Temporary storage for stamps since we cannot afford to allocate (and initialize) a
-    /// new vector with the length of the number of variables each time a conflict clause
-    /// is computed.
-    /// This member variable is governed by class invariant `A`.
-    ///
-    /// A variable `v` can be "stamped" for two reasons:
-    ///
-    /// - if `v` has been assigned on the current decision level: when traversing down the trail,
-    ///   resolution with `v`'s reason clause needs to be performed.
-    /// - if `v` has not been assigned on the current decision level: `v` occurs in the result.
-    ///
-    /// Note that only one variable assigned on the current decision level can actually occur
-    /// in the result: the variable of the asserting literal (UIP).
-    ///
-    /// Thus, `stamps` is used both for keeping track of remaining resolution work, and
-    /// for quickly deciding whether a variable already occurs in the result. These two concerns
-    /// are handled by the same data structure for memory efficiency.
-    stamps: StampMap,
-    /// Temporary buffer to store literals of the learned clauses.
-    result: Vec<Literal>,
-}
-
 pub struct LearnedClauseLiterals<'a> {
     literals: slice::Iter<'a, Literal>,
 }
@@ -114,6 +90,30 @@ impl StampMap {
     }
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct FirstUipLearning {
+    /// Temporary storage for stamps since we cannot afford to allocate (and initialize) a
+    /// new vector with the length of the number of variables each time a conflict clause
+    /// is computed.
+    /// This member variable is governed by class invariant `A`.
+    ///
+    /// A variable `v` can be "stamped" for two reasons:
+    ///
+    /// - if `v` has been assigned on the current decision level: when traversing down the trail,
+    ///   resolution with `v`'s reason clause needs to be performed.
+    /// - if `v` has not been assigned on the current decision level: `v` occurs in the result.
+    ///
+    /// Note that only one variable assigned on the current decision level can actually occur
+    /// in the result: the variable of the asserting literal (UIP).
+    ///
+    /// Thus, `stamps` is used both for keeping track of remaining resolution work, and
+    /// for quickly deciding whether a variable already occurs in the result. These two concerns
+    /// are handled by the same data structure for memory efficiency.
+    stamps: StampMap,
+    /// Temporary buffer to store literals of the learned clauses.
+    result: Vec<Literal>,
+}
+
 impl FirstUipLearning {
     /// Registers the given number of additional variables.
     ///
@@ -142,10 +142,17 @@ impl FirstUipLearning {
         LearnedClauseLiterals::new(self.result.as_slice())
     }
 
+    /// Resets the stamps for the variables of the given literals.
+    fn clear_stamps(&mut self) {
+        for literal in &self.result {
+            self.stamps.unstamp(literal.variable());
+        }
+    }
+
     /// Initializes the result buffer.
     ///
     /// The result buffer is initialized by inserting all literals of the
-    /// given conflicting clause that occure on antoher decision level than the
+    /// given conflicting clause that occur on another decision level than the
     /// current one.
     /// Furthermore, if the asserting literal is found during this call, it is
     /// prepended to the result buffer. Note that this can happen if the
@@ -241,20 +248,26 @@ impl FirstUipLearning {
         count_unresolved
     }
 
-    /// Iteratively resolves the result buffer with reason clause of literals
-    /// occurring on the current decision level, aborting when having reached the
-    /// first unique implication point.
-    fn resolve_until_uip(
+    /// Finds the 1-UIP for the given level assignments, trail and reasons.
+    ///
+    /// Should be followed with a call to [`Self::find_asserting_literal`].
+    ///
+    /// # Panics
+    ///
+    /// - If the 1-UIP has been found too early.
+    /// - If the 1-UIP has not been found at all.
+    fn find_first_uip<L>(
         &mut self,
         count_unresolved: usize,
+        level_assignments: &mut L,
         trail: &Trail,
         levels_and_reasons: &DecisionLevelsAndReasons,
         clause_db: &ClauseDb,
-    ) {
+    ) where
+        L: Iterator<Item = Literal>,
+    {
         let mut count_unresolved = count_unresolved;
         let current_level = trail.current_decision_level();
-        let mut level_assignments =
-            trail.level_assignments(current_level).into_iter().rev();
         while count_unresolved != 1 {
             let resolve_at_lit = level_assignments
                 .next()
@@ -274,7 +287,7 @@ impl FirstUipLearning {
                             .expect("error upon resolving reason clause");
                         count_unresolved += self.add_resolvent(
                             reason,
-                            Some(*resolve_at_lit),
+                            Some(resolve_at_lit),
                             trail,
                             levels_and_reasons,
                         );
@@ -283,27 +296,57 @@ impl FirstUipLearning {
                 }
             }
         }
-        let asserting_literal = *level_assignments
-            .find(|literal| {
-                let var = literal.variable();
-                self.stamps.is_stamped(var)
-            })
-            .expect("encountered missing asserting literal");
-        self.result.push(asserting_literal);
-        let first = 0;
-        let last = self.result.len() - 1;
-        self.result.swap(first, last);
-        self.stamps.unstamp(asserting_literal.variable());
         assert_eq!(
             count_unresolved, 1,
             "reached the end of the decision level assignments without finding the 1-UIP"
         );
     }
 
-    /// Resets the stamps for the variables of the given literals.
-    fn clear_stamps(&mut self) {
-        for literal in &self.result {
-            self.stamps.unstamp(literal.variable());
-        }
+    /// Finds the asserting literal.
+    ///
+    /// Needs to be called after [`Self::find_first_uip`].
+    /// Places the asserting literal into the first position of the result buffer.
+    fn find_asserting_literal<L>(&mut self, level_assignments: &mut L)
+    where
+        L: Iterator<Item = Literal>,
+    {
+        let asserting_literal = level_assignments
+            .find(|literal| {
+                let var = literal.variable();
+                self.stamps.is_stamped(var)
+            })
+            .expect("encountered missing asserting literal");
+        self.result.push(asserting_literal);
+        // Swap first and last to put the asserting literal into the first position.
+        let last = self.result.len() - 1;
+        self.result.swap(0, last);
+        self.stamps.unstamp(asserting_literal.variable());
+    }
+
+    /// Iteratively resolves the result buffer with reason clause of literals
+    /// occurring on the current decision level, aborting when having reached the
+    /// first unique implication point.
+    fn resolve_until_uip(
+        &mut self,
+        count_unresolved: usize,
+        trail: &Trail,
+        levels_and_reasons: &DecisionLevelsAndReasons,
+        clause_db: &ClauseDb,
+    ) {
+        // let mut count_unresolved = count_unresolved;
+        let current_level = trail.current_decision_level();
+        let mut level_assignments = trail
+            .level_assignments(current_level)
+            .into_iter()
+            .copied()
+            .rev();
+        self.find_first_uip(
+            count_unresolved,
+            &mut level_assignments,
+            trail,
+            levels_and_reasons,
+            clause_db,
+        );
+        self.find_asserting_literal(&mut level_assignments);
     }
 }
