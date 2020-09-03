@@ -224,41 +224,35 @@ impl FirstUipLearning {
         trail: &Trail,
         levels_and_reasons: &DecisionLevelsAndReasons,
     ) -> usize {
-        let mut count_unresolved = 0;
         // Stamp literals on the current decision level and mark them as resolution
         // "work". All others already belong to the result: resolution is not
         // performed at these literals, since none of their inverses can appear in
         // reason clauses for variables on the current decision level. They may
         // appear in those reason clauses with the same sign, though, which is why
         // we need to keep track of the literals already included in the result.
-        let current_level = trail.current_decision_level();
         if let Some(resolve_at_lit) = resolve_at_lit {
             self.stamps.unstamp(resolve_at_lit.variable());
         }
-        // Optimization: To avoid pushing into the result buffer we
-        // assign it to an expected capacity. In most cases this won't actually cause
-        // allocations since the buffer is reused.
-        let mut effective_literals_len = self.result.len();
-        self.result
-            .resize_with(effective_literals_len + reason.len(), || None);
+        // Reserve upfront in the result buffer for the reason clause literals.
+        self.result.reserve(reason.len());
+        let current_level = trail.current_decision_level();
+        let mut count_unresolved = 0;
         for reason_literal in reason {
             let reason_variable = reason_literal.variable();
             if Some(reason_literal) != resolve_at_lit
                 && !self.stamps.is_stamped(reason_variable)
             {
                 self.stamps.stamp(reason_variable);
-                if levels_and_reasons.get_level(reason_variable).expect(
+                let reason_level = levels_and_reasons.get_level(reason_variable).expect(
                     "encountered unexpected missing decision level for reason variable",
-                ) == current_level
-                {
+                );
+                if reason_level == current_level {
                     count_unresolved += 1;
                 } else {
-                    self.result[effective_literals_len] = Some(reason_literal);
-                    effective_literals_len += 1;
+                    self.result.push(Some(reason_literal));
                 }
             }
         }
-        self.result.resize_with(effective_literals_len, || None);
         count_unresolved
     }
 
