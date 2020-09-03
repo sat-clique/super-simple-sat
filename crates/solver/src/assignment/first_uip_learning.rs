@@ -268,8 +268,8 @@ impl FirstUipLearning {
     ) {
         let mut count_unresolved = count_unresolved;
         let current_level = trail.current_decision_level();
-        let level_assignments = trail.level_assignments(current_level);
-        let mut level_assignments = level_assignments.into_iter().rev();
+        let mut level_assignments =
+            trail.level_assignments(current_level).into_iter().rev();
         while count_unresolved != 1 {
             let resolve_at_lit = level_assignments
                 .next()
