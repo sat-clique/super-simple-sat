@@ -333,7 +333,6 @@ impl FirstUipLearning {
         levels_and_reasons: &DecisionLevelsAndReasons,
         clause_db: &ClauseDb,
     ) {
-        // let mut count_unresolved = count_unresolved;
         let current_level = trail.current_decision_level();
         let mut level_assignments = trail
             .level_assignments(current_level)
