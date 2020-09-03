@@ -33,24 +33,16 @@ pub struct FirstUipLearning {
     /// are handled by the same data structure for memory efficiency.
     stamps: StampMap,
     /// Temporary buffer to store literals of the learned clauses.
-    result: Vec<Option<Literal>>,
+    result: Vec<Literal>,
 }
 
 pub struct LearnedClauseLiterals<'a> {
-    literals: slice::Iter<'a, Option<Literal>>,
+    literals: slice::Iter<'a, Literal>,
 }
 
 impl<'a> LearnedClauseLiterals<'a> {
     /// Creates a new learned clause literals iterator from the given literals buffer.
-    ///
-    /// # Panics
-    ///
-    /// If the literals buffer contains undefined literals (`None`).
-    fn new(literals: &'a [Option<Literal>]) -> Self {
-        debug_assert!(
-            literals.iter().all(|literal| literal.is_some()),
-            "the conflict clause still contains some undefined literals after the 1-UIP resolution"
-        );
+    fn new(literals: &'a [Literal]) -> Self {
         Self {
             literals: literals.iter(),
         }
@@ -65,13 +57,7 @@ impl<'a> Iterator for LearnedClauseLiterals<'a> {
     }
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.literals.next() {
-            Some(Some(literal)) => Some(*literal),
-            None => None,
-            Some(None) => {
-                unreachable!("encountered unexpected undefined literal in learned clause")
-            }
-        }
+        self.literals.next().copied()
     }
 }
 
@@ -141,6 +127,7 @@ impl FirstUipLearning {
     /// Given a conflicting clause computes the conflict clause.
     ///
     /// Returns an iterator over the literals of the learned clause.
+    /// The asserting literal is yielded first.
     pub fn compute_conflict_clause(
         &mut self,
         conflicting_clause: ClauseRef,
@@ -181,8 +168,6 @@ impl FirstUipLearning {
         levels_and_reasons: &DecisionLevelsAndReasons,
     ) -> usize {
         self.result.clear();
-        // `None` stands for an undefined literal.
-        self.result.push(None);
         // Mark the literals on the current decision levels as work, put
         // the rest into the result, stamp them all - this can be done
         // by resolving the conflicting clause with an empty clause and
@@ -249,7 +234,7 @@ impl FirstUipLearning {
                 if reason_level == current_level {
                     count_unresolved += 1;
                 } else {
-                    self.result.push(Some(reason_literal));
+                    self.result.push(reason_literal);
                 }
             }
         }
@@ -304,7 +289,10 @@ impl FirstUipLearning {
                 self.stamps.is_stamped(var)
             })
             .expect("encountered missing asserting literal");
-        self.result[0] = Some(asserting_literal);
+        self.result.push(asserting_literal);
+        let first = 0;
+        let last = self.result.len() - 1;
+        self.result.swap(first, last);
         self.stamps.unstamp(asserting_literal.variable());
         assert_eq!(
             count_unresolved, 1,
@@ -315,8 +303,6 @@ impl FirstUipLearning {
     /// Resets the stamps for the variables of the given literals.
     fn clear_stamps(&mut self) {
         for literal in &self.result {
-            let literal =
-                literal.expect("encountered undefined literal after clause learning");
             self.stamps.unstamp(literal.variable());
         }
     }
