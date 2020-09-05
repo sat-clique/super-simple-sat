@@ -36,7 +36,9 @@ pub trait ResolveClauseId {
     fn resolve_clause_id(&self, id: ClauseId) -> ClauseRef;
 }
 
+/// Types that provide the latest decision level and reason of a variable on the trail.
 pub trait DecisionLevelAndReasonOf {
+    /// Returns the decision level and reason clause (if any) for the given variable on the trail.
     fn decision_level_and_reason_of(
         &self,
         variable: Variable,
