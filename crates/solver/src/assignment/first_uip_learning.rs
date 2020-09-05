@@ -1,9 +1,13 @@
 use super::{
+    DecisionLevel,
     DecisionLevelsAndReasons,
     Trail,
 };
 use crate::{
-    clause_db::ClauseRef,
+    clause_db::{
+        ClauseId,
+        ClauseRef,
+    },
     ClauseDb,
     Literal,
     Variable,
@@ -11,6 +15,62 @@ use crate::{
 use alloc::vec::Vec;
 use bounded::BoundedBitmap;
 use core::slice;
+
+/// Types that provide information about the current decision level.
+pub trait CurrentDecisionLevel {
+    /// Returns the current decision level on the trail.
+    fn current_decision_level(&self) -> DecisionLevel;
+}
+
+/// Types that provide the assignments of the given decision level.
+pub trait LevelAssignments {
+    /// Returns all assignments of the current decision level.
+    ///
+    /// They are in the order in which they have been assigned on the trail.
+    fn level_assignments(&self, level: DecisionLevel) -> &[Literal];
+}
+
+/// Types that provide resolution of clause IDs into actual clauses.
+pub trait ResolveClauseId {
+    /// Returns the clause for the given clause ID.
+    fn resolve_clause_id(&self, id: ClauseId) -> ClauseRef;
+}
+
+pub trait DecisionLevelAndReasonOf {
+    fn decision_level_and_reason_of(
+        &self,
+        variable: Variable,
+    ) -> (DecisionLevel, Option<ClauseId>);
+}
+
+impl CurrentDecisionLevel for Trail {
+    fn current_decision_level(&self) -> DecisionLevel {
+        Self::current_decision_level(self)
+    }
+}
+
+impl LevelAssignments for Trail {
+    fn level_assignments(&self, level: DecisionLevel) -> &[Literal] {
+        Self::level_assignments(self, level)
+    }
+}
+
+impl ResolveClauseId for ClauseDb {
+    fn resolve_clause_id(&self, id: ClauseId) -> ClauseRef {
+        self.resolve(id)
+            .expect("encountered unexpected invalid clause ID")
+    }
+}
+
+impl DecisionLevelAndReasonOf for DecisionLevelsAndReasons {
+    fn decision_level_and_reason_of(
+        &self,
+        variable: Variable,
+    ) -> (DecisionLevel, Option<ClauseId>) {
+        self.get(variable)
+            .expect("encountered missing decision level for variable on the trail")
+    }
+}
 
 pub struct LearnedClauseLiterals<'a> {
     literals: slice::Iter<'a, Literal>,
@@ -128,13 +188,18 @@ impl FirstUipLearning {
     ///
     /// Returns an iterator over the literals of the learned clause.
     /// The asserting literal is yielded first.
-    pub fn compute_conflict_clause(
+    pub fn compute_conflict_clause<T, R, C>(
         &mut self,
         conflicting_clause: ClauseRef,
-        trail: &Trail,
-        levels_and_reasons: &DecisionLevelsAndReasons,
-        clause_db: &ClauseDb,
-    ) -> LearnedClauseLiterals {
+        trail: &T,
+        levels_and_reasons: &R,
+        clause_db: &C,
+    ) -> LearnedClauseLiterals
+    where
+        T: CurrentDecisionLevel + LevelAssignments,
+        R: DecisionLevelAndReasonOf,
+        C: ResolveClauseId,
+    {
         let count_unresolved =
             self.initialze_result(conflicting_clause, trail, levels_and_reasons);
         self.resolve_until_uip(count_unresolved, trail, levels_and_reasons, clause_db);
@@ -168,12 +233,16 @@ impl FirstUipLearning {
     ///
     /// Returns the amount of literals on the current decision level found in the
     /// conflicting clause.
-    fn initialze_result(
+    fn initialze_result<T, R>(
         &mut self,
         conflicting_clause: ClauseRef,
-        trail: &Trail,
-        levels_and_reasons: &DecisionLevelsAndReasons,
-    ) -> usize {
+        trail: &T,
+        levels_and_reasons: &R,
+    ) -> usize
+    where
+        T: CurrentDecisionLevel,
+        R: DecisionLevelAndReasonOf,
+    {
         self.result.clear();
         // Mark the literals on the current decision levels as work, put
         // the rest into the result, stamp them all - this can be done
@@ -209,13 +278,17 @@ impl FirstUipLearning {
     /// This also holds when this method returns.
     ///
     /// Returns the amount of literals added to `work`.
-    fn add_resolvent(
+    fn add_resolvent<T, R>(
         &mut self,
         reason: ClauseRef,
         resolve_at_lit: Option<Literal>,
-        trail: &Trail,
-        levels_and_reasons: &DecisionLevelsAndReasons,
-    ) -> usize {
+        trail: &T,
+        levels_and_reasons: &R,
+    ) -> usize
+    where
+        T: CurrentDecisionLevel,
+        R: DecisionLevelAndReasonOf,
+    {
         // Stamp literals on the current decision level and mark them as resolution
         // "work". All others already belong to the result: resolution is not
         // performed at these literals, since none of their inverses can appear in
@@ -223,6 +296,7 @@ impl FirstUipLearning {
         // appear in those reason clauses with the same sign, though, which is why
         // we need to keep track of the literals already included in the result.
         if let Some(resolve_at_lit) = resolve_at_lit {
+            debug_assert!(self.stamps.is_stamped(resolve_at_lit.variable()));
             self.stamps.unstamp(resolve_at_lit.variable());
         }
         // Reserve upfront in the result buffer for the reason clause literals.
@@ -235,9 +309,8 @@ impl FirstUipLearning {
                 && !self.stamps.is_stamped(reason_variable)
             {
                 self.stamps.stamp(reason_variable);
-                let reason_level = levels_and_reasons.get_level(reason_variable).expect(
-                    "encountered unexpected missing decision level for reason variable",
-                );
+                let (reason_level, _) =
+                    levels_and_reasons.decision_level_and_reason_of(reason_variable);
                 if reason_level == current_level {
                     count_unresolved += 1;
                 } else {
@@ -256,14 +329,17 @@ impl FirstUipLearning {
     ///
     /// - If the 1-UIP has been found too early.
     /// - If the 1-UIP has not been found at all.
-    fn find_first_uip<L>(
+    fn find_first_uip<T, R, C, L>(
         &mut self,
         count_unresolved: usize,
         level_assignments: &mut L,
-        trail: &Trail,
-        levels_and_reasons: &DecisionLevelsAndReasons,
-        clause_db: &ClauseDb,
+        trail: &T,
+        levels_and_reasons: &R,
+        clause_db: &C,
     ) where
+        T: CurrentDecisionLevel,
+        R: DecisionLevelAndReasonOf,
+        C: ResolveClauseId,
         L: Iterator<Item = Literal>,
     {
         let mut count_unresolved = count_unresolved;
@@ -275,16 +351,13 @@ impl FirstUipLearning {
             let resolve_at_var = resolve_at_lit.variable();
             let is_stamped = self.stamps.is_stamped(resolve_at_var);
             if is_stamped {
-                let (level, reason) = levels_and_reasons
-                    .get(resolve_at_var)
-                    .expect("encountered missing reason for resolution variable");
+                let (level, reason) =
+                    levels_and_reasons.decision_level_and_reason_of(resolve_at_var);
                 debug_assert_eq!(level, current_level);
                 match reason {
                     None => panic!("encountered the 1-UIP too early"),
                     Some(reason) => {
-                        let reason = clause_db
-                            .resolve(reason)
-                            .expect("error upon resolving reason clause");
+                        let reason = clause_db.resolve_clause_id(reason);
                         count_unresolved += self.add_resolvent(
                             reason,
                             Some(resolve_at_lit),
@@ -326,13 +399,17 @@ impl FirstUipLearning {
     /// Iteratively resolves the result buffer with reason clause of literals
     /// occurring on the current decision level, aborting when having reached the
     /// first unique implication point.
-    fn resolve_until_uip(
+    fn resolve_until_uip<T, R, C>(
         &mut self,
         count_unresolved: usize,
-        trail: &Trail,
-        levels_and_reasons: &DecisionLevelsAndReasons,
-        clause_db: &ClauseDb,
-    ) {
+        trail: &T,
+        levels_and_reasons: &R,
+        clause_db: &C,
+    ) where
+        T: CurrentDecisionLevel + LevelAssignments,
+        R: DecisionLevelAndReasonOf,
+        C: ResolveClauseId,
+    {
         let current_level = trail.current_decision_level();
         let mut level_assignments = trail
             .level_assignments(current_level)
