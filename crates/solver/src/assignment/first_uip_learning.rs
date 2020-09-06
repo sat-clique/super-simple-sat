@@ -386,7 +386,7 @@ impl FirstUipLearning {
     where
         L: Iterator<Item = Literal>,
     {
-        let asserting_literal = level_assignments
+        let asserting_literal = !level_assignments
             .find(|literal| {
                 let var = literal.variable();
                 self.stamps.is_stamped(var)
