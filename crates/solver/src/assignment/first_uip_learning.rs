@@ -429,3 +429,107 @@ impl FirstUipLearning {
         self.find_asserting_literal(&mut level_assignments);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hashbrown::HashMap;
+    use std::collections::BTreeMap;
+
+    /// Test trail implementation to offer the required methods for the 1-UIP learning.
+    #[derive(Debug)]
+    pub struct TestTrail {
+        current_level: DecisionLevel,
+        level_assignments: BTreeMap<DecisionLevel, Vec<Literal>>,
+    }
+
+    impl TestTrail {
+        /// Creates a new test trail for the given current decision level.
+        pub fn new(current_level: DecisionLevel) -> Self {
+            Self {
+                current_level,
+                level_assignments: BTreeMap::default(),
+            }
+        }
+
+        /// Registers the given assignments for the decision level.
+        pub fn set_assignments_for_level(
+            &mut self,
+            level: DecisionLevel,
+            assignments: &[Literal],
+        ) {
+            self.level_assignments.insert(level, assignments.to_vec());
+        }
+    }
+
+    impl CurrentDecisionLevel for TestTrail {
+        fn current_decision_level(&self) -> DecisionLevel {
+            self.current_level
+        }
+    }
+
+    impl LevelAssignments for TestTrail {
+        fn level_assignments(&self, level: DecisionLevel) -> &[Literal] {
+            self.level_assignments
+                .get(&level)
+                .expect("encountered missing level assignments for test trail")
+        }
+    }
+
+    /// Test clause database to resolve registered test clauses.
+    #[derive(Debug, Default)]
+    pub struct TestClauseDb {
+        clauses: BTreeMap<ClauseId, Vec<Literal>>,
+    }
+
+    impl TestClauseDb {
+        /// Registers the given literals for the clause ID.
+        pub fn register_clause(&mut self, id: ClauseId, literals: &[Literal]) {
+            self.clauses.insert(id, literals.to_vec());
+        }
+    }
+
+    impl ResolveClauseId for TestClauseDb {
+        fn resolve_clause_id(&self, id: ClauseId) -> ClauseRef {
+            self.clauses
+                .get(&id)
+                .map(|literals| ClauseRef::new(id, literals))
+                .expect(
+                    "encountered missing clause for clause ID in test clause database",
+                )
+        }
+    }
+
+    /// Test mapping to store the decision level and reason clause ID for some variables.
+    #[derive(Debug, Default)]
+    pub struct TestLevelsAndReasons {
+        levels_and_reasons: BTreeMap<Variable, (DecisionLevel, Option<ClauseId>)>,
+    }
+
+    impl TestLevelsAndReasons {
+        /// Registers the given decision level and optional reason clause ID for the variable.
+        pub fn register(
+            &mut self,
+            variable: Variable,
+            level: DecisionLevel,
+            reason: Option<ClauseId>,
+        ) {
+            self.levels_and_reasons.insert(variable, (level, reason));
+        }
+    }
+
+    impl DecisionLevelAndReasonOf for TestLevelsAndReasons {
+        fn decision_level_and_reason_of(
+            &self,
+            variable: Variable,
+        ) -> (DecisionLevel, Option<ClauseId>) {
+            self.levels_and_reasons
+                .get(&variable)
+                .copied()
+                .expect("encountered missing mapping from variable to decision level and optional reason clause in tests")
+        }
+    }
+
+    #[test]
+    fn it_works() {}
+}
