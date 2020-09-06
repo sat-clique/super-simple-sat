@@ -74,6 +74,7 @@ impl DecisionLevelAndReasonOf for DecisionLevelsAndReasons {
     }
 }
 
+/// Iterator over the literals of the newly learned clause.
 pub struct LearnedClauseLiterals<'a> {
     literals: slice::Iter<'a, Literal>,
 }
