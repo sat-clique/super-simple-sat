@@ -433,7 +433,8 @@ impl FirstUipLearning {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hashbrown::HashMap;
+    use crate::Sign;
+    use bounded::Index as _;
     use std::collections::BTreeMap;
 
     /// Test trail implementation to offer the required methods for the 1-UIP learning.
@@ -487,6 +488,12 @@ mod tests {
         pub fn register_clause(&mut self, id: ClauseId, literals: &[Literal]) {
             self.clauses.insert(id, literals.to_vec());
         }
+
+        pub fn push_clause(&mut self, literals: &[Literal]) -> ClauseId {
+            let id = ClauseId::from_index(self.clauses.len());
+            self.register_clause(id, literals);
+            id
+        }
     }
 
     impl ResolveClauseId for TestClauseDb {
@@ -530,6 +537,74 @@ mod tests {
         }
     }
 
+    /// Returns the literal for the given integer.
+    ///
+    /// The DIMACS format is used here.
+    fn lit(value: u32) -> Literal {
+        Variable::from_index(value as usize)
+            .expect("invalid ID given for variable")
+            .into_literal(Sign::True)
+    }
+
+    /// Returns the variable from the given integer.
+    fn var(value: u32) -> Variable {
+        lit(value).variable()
+    }
+
+    /// Returns `true` if both clauses are equal.
+    ///
+    /// Equal means they contain the same set of unique literals.
+    /// The order of the literals and duplicated literals are ignored.
+    fn are_clauses_equal(c1: &[Literal], c2: &[Literal]) -> bool {
+        let mut c1 = c1.to_vec();
+        let mut c2 = c2.to_vec();
+        c1.sort();
+        c1.dedup();
+        c2.sort();
+        c2.dedup();
+        c1 == c2
+    }
+
+    fn decision_level(value: usize) -> DecisionLevel {
+        DecisionLevel::from_index(value)
+    }
+
     #[test]
-    fn it_works() {}
+    fn it_works() {
+        let current_decision_level = DecisionLevel::from_index(4);
+        let mut trail = TestTrail::new(current_decision_level);
+        let mut clause_db = TestClauseDb::default();
+        let mut levels_and_reasons = TestLevelsAndReasons::default();
+        let reason_clause = clause_db.push_clause(&[!lit(3), !lit(1)]);
+        let conflicting_clause =
+            clause_db.push_clause(&[lit(3), !lit(4), lit(6), !lit(9)]);
+        levels_and_reasons.register(var(4), decision_level(2), None);
+        levels_and_reasons.register(var(1), decision_level(3), None);
+        levels_and_reasons.register(
+            var(9),
+            DecisionLevel::from_index(3),
+            Some(reason_clause),
+        );
+        levels_and_reasons.register(var(3), decision_level(4), None);
+        levels_and_reasons.register(var(6), decision_level(4), None);
+        trail.set_assignments_for_level(decision_level(2), &[lit(4)]);
+        trail.set_assignments_for_level(decision_level(3), &[!lit(1)]);
+        trail.set_assignments_for_level(decision_level(4), &[!lit(3), !lit(6), lit(9)]);
+        let mut first_uip = FirstUipLearning::default();
+        first_uip.register_new_variables(10);
+        let conflicting_clause = clause_db.resolve_clause_id(conflicting_clause);
+        let learned_clause = first_uip
+            .compute_conflict_clause(
+                conflicting_clause,
+                &trail,
+                &levels_and_reasons,
+                &clause_db,
+            )
+            .collect::<Vec<_>>();
+        let expected_clause = vec![!lit(4), lit(6), !lit(9), !lit(1)];
+        let asserting_literal = lit(6);
+        assert_eq!(learned_clause[0], asserting_literal);
+        assert_eq!(learned_clause.len(), 4);
+        assert!(are_clauses_equal(&learned_clause, &expected_clause));
+    }
 }
