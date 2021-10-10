@@ -56,7 +56,7 @@ impl<'a> InformDecider<'a> {
 pub struct Decider {
     len_variables: usize,
     priorities: BoundedHeap<Variable, Priority>,
-    activity_delta: u64,
+    _activity_delta: u64,
 }
 
 impl Decider {

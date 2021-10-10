@@ -280,7 +280,7 @@ impl Assignment {
     pub fn pop_decision_level(
         &mut self,
         level: DecisionLevel,
-        mut inform_decider: InformDecider,
+        inform_decider: InformDecider,
     ) {
         self.trail.pop_to_level(level, &mut self.assignments, inform_decider)
     }
