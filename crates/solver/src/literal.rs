@@ -11,8 +11,8 @@ use core::{
 /// The sign of a literal.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Sign {
-    True,
-    False,
+    True = 0,
+    False = 1,
 }
 
 impl Bool for Sign {
@@ -32,10 +32,7 @@ impl Bool for Sign {
     /// - `Sign::True` becomes `true`
     /// - `Sign::False` becomes `false`
     fn into_bool(self) -> bool {
-        match self {
-            Self::True => true,
-            Self::False => false,
-        }
+        (self as u8) == 1
     }
 }
 
