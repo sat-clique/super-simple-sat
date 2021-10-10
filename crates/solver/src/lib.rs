@@ -21,9 +21,7 @@ use crate::{
     },
     builder::SolverBuilder,
     clause_db::ClauseDb,
-    decider::{
-        Decider,
-    },
+    decider::Decider,
 };
 pub use crate::{
     clause_db::Clause,
@@ -37,12 +35,14 @@ pub use crate::{
         LiteralChunkIter,
     },
 };
-use core::fmt::Display;
-use core::fmt;
 use bounded::Bool;
 use cnf_parser::{
     Error as CnfError,
     Input,
+};
+use core::{
+    fmt,
+    fmt::Display,
 };
 
 #[derive(Debug, PartialEq, Eq)]

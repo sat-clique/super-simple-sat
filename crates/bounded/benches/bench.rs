@@ -9,12 +9,16 @@ use criterion::{
     Criterion,
 };
 use rand::{
-    Rng,
     rngs::SmallRng,
+    Rng,
     SeedableRng,
 };
 
-criterion_group!(bench_solve, bench_bounded_bitwise_map_set, bench_bounded_bitwise_map_get);
+criterion_group!(
+    bench_solve,
+    bench_bounded_bitwise_map_set,
+    bench_bounded_bitwise_map_get
+);
 criterion_main!(bench_solve);
 
 fn bench_bounded_bitwise_map_get(c: &mut Criterion) {

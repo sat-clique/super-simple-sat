@@ -5,11 +5,11 @@ use criterion::{
     BatchSize,
     Criterion,
 };
+use s3sat_solver::Solver;
 use std::{
     fs,
     path::Path,
 };
-use s3sat_solver::Solver;
 
 criterion_group!(
     bench_solve,

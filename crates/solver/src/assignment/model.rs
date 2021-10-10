@@ -3,15 +3,15 @@ pub use super::{
     AssignmentError,
     VariableAssignment,
 };
-use bounded::{
-    bounded_bitmap,
-    BoundedBitmap,
-};
 use crate::{
     Bool,
     Literal,
     Sign,
     Variable,
+};
+use bounded::{
+    bounded_bitmap,
+    BoundedBitmap,
 };
 use core::{
     fmt,

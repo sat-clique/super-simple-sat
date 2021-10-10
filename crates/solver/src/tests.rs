@@ -2,9 +2,9 @@ use crate::{
     Clause,
     Error,
     Literal,
+    Sign,
     SolveResult,
     Solver,
-    Sign,
     Variable,
 };
 use std::{
@@ -219,15 +219,9 @@ fn test_cnf_input() {
         -10 -7 -2 0
     ";
     let mut solver = Solver::from_cnf(&mut &cnf_input[..]).unwrap();
-    let assumption_1 = Variable::from_index(0)
-        .unwrap()
-        .into_literal(Sign::True);
-    let assumption_2 = Variable::from_index(6)
-        .unwrap()
-        .into_literal(Sign::True);
-    let assumption_3 = Variable::from_index(5)
-        .unwrap()
-        .into_literal(Sign::True);
+    let assumption_1 = Variable::from_index(0).unwrap().into_literal(Sign::True);
+    let assumption_2 = Variable::from_index(6).unwrap().into_literal(Sign::True);
+    let assumption_3 = Variable::from_index(5).unwrap().into_literal(Sign::True);
     let result = solver.solve(vec![assumption_1, assumption_2, assumption_3]);
     assert_eq!(result.map(|res| res.is_sat()), Ok(true));
 }

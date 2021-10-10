@@ -234,7 +234,8 @@ impl Assignment {
         level: DecisionLevel,
         inform_decider: InformDecider,
     ) {
-        self.trail.pop_to_level(level, &mut self.assignments, inform_decider)
+        self.trail
+            .pop_to_level(level, &mut self.assignments, inform_decider)
     }
 
     /// Enqueues a propagation literal.
@@ -282,7 +283,8 @@ impl Assignment {
         level: DecisionLevel,
         inform_decider: InformDecider,
     ) {
-        self.trail.pop_to_level(level, &mut self.assignments, inform_decider)
+        self.trail
+            .pop_to_level(level, &mut self.assignments, inform_decider)
     }
 
     /// Propagates the enqueued assumptions.
