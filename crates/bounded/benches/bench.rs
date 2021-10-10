@@ -31,7 +31,7 @@ fn bench_bounded_bitwise_map_get(c: &mut Criterion) {
         bencher.iter(|| {
             let mut rng = SmallRng::seed_from_u64(0);
             for _ in 0..len {
-                assert_eq!(quad_map.get(rng.gen_range(0, len)), Ok(quad::B00));
+                assert_eq!(quad_map.get(rng.gen_range(0..len)), Ok(quad::B00));
             }
         })
     });
@@ -39,7 +39,7 @@ fn bench_bounded_bitwise_map_get(c: &mut Criterion) {
         bencher.iter(|| {
             let mut rng = SmallRng::seed_from_u64(0);
             for _ in 0..len {
-                assert_eq!(bit_map.get(rng.gen_range(0, len)), Ok(false));
+                assert_eq!(bit_map.get(rng.gen_range(0..len)), Ok(false));
             }
         })
     });
@@ -47,7 +47,7 @@ fn bench_bounded_bitwise_map_get(c: &mut Criterion) {
         bencher.iter(|| {
             let mut rng = SmallRng::seed_from_u64(0);
             for _ in 0..len {
-                assert!(!vec_bool[rng.gen_range(0, len)]);
+                assert!(!vec_bool[rng.gen_range(0..len)]);
             }
         })
     });
@@ -63,7 +63,7 @@ fn bench_bounded_bitwise_map_set(c: &mut Criterion) {
         bencher.iter(|| {
             let mut rng = SmallRng::seed_from_u64(0);
             for _ in 0..len {
-                quad_map.set(rng.gen_range(0, len), quad::B11).unwrap();
+                quad_map.set(rng.gen_range(0..len), quad::B11).unwrap();
             }
         })
     });
@@ -71,7 +71,7 @@ fn bench_bounded_bitwise_map_set(c: &mut Criterion) {
         bencher.iter(|| {
             let mut rng = SmallRng::seed_from_u64(0);
             for _ in 0..len {
-                bit_map.set(rng.gen_range(0, len), true).unwrap();
+                bit_map.set(rng.gen_range(0..len), true).unwrap();
             }
         })
     });
@@ -79,7 +79,7 @@ fn bench_bounded_bitwise_map_set(c: &mut Criterion) {
         bencher.iter(|| {
             let mut rng = SmallRng::seed_from_u64(0);
             for _ in 0..len {
-                vec_bool[rng.gen_range(0, len)] = true;
+                vec_bool[rng.gen_range(0..len)] = true;
             }
         })
     });
