@@ -18,7 +18,3 @@ rand = { version = "0.7", features = ["small_rng"] }
 [[bench]]
 name = "bench"
 harness = false
-
-[profile.bench]
-lto = true
-codegen-units = 1

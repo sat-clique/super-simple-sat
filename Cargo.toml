@@ -4,3 +4,7 @@ members = [
     "crates/solver",
     "crates/driver",
 ]
+
+[profile.bench]
+lto = true
+codegen-units = 1
