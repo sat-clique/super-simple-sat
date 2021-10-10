@@ -4,7 +4,6 @@ use bounded::{
 };
 use core::{
     convert::TryFrom,
-    num::NonZeroU32,
     ops::Not,
 };
 
@@ -115,22 +114,27 @@ impl Not for Literal {
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct Variable {
-    value: NonZeroU32,
+    value: u32,
+}
+
+impl From<u32> for Variable {
+    fn from(value: u32) -> Self {
+        Self { value }
+    }
 }
 
 impl From<Literal> for Variable {
     #[inline]
     fn from(literal: Literal) -> Self {
         Self {
-            value: NonZeroU32::new((literal.value >> 1) + 1)
-                .expect("encountered unexpected zero i32"),
+            value: literal.value >> 1,
         }
     }
 }
 
 impl Variable {
     /// The maximum supported number of unique variables.
-    pub const MAX_LEN: usize = (u32::MAX - 1) as usize;
+    pub const MAX_LEN: usize = (u32::MAX >> 1) as usize;
 
     /// Returns `true` if the given index is a valid variable index.
     #[inline]
@@ -145,27 +149,21 @@ impl Variable {
     /// This solver only supports up to 2^31-1 unique variables.
     /// Any index that is out of this range is invalid for this operation.
     pub(crate) fn from_index(index: usize) -> Option<Self> {
-        let index = i32::try_from(index).ok()?;
-        NonZeroU32::new((index as u32).wrapping_add(1)).map(|shifted_index| {
-            Self {
-                value: shifted_index,
-            }
-        })
+        assert!(index < Self::MAX_LEN);
+        u32::try_from(index).ok().map(|value| Self { value })
     }
 
     /// Returns the literal for the variable with the given polarity.
     pub fn into_literal(self, assignment: Sign) -> Literal {
-        let value = match assignment {
-            Sign::True => self.value.get() as i32,
-            Sign::False => -(self.value.get() as i32),
-        };
-        Literal::from(value)
+        let sign = assignment as u8;
+        let value = (self.value << 1) + sign as u32;
+        Literal { value }
     }
 
     /// Returns the index of the variable.
     #[inline]
     pub(crate) fn into_index(self) -> usize {
-        self.value.get() as usize - 1
+        self.value as usize
     }
 }
 
