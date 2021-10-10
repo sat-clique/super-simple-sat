@@ -100,6 +100,15 @@ impl Not for Literal {
     }
 }
 
+#[cfg(test)]
+impl From<i32> for Literal {
+    fn from(value: i32) -> Self {
+        NonZeroI32::new(value)
+            .map(|non_zero| Self { value: non_zero })
+            .expect("zero is not allowed as literal value")
+    }
+}
+
 impl From<cnf_parser::Literal> for Literal {
     #[inline]
     fn from(literal: cnf_parser::Literal) -> Self {

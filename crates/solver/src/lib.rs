@@ -1,9 +1,10 @@
-#![forbid(unsafe_code)]
+// #![forbid(unsafe_code)]
 #![allow(clippy::len_without_is_empty)]
 
 mod assignment;
 mod builder;
 mod clause_db;
+mod clause_db2;
 mod decider;
 mod literal;
 mod literal_chunk;
