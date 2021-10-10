@@ -4,10 +4,7 @@ use bounded::{
 };
 use core::{
     convert::TryFrom,
-    num::{
-        NonZeroI32,
-        NonZeroU32,
-    },
+    num::NonZeroU32,
     ops::Not,
 };
 
@@ -54,10 +51,9 @@ impl Not for Sign {
 }
 
 /// A literal of a variable with its polarity.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[repr(transparent)]
+#[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub struct Literal {
-    value: NonZeroI32,
+    value: u32,
 }
 
 impl Literal {
@@ -67,16 +63,16 @@ impl Literal {
         Variable::from(self)
     }
 
-    /// Returns `true` if the literal has negative polarity.
-    #[inline]
-    pub fn is_negative(self) -> bool {
-        self.value.get().is_negative()
-    }
-
     /// Returns `true` if the literal has positive polarity.
     #[inline]
     pub fn is_positive(self) -> bool {
-        self.value.get().is_positive()
+        self.value & 1 == 0
+    }
+
+    /// Returns `true` if the literal has negative polarity.
+    #[inline]
+    pub fn is_negative(self) -> bool {
+        self.value & 1 != 0
     }
 
     /// Returns the assignment and polarity of the literal.
@@ -88,14 +84,14 @@ impl Literal {
     }
 }
 
-impl Not for Literal {
-    type Output = Self;
-
+impl From<i32> for Literal {
     #[inline]
-    fn not(self) -> Self::Output {
-        Self {
-            value: NonZeroI32::new(-self.value.get())
-                .expect("encountered zero i32 from non-zero i32"),
+    fn from(x: i32) -> Self {
+        debug_assert!(x != 0);
+        let var = x.abs() as u32 - 1;
+        let sign = (x < 0) as u32;
+        Literal {
+            value: (var << 1) + sign,
         }
     }
 }
@@ -103,8 +99,17 @@ impl Not for Literal {
 impl From<cnf_parser::Literal> for Literal {
     #[inline]
     fn from(literal: cnf_parser::Literal) -> Self {
+        Self::from(literal.into_value().get())
+    }
+}
+
+impl Not for Literal {
+    type Output = Self;
+
+    #[inline]
+    fn not(self) -> Self::Output {
         Self {
-            value: literal.into_value(),
+            value: self.value ^ 1,
         }
     }
 }
@@ -120,7 +125,7 @@ impl From<Literal> for Variable {
     #[inline]
     fn from(literal: Literal) -> Self {
         Self {
-            value: NonZeroU32::new(literal.value.get().abs() as u32)
+            value: NonZeroU32::new((literal.value >> 1) + 1)
                 .expect("encountered unexpected zero i32"),
         }
     }
@@ -157,9 +162,7 @@ impl Variable {
             Sign::True => self.value.get() as i32,
             Sign::False => -(self.value.get() as i32),
         };
-        Literal {
-            value: NonZeroI32::new(value).expect("encountered unexpected zero i32"),
-        }
+        Literal::from(value)
     }
 
     /// Returns the index of the variable.
