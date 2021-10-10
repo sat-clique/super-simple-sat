@@ -194,7 +194,7 @@ where
     /// The bit mask shadows all but the necessary bits for the quad to exact the quad
     /// information that the given index refers to.
     fn quad_index_to_mask(index: QuadIndex) -> Chunk {
-        (0b11 as Chunk) << (CHUNK_LEN - (BITS_PER_QUAD * (1 + index.into_index())))
+        0b11_u32 << (CHUNK_LEN - (BITS_PER_QUAD * (1 + index.into_index())))
     }
 
     /// Ensures that the given index is valid for the bounded quad map.

@@ -114,7 +114,7 @@ impl<'a> ClauseRefMut<'a> {
         for i in 2..self.literals.len() {
             if assignment
                 .is_satisfied(self.literals[i])
-                .unwrap_or_else(|| true)
+                .unwrap_or(true)
             {
                 self.literals.swap(1, i);
                 return PropagationResult::NewWatchedLiteral {

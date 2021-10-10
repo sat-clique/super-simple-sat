@@ -35,7 +35,7 @@ impl LastModel {
         assignment: &VariableAssignment,
     ) -> Result<(), AssignmentError> {
         self.last_model
-            .update(&assignment)
+            .update(assignment)
             .expect("encountered unexpected incomplete assignment");
         Ok(())
     }
@@ -139,15 +139,12 @@ impl<'a> Iterator for ModelIter<'a> {
     type Item = (Variable, Sign);
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.iter.next() {
-            None => None,
-            Some((index, assignment)) => {
-                Some((
-                    Variable::from_index(index)
-                        .expect("encountered unexpected invalid variable index"),
-                    assignment,
-                ))
-            }
-        }
+        self.iter.next().map(|(index, assignment)| {
+            (
+                Variable::from_index(index)
+                    .expect("encountered unexpected invalid variable index"),
+                assignment,
+            )
+        })
     }
 }

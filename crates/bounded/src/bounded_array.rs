@@ -1,3 +1,5 @@
+#![allow(clippy::len_without_is_empty)]
+
 use super::{
     Index,
     OutOfBoundsAccess,
