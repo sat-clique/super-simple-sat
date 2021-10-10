@@ -112,10 +112,7 @@ impl<'a> ClauseRefMut<'a> {
         }
         // Look for new literal to watch:
         for i in 2..self.literals.len() {
-            if assignment
-                .is_satisfied(self.literals[i])
-                .unwrap_or(true)
-            {
+            if assignment.is_satisfied(self.literals[i]).unwrap_or(true) {
                 self.literals.swap(1, i);
                 return PropagationResult::NewWatchedLiteral {
                     new_watched: !self.literals[1],
