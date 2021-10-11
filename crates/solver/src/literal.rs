@@ -74,7 +74,7 @@ impl Literal {
     /// Flips the polarity of the literal sign.
     #[inline]
     pub fn negate(&mut self) {
-        self.value = self.value ^ 1;
+        self.value ^= 1;
     }
 
     /// Returns the assignment and polarity of the literal.
