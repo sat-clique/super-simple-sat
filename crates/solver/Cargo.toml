@@ -12,7 +12,8 @@ description = """A super simple implementation of a SAT solver."""
 categories = ["algorithms", "science"]
 
 [dependencies]
-bounded = { version = "0.1.0", path = "../bounded/", package = "bounded_collections" }
+bounded = { version = "0.1", path = "../bounded/", package = "bounded_collections" }
+utils = { version = "0.1", path = "../utils", package = "s3sat-utils" }
 cnf-parser = "0.1"
 
 [dev-dependencies]
