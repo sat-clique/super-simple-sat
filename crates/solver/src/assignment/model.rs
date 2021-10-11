@@ -108,8 +108,8 @@ impl Model {
     /// Returns `true` if the given literal is satisfied under this model.
     pub fn is_satisfied(&self, literal: Literal) -> Result<bool, AssignmentError> {
         let assignment = self.resolve(literal.variable())?.into_bool();
-        let result =
-            literal.sign().is_pos() && assignment || literal.sign().is_neg() && !assignment;
+        let result = literal.sign().is_pos() && assignment
+            || literal.sign().is_neg() && !assignment;
         Ok(result)
     }
 }
