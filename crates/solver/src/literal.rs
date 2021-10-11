@@ -48,6 +48,7 @@ impl Not for Sign {
 
 /// A literal of a variable with its polarity.
 #[derive(Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
+#[repr(transparent)]
 pub struct Literal {
     value: u32,
 }
