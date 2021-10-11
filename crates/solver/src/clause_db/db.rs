@@ -1,5 +1,4 @@
 use super::{
-    Clause,
     ClauseRef,
     ClauseRefMut,
 };
@@ -85,17 +84,22 @@ impl ClauseDb {
     ///
     /// If the given clause is a unit clause. In this case the clause is
     /// returned as unit clause for further processing.
-    pub fn push(&mut self, clause: Clause) -> Result<ClauseId, UnitClause> {
-        match clause.unit_literal() {
-            Some(literal) => Err(UnitClause { literal }),
-            None => {
-                let id = self.len();
-                self.literals.extend(&clause);
-                let end = self.literals.len();
-                self.ends.push(LiteralsEnd::from_index(end));
-                Ok(ClauseId::from_index(id))
-            }
+    pub fn push<I, T>(&mut self, literals: I) -> Result<ClauseId, UnitClause>
+    where
+        I: IntoIterator<IntoIter = T>,
+        T: ExactSizeIterator<Item = Literal>,
+    {
+        let mut literals = literals.into_iter();
+        if literals.len() == 1 {
+            return Err(UnitClause {
+                literal: literals.next().unwrap(),
+            })
         }
+        let id = self.len();
+        self.literals.extend(literals);
+        let end = self.literals.len();
+        self.ends.push(LiteralsEnd::from_index(end));
+        Ok(ClauseId::from_index(id))
     }
 
     /// Pushes another clause to the clause database, returns its identifier.
@@ -108,20 +112,25 @@ impl ClauseDb {
     ///
     /// If the given clause is a unit clause. In this case the clause is
     /// returned as unit clause for further processing.
-    pub fn push_get(&mut self, clause: Clause) -> Result<ClauseRef, UnitClause> {
-        match clause.unit_literal() {
-            Some(literal) => Err(UnitClause { literal }),
-            None => {
-                let id = ClauseId::from_index(self.len());
-                let start = self.literals.len();
-                self.literals.extend(&clause);
-                let end = self.literals.len();
-                self.ends.push(LiteralsEnd::from_index(end));
-                let clause_ref = ClauseRef::new(id, &self.literals[start..end])
-                    .expect("encountered unexpected invalid shared clause reference");
-                Ok(clause_ref)
-            }
+    pub fn push_get<I, T>(&mut self, literals: I) -> Result<ClauseRef, UnitClause>
+    where
+        I: IntoIterator<IntoIter = T>,
+        T: ExactSizeIterator<Item = Literal>,
+    {
+        let mut literals = literals.into_iter();
+        if literals.len() == 1 {
+            return Err(UnitClause {
+                literal: literals.next().unwrap(),
+            })
         }
+        let id = ClauseId::from_index(self.len());
+        let start = self.literals.len();
+        self.literals.extend(literals);
+        let end = self.literals.len();
+        self.ends.push(LiteralsEnd::from_index(end));
+        let clause_ref = ClauseRef::new(id, &self.literals[start..end])
+            .expect("encountered unexpected invalid shared clause reference");
+        Ok(clause_ref)
     }
 
     /// Converts the clause identifier into the range of its literals.

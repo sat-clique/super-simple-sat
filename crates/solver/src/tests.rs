@@ -1,7 +1,5 @@
 use crate::{
-    Clause,
     Error,
-    Literal,
     Sign,
     SolveResult,
     Solver,
@@ -82,15 +80,11 @@ fn solve_empty_problem_works() {
     assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(true));
 }
 
-fn clause(lits: &[Literal]) -> Clause {
-    Clause::new(lits.into_iter().copied()).unwrap()
-}
-
 #[test]
 fn solve_problem_with_single_unit_clause() {
     let mut solver = Solver::default();
     let a = solver.new_literal();
-    solver.consume_clause(clause(&[a])).unwrap();
+    solver.consume_clause([a]).unwrap();
     assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(true));
 }
 
@@ -99,9 +93,9 @@ fn solve_problem_with_single_unit_clause() {
 fn solve_problem_with_non_contradictory_unit_clauses() {
     let mut solver = Solver::default();
     let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
-    solver.consume_clause(clause(&[ vars[2]])).unwrap();
-    solver.consume_clause(clause(&[ vars[4]])).unwrap();
-    solver.consume_clause(clause(&[!vars[5]])).unwrap();
+    solver.consume_clause([ vars[2]]).unwrap();
+    solver.consume_clause([ vars[4]]).unwrap();
+    solver.consume_clause([!vars[5]]).unwrap();
     assert_eq!(solver.solve(vec![]).map(|res| res.is_sat()), Ok(true));
 }
 
@@ -110,9 +104,9 @@ fn solve_problem_with_non_contradictory_unit_clauses() {
 fn solve_problem_with_contradictory_unit_clauses() {
     let mut solver = Solver::default();
     let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
-    assert!(solver.consume_clause(clause(&[ vars[2]])).is_ok());
-    assert!(solver.consume_clause(clause(&[ vars[4]])).is_ok());
-    assert_eq!(solver.consume_clause(clause(&[!vars[4]])), Err(Error::Conflict));
+    assert!(solver.consume_clause([ vars[2]]).is_ok());
+    assert!(solver.consume_clause([ vars[4]]).is_ok());
+    assert_eq!(solver.consume_clause([!vars[4]]), Err(Error::Conflict));
 }
 
 #[test]
@@ -120,10 +114,10 @@ fn solve_problem_with_contradictory_unit_clauses() {
 fn test_solve_satisfiable_3sat_problem() {
     let mut solver = Solver::default();
     let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
-    solver.consume_clause(clause(&[ vars[1],  vars[3],  vars[5]])).unwrap();
-    solver.consume_clause(clause(&[!vars[1], !vars[7],  vars[5]])).unwrap();
-    solver.consume_clause(clause(&[!vars[3], !vars[7], !vars[0]])).unwrap();
-    solver.consume_clause(clause(&[!vars[9], !vars[6], !vars[1]])).unwrap();
+    solver.consume_clause([ vars[1],  vars[3],  vars[5]]).unwrap();
+    solver.consume_clause([!vars[1], !vars[7],  vars[5]]).unwrap();
+    solver.consume_clause([!vars[3], !vars[7], !vars[0]]).unwrap();
+    solver.consume_clause([!vars[9], !vars[6], !vars[1]]).unwrap();
     let result = solver.solve(vec![]);
     assert_eq!(result.map(|res| res.is_sat()), Ok(true));
 }
@@ -133,10 +127,10 @@ fn test_solve_satisfiable_3sat_problem() {
 fn test_minimal_unsatisfiable_2sat_problem() {
     let mut solver = Solver::default();
     let vars = (0..2).map(|_| solver.new_literal()).collect::<Vec<_>>();
-    solver.consume_clause(clause(&[ vars[0],  vars[1]])).unwrap();
-    solver.consume_clause(clause(&[ vars[0], !vars[1]])).unwrap();
-    solver.consume_clause(clause(&[!vars[0],  vars[1]])).unwrap();
-    solver.consume_clause(clause(&[!vars[0], !vars[1]])).unwrap();
+    solver.consume_clause([ vars[0],  vars[1]]).unwrap();
+    solver.consume_clause([ vars[0], !vars[1]]).unwrap();
+    solver.consume_clause([!vars[0],  vars[1]]).unwrap();
+    solver.consume_clause([!vars[0], !vars[1]]).unwrap();
     let result = solver.solve(vec![]);
     assert_eq!(result.map(|res| res.is_sat()), Ok(false));
 }
@@ -146,12 +140,12 @@ fn test_minimal_unsatisfiable_2sat_problem() {
 fn test_unsatisfiable_2sat_problem() {
     let mut solver = Solver::default();
     let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
-    solver.consume_clause(clause(&[!vars[1],  vars[3]])).unwrap();
-    solver.consume_clause(clause(&[!vars[3],  vars[8]])).unwrap();
-    solver.consume_clause(clause(&[!vars[8], !vars[1]])).unwrap();
-    solver.consume_clause(clause(&[ vars[4],  vars[1]])).unwrap();
-    solver.consume_clause(clause(&[!vars[4],  vars[7]])).unwrap();
-    solver.consume_clause(clause(&[!vars[7], !vars[4]])).unwrap();
+    solver.consume_clause([!vars[1],  vars[3]]).unwrap();
+    solver.consume_clause([!vars[3],  vars[8]]).unwrap();
+    solver.consume_clause([!vars[8], !vars[1]]).unwrap();
+    solver.consume_clause([ vars[4],  vars[1]]).unwrap();
+    solver.consume_clause([!vars[4],  vars[7]]).unwrap();
+    solver.consume_clause([!vars[7], !vars[4]]).unwrap();
     let result = solver.solve(vec![]);
     assert_eq!(result.map(|res| res.is_sat()), Ok(false));
 }
@@ -161,10 +155,10 @@ fn test_unsatisfiable_2sat_problem() {
 fn test_solve_3sat_problem_with_satisfiable_assumptions() {
     let mut solver = Solver::default();
     let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
-    solver.consume_clause(clause(&[ vars[1],  vars[3],  vars[5]])).unwrap();
-    solver.consume_clause(clause(&[!vars[1], !vars[7],  vars[5]])).unwrap();
-    solver.consume_clause(clause(&[!vars[3], !vars[7], !vars[0]])).unwrap();
-    solver.consume_clause(clause(&[!vars[9], !vars[6], !vars[1]])).unwrap();
+    solver.consume_clause([ vars[1],  vars[3],  vars[5]]).unwrap();
+    solver.consume_clause([!vars[1], !vars[7],  vars[5]]).unwrap();
+    solver.consume_clause([!vars[3], !vars[7], !vars[0]]).unwrap();
+    solver.consume_clause([!vars[9], !vars[6], !vars[1]]).unwrap();
     let result = solver.solve(vec![vars[1], vars[7], vars[6]]);
     assert_eq!(result.map(|res| res.is_sat()), Ok(true));
 }
@@ -174,10 +168,10 @@ fn test_solve_3sat_problem_with_satisfiable_assumptions() {
 fn test_solve_3sat_problem_with_unsatisfiable_assumptions() {
     let mut solver = Solver::default();
     let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
-    solver.consume_clause(clause(&[ vars[1],  vars[3],  vars[5]])).unwrap();
-    solver.consume_clause(clause(&[ vars[1], !vars[7], !vars[5]])).unwrap();
-    solver.consume_clause(clause(&[!vars[3], !vars[7], !vars[0]])).unwrap();
-    solver.consume_clause(clause(&[!vars[9], !vars[6],  vars[1]])).unwrap();
+    solver.consume_clause([ vars[1],  vars[3],  vars[5]]).unwrap();
+    solver.consume_clause([ vars[1], !vars[7], !vars[5]]).unwrap();
+    solver.consume_clause([!vars[3], !vars[7], !vars[0]]).unwrap();
+    solver.consume_clause([!vars[9], !vars[6],  vars[1]]).unwrap();
     let result = solver.solve(vec![!vars[1], !vars[3], vars[7]]);
     assert_eq!(result.map(|res| res.is_sat()), Ok(false));
 }
@@ -187,10 +181,10 @@ fn test_solve_3sat_problem_with_unsatisfiable_assumptions() {
 fn test_get_forced_assignment() {
     let mut solver = Solver::default();
     let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
-    solver.consume_clause(clause(&[ vars[1],  vars[3],  vars[5]])).unwrap();
-    solver.consume_clause(clause(&[!vars[1], !vars[7],  vars[5]])).unwrap();
-    solver.consume_clause(clause(&[!vars[3], !vars[7], !vars[0]])).unwrap();
-    solver.consume_clause(clause(&[!vars[9], !vars[6], !vars[1]])).unwrap();
+    solver.consume_clause([ vars[1],  vars[3],  vars[5]]).unwrap();
+    solver.consume_clause([!vars[1], !vars[7],  vars[5]]).unwrap();
+    solver.consume_clause([!vars[3], !vars[7], !vars[0]]).unwrap();
+    solver.consume_clause([!vars[9], !vars[6], !vars[1]]).unwrap();
     let result = solver.solve(vec![vars[1], vars[7], vars[6]]);
     assert_eq!(result.as_ref().map(|res| res.is_sat()), Ok(true));
     let model = match result.unwrap() {

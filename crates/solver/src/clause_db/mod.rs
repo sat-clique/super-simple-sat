@@ -1,13 +1,13 @@
-mod clause;
 mod clause_ref;
 mod db;
 mod sanitizer;
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum Error {
+    EmptyClause,
+}
+
 pub use self::{
-    clause::{
-        Clause,
-        Error,
-    },
     clause_ref::{
         ClauseRef,
         ClauseRefMut,

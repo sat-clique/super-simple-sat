@@ -1,5 +1,8 @@
 use crate::{
-    clause_db::Clause,
+    clause_db::{
+        ClauseSanitizer,
+        SanitizedLiterals,
+    },
     Error,
     Literal,
     Solver,
@@ -11,6 +14,7 @@ pub struct SolverBuilder {
     solver: Solver,
     num_variables: Option<usize>,
     current_clause: Vec<Literal>,
+    sanitizer: ClauseSanitizer,
 }
 
 impl SolverBuilder {
@@ -18,10 +22,18 @@ impl SolverBuilder {
         if self.num_variables.is_none() {
             return Err("missing problem line before clause inputs".into())
         }
-        let accumulated_lits = core::mem::take(&mut self.current_clause);
-        let clause = Clause::new(accumulated_lits)
-            .map_err(|_| "encountered empty or self conflicting clause")?;
-        self.solver.consume_clause(clause)?;
+        match self.sanitizer.sanitize(self.current_clause.drain(..)) {
+            SanitizedLiterals::Literals(literals) => {
+                self.solver.consume_clause(literals)?;
+            }
+            SanitizedLiterals::UnitClause(unit) => {
+                self.solver.enqueue_assumption(unit)?;
+            }
+            SanitizedLiterals::TautologicalClause => (),
+            SanitizedLiterals::EmptyClause => {
+                return Err("encountered empty or self conflicting clause".into())
+            }
+        }
         Ok(())
     }
 

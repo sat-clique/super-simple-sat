@@ -24,7 +24,6 @@ use crate::{
     decider::Decider,
 };
 pub use crate::{
-    clause_db::Clause,
     literal::{
         Literal,
         Sign,
@@ -152,6 +151,17 @@ impl Solver {
         Ok(builder.finalize())
     }
 
+    /// Enqueues an assumption at the root level of the solver.
+    ///
+    /// # Errors
+    ///
+    /// If the assumption conflicts with another root assumption.
+    pub fn enqueue_assumption(&mut self, assumption: Literal) -> Result<(), Error> {
+        self.assignment
+            .enqueue_assumption(assumption)
+            .map_err(|_| Error::Conflict)
+    }
+
     /// Consumes the given clause.
     ///
     /// # Errors
@@ -159,8 +169,12 @@ impl Solver {
     /// If the clause is unit and is in conflict with the current assignment.
     /// This is mostly encountered upon consuming two conflicting unit clauses.
     /// In this case the clause will not be added as new constraint.
-    pub fn consume_clause(&mut self, clause: Clause) -> Result<(), Error> {
-        match self.clauses.push_get(clause) {
+    pub fn consume_clause<I, T>(&mut self, literals: I) -> Result<(), Error>
+    where
+        I: IntoIterator<IntoIter = T>,
+        T: ExactSizeIterator<Item = Literal>,
+    {
+        match self.clauses.push_get(literals) {
             Ok(clause) => {
                 self.assignment.initialize_watchers(clause);
                 for literal in clause {
