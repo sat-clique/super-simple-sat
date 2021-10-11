@@ -95,8 +95,13 @@ pub struct Literal {
 
 impl Literal {
     /// Creates a new literal form the given variable and sign.
+    ///
+    /// # Note
+    ///
+    /// This is an internal API. Users should create new literals
+    /// through the API provided by the solver instance.
     #[inline]
-    pub fn new(var: Variable, sign: Sign) -> Self {
+    pub(crate) fn new(var: Variable, sign: Sign) -> Self {
         let sign = sign.into_u8();
         let value = (var.value << 1) + sign as u32;
         Self { value }
