@@ -118,12 +118,6 @@ impl Literal {
     pub fn sign(self) -> Sign {
         Sign((self.value & 1) == 0)
     }
-
-    /// Flips the polarity of the literal sign.
-    #[inline]
-    pub fn negate(&mut self) {
-        self.value ^= 1;
-    }
 }
 
 impl From<i32> for Literal {
