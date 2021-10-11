@@ -4,34 +4,73 @@ use bounded::{
 };
 use core::{
     convert::TryFrom,
+    fmt,
+    fmt::{
+        Debug,
+        Display,
+        Formatter,
+    },
     ops::Not,
 };
 
 /// The sign of a literal.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum Sign {
-    True = 0,
-    False = 1,
+#[derive(Copy, Clone, PartialEq, Eq)]
+#[repr(transparent)]
+pub struct Sign(bool);
+
+impl Debug for Sign {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self.into_bool() {
+            true => write!(f, "Sign::POS"),
+            false => write!(f, "Sign::NEG"),
+        }
+    }
+}
+
+impl Display for Sign {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        if self.is_neg() {
+            write!(f, "-")?;
+        }
+        Ok(())
+    }
+}
+
+impl Sign {
+    /// The positive sign.
+    pub const POS: Self = Self(true);
+
+    /// The negative sign.
+    pub const NEG: Self = Self(false);
+
+    /// Returns `true` if the sign has positive polarity.
+    pub fn is_pos(self) -> bool {
+        self.0
+    }
+
+    /// Returns `true` if the sign has negative polarity.
+    pub fn is_neg(self) -> bool {
+        !self.is_pos()
+    }
 }
 
 impl Bool for Sign {
     /// Creates a sign from the given `bool` value.
     ///
-    /// - `false` becomes `Sign::False`
-    /// - `true` becomes `Sign::True`
+    /// - `false` becomes `Sign::NEG`
+    /// - `true` becomes `Sign::POS`
+    #[inline]
     fn from_bool(value: bool) -> Self {
-        match value {
-            true => Self::True,
-            false => Self::False,
-        }
+        Self(value)
     }
 
     /// Converts the sign into a `bool` value.
     ///
-    /// - `Sign::True` becomes `true`
-    /// - `Sign::False` becomes `false`
+    /// - `Sign::POS` becomes `true`
+    /// - `Sign::NEG` becomes `false`
+    #[inline]
     fn into_bool(self) -> bool {
-        (self as u8) == 1
+        self.0
     }
 }
 
@@ -39,10 +78,7 @@ impl Not for Sign {
     type Output = Self;
 
     fn not(self) -> Self::Output {
-        match self {
-            Self::True => Self::False,
-            Self::False => Self::True,
-        }
+        Self(!self.0)
     }
 }
 
@@ -60,30 +96,16 @@ impl Literal {
         Variable::from(self)
     }
 
-    /// Returns `true` if the literal has positive polarity.
+    /// Returns the assignment and polarity of the literal.
     #[inline]
-    pub fn is_positive(self) -> bool {
-        self.value & 1 == 0
-    }
-
-    /// Returns `true` if the literal has negative polarity.
-    #[inline]
-    pub fn is_negative(self) -> bool {
-        self.value & 1 != 0
+    pub fn sign(self) -> Sign {
+        Sign((self.value & 1) == 0)
     }
 
     /// Flips the polarity of the literal sign.
     #[inline]
     pub fn negate(&mut self) {
         self.value ^= 1;
-    }
-
-    /// Returns the assignment and polarity of the literal.
-    pub fn sign(self) -> Sign {
-        match self.is_positive() {
-            true => Sign::True,
-            false => Sign::False,
-        }
     }
 }
 
@@ -161,8 +183,8 @@ impl Variable {
     }
 
     /// Returns the literal for the variable with the given polarity.
-    pub fn into_literal(self, assignment: Sign) -> Literal {
-        let sign = assignment as u8;
+    pub fn into_literal(self, sign: Sign) -> Literal {
+        let sign = sign.into_bool() as u8;
         let value = (self.value << 1) + sign as u32;
         Literal { value }
     }

@@ -210,7 +210,7 @@ impl Solver {
     ///
     /// If there are too many variables in use after this operation.
     pub fn new_literal(&mut self) -> Literal {
-        self.new_variable().into_literal(Sign::True)
+        self.new_variable().into_literal(Sign::POS)
     }
 
     /// Allocates the given amount of new literals for the solver and returns them.
@@ -269,11 +269,11 @@ impl Solver {
             Some(unassigned_variable) => {
                 let level = self.assignment.bump_decision_level();
                 if self
-                    .solve_for_decision(unassigned_variable.into_literal(Sign::True))?
+                    .solve_for_decision(unassigned_variable.into_literal(Sign::POS))?
                     .is_sat()
                     || self
                         .solve_for_decision(
-                            unassigned_variable.into_literal(Sign::False),
+                            unassigned_variable.into_literal(Sign::NEG),
                         )?
                         .is_sat()
                 {

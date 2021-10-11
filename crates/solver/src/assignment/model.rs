@@ -60,7 +60,7 @@ impl Display for Model {
                 let assignment = assignment.into_bool().to_string();
                 writeln!(f, " - var({:3}) = {}", index, assignment)?;
             } else {
-                if assignment == Sign::False {
+                if assignment == Sign::NEG {
                     write!(f, "-")?;
                 }
                 write!(f, "{}", index)?;
@@ -109,7 +109,7 @@ impl Model {
     pub fn is_satisfied(&self, literal: Literal) -> Result<bool, AssignmentError> {
         let assignment = self.resolve(literal.variable())?.into_bool();
         let result =
-            literal.is_positive() && assignment || literal.is_negative() && !assignment;
+            literal.sign().is_pos() && assignment || literal.sign().is_neg() && !assignment;
         Ok(result)
     }
 }

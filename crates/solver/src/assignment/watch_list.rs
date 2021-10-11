@@ -56,15 +56,15 @@ impl VariableWatchers {
     ) {
         let watcher = Watcher::new(blocker, watcher);
         match watched.sign() {
-            Sign::True => self.pos.push(watcher),
-            Sign::False => self.neg.push(watcher),
+            Sign::POS => self.pos.push(watcher),
+            Sign::NEG => self.neg.push(watcher),
         }
     }
 
     fn literal_watchers_mut(&mut self, literal: Literal) -> &mut Vec<Watcher> {
         match literal.sign() {
-            Sign::True => &mut self.pos,
-            Sign::False => &mut self.neg,
+            Sign::POS => &mut self.pos,
+            Sign::NEG => &mut self.neg,
         }
     }
 
