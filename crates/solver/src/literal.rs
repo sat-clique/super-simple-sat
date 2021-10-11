@@ -95,6 +95,14 @@ pub struct Literal {
 }
 
 impl Literal {
+    /// Creates a new literal form the given variable and sign.
+    #[inline]
+    pub fn new(var: Variable, sign: Sign) -> Self {
+        let sign = sign.into_u8();
+        let value = (var.value << 1) + sign as u32;
+        Self { value }
+    }
+
     /// Returns the variable of the literal.
     #[inline]
     pub fn variable(self) -> Variable {
@@ -185,13 +193,6 @@ impl Variable {
     pub(crate) fn from_index(index: usize) -> Option<Self> {
         assert!(index < Self::MAX_LEN);
         u32::try_from(index).ok().map(|value| Self { value })
-    }
-
-    /// Returns the literal for the variable with the given polarity.
-    pub fn into_literal(self, sign: Sign) -> Literal {
-        let sign = sign.into_bool() as u8;
-        let value = (self.value << 1) + sign as u32;
-        Literal { value }
     }
 
     /// Returns the index of the variable.

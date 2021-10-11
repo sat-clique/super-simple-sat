@@ -46,11 +46,9 @@ impl LiteralChunk {
         if n >= self.len() {
             return None
         }
-        Some(
-            Variable::from_index(self.start_index + n)
-                .expect("encountered unexpected out of bounds variable index")
-                .into_literal(Sign::POS),
-        )
+        let var = Variable::from_index(self.start_index + n)
+            .expect("encountered unexpected out of bounds variable index");
+        Some(Literal::new(var, Sign::POS))
     }
 }
 
