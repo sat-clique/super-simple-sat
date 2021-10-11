@@ -71,6 +71,12 @@ impl Literal {
         self.value & 1 != 0
     }
 
+    /// Flips the polarity of the literal sign.
+    #[inline]
+    pub fn negate(&mut self) {
+        self.value = self.value ^ 1;
+    }
+
     /// Returns the assignment and polarity of the literal.
     pub fn assignment(self) -> Sign {
         match self.is_positive() {
