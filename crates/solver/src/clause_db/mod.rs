@@ -1,6 +1,7 @@
 mod clause;
 mod clause_ref;
 mod db;
+mod sanitizer;
 
 pub use self::{
     clause::{
@@ -16,5 +17,10 @@ pub use self::{
         ClauseDb,
         ClauseDbIter,
         ClauseId,
+    },
+    sanitizer::{
+        ClauseSanitizer,
+        LiteralIter,
+        SanitizedLiterals,
     },
 };

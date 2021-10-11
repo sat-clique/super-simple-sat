@@ -15,6 +15,7 @@ categories = ["algorithms", "science"]
 bounded = { version = "0.1", path = "../bounded/", package = "bounded_collections" }
 utils = { version = "0.1", path = "../utils", package = "s3sat-utils" }
 cnf-parser = "0.1"
+ahash = "0.7"
 
 [dev-dependencies]
 criterion = "0.3"
