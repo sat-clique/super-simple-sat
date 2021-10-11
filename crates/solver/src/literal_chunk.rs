@@ -4,50 +4,57 @@ use crate::{
     Sign,
     Variable,
 };
+use bounded::Index as _;
 
 /// A chunk of literals.
 ///
 /// Created by the
-/// [`Solver::new_literal_chunk`](`crate::Solver::new_literal_chunk)
+/// [`Solver::new_literal_chunk`]([`crate::Solver::new_literal_chunk`])
 /// method.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct LiteralChunk {
-    /// The start index of this chunk for the first literal.
-    start_index: usize,
-    /// The number of literals in the chunk.
+    /// The value of the first literal of the literal chunk.
+    first_value: u32,
+    /// The number of literals in the literal chunk.
     len: usize,
 }
 
 impl LiteralChunk {
-    /// Creates a new literal chunk for the given start index and length.
-    pub(crate) fn new(start_index: usize, end_index: usize) -> Result<Self, Error> {
-        if start_index >= end_index {
-            return Err(Error::InvalidLiteralChunkRange)
+    /// Creates a new literal chunk for the given first value and length.
+    pub(crate) fn new(first_index: usize, len: usize) -> Result<Self, Error> {
+        if !Variable::is_valid_index(first_index + len) {
+            return Err(Error::InvalidLiteralChunk)
         }
-        if !Variable::is_valid_index(start_index) {
-            return Err(Error::InvalidLiteralChunkStart)
-        }
-        if !Variable::is_valid_index(end_index) {
-            return Err(Error::InvalidLiteralChunkEnd)
-        }
-        Ok(Self {
-            start_index,
-            len: end_index - start_index,
-        })
+        // Can now safely cast to `u32`.
+        let first_value = first_index as u32;
+        Ok(Self { first_value, len })
     }
 
     /// Returns the number of literals in this chunk.
+    #[inline]
     pub fn len(&self) -> usize {
         self.len
     }
 
+    /// Returns `true` if the literal chunk is empty.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// Returns the index of the first literal of the literal chunk.
+    fn first_index(&self) -> usize {
+        self.first_value as usize
+    }
+
     /// Returns the n-th literal of the chunk if within bounds.
+    #[inline]
     pub fn get(&self, n: usize) -> Option<Literal> {
         if n >= self.len() {
             return None
         }
-        let var = Variable::from_index(self.start_index + n)
-            .expect("encountered unexpected out of bounds variable index");
+        let var_index = self.first_index() + n;
+        let var = Variable::from_index(var_index);
         Some(Literal::new(var, Sign::POS))
     }
 }
@@ -56,18 +63,23 @@ impl IntoIterator for LiteralChunk {
     type Item = Literal;
     type IntoIter = LiteralChunkIter;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
         LiteralChunkIter::new(self)
     }
 }
 
-#[derive(Debug, Clone)]
+/// An iterator over the literals of a literal chunk.
+#[derive(Debug, Clone, Copy)]
 pub struct LiteralChunkIter {
+    /// The last yielded literal of the literal chunk.
     current: usize,
+    /// The literal chunk that is being iterated over.
     chunk: LiteralChunk,
 }
 
 impl LiteralChunkIter {
+    /// Creates a new iterator for the literal chunk.
     fn new(chunk: LiteralChunk) -> Self {
         Self { current: 0, chunk }
     }
@@ -76,18 +88,24 @@ impl LiteralChunkIter {
 impl Iterator for LiteralChunkIter {
     type Item = Literal;
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let remaining = self.chunk.len() - self.current;
+        let remaining = self.len();
         (remaining, Some(remaining))
     }
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        match self.chunk.get(self.current) {
-            None => None,
-            Some(literal) => {
-                self.current += 1;
-                Some(literal)
-            }
-        }
+        self.chunk.get(self.current).map(|literal| {
+            self.current += 1;
+            literal
+        })
+    }
+}
+
+impl ExactSizeIterator for LiteralChunkIter {
+    #[inline]
+    fn len(&self) -> usize {
+        self.chunk.len() - self.current
     }
 }

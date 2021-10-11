@@ -18,7 +18,7 @@ pub struct TrailLimit(u32);
 
 impl Index for TrailLimit {
     fn from_index(index: usize) -> Self {
-        assert!(index <= Variable::MAX_LEN);
+        assert!(index <= Variable::MAX_INDEX);
         Self(index as u32)
     }
 
@@ -33,7 +33,7 @@ pub struct DecisionLevel(u32);
 
 impl Index for DecisionLevel {
     fn from_index(index: usize) -> Self {
-        assert!(index <= Variable::MAX_LEN);
+        assert!(index <= Variable::MAX_INDEX);
         Self(index as u32)
     }
 

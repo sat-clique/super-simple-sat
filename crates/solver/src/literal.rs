@@ -3,7 +3,6 @@ use bounded::{
     Index,
 };
 use core::{
-    convert::TryFrom,
     fmt,
     fmt::{
         Debug,
@@ -175,39 +174,42 @@ impl From<Literal> for Variable {
 }
 
 impl Variable {
-    /// The maximum supported number of unique variables.
-    pub const MAX_LEN: usize = (u32::MAX >> 1) as usize;
+    /// The maximum valid value of a variable.
+    ///
+    /// # Note
+    ///
+    /// Due to memory layout of literals and variables this solver
+    /// only supports up to 2^31 unique variables.
+    pub const MAX_VALUE: u32 = u32::MAX >> 1;
+
+    /// The maximum supported variable index.
+    pub const MAX_INDEX: usize = Self::MAX_VALUE as usize;
 
     /// Returns `true` if the given index is a valid variable index.
     #[inline]
     pub(crate) fn is_valid_index(index: usize) -> bool {
-        i32::try_from(index).is_ok()
+        index <= Self::MAX_INDEX
     }
 
-    /// Returns the variable for the given index if valid.
-    ///
-    /// # Note
-    ///
-    /// This solver only supports up to 2^31-1 unique variables.
-    /// Any index that is out of this range is invalid for this operation.
-    pub(crate) fn from_index(index: usize) -> Option<Self> {
-        assert!(index < Self::MAX_LEN);
-        u32::try_from(index).ok().map(|value| Self { value })
-    }
-
-    /// Returns the index of the variable.
-    #[inline]
-    pub(crate) fn into_index(self) -> usize {
-        self.value as usize
+    /// Returns back the index as `u32` if it is a valid value for a literal.
+    fn filter_valid_index(index: usize) -> Option<u32> {
+        if Self::is_valid_index(index) {
+            return Some(index as u32)
+        }
+        None
     }
 }
 
 impl Index for Variable {
+    #[inline]
     fn from_index(index: usize) -> Self {
-        Variable::from_index(index).expect("encountered invalid index")
+        Self::filter_valid_index(index)
+            .map(|value| Self { value })
+            .unwrap_or_else(|| panic!("encountered invalid index: {}", index))
     }
 
+    #[inline]
     fn into_index(self) -> usize {
-        self.into_index()
+        self.value as usize
     }
 }

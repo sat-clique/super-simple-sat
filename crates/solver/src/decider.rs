@@ -2,7 +2,10 @@ use crate::{
     assignment::VariableAssignment,
     Variable,
 };
-use bounded::BoundedHeap;
+use bounded::{
+    BoundedHeap,
+    Index as _,
+};
 use core::ops::Add;
 
 /// The priority of a variable used for branching decisions.
@@ -80,8 +83,7 @@ impl Decider {
         let total_variables = self.len_variables() + new_variables;
         self.priorities.resize_capacity(total_variables);
         for i in self.len_variables()..total_variables {
-            let variable =
-                Variable::from_index(i).expect("unexpected variable index out of bounds");
+            let variable = Variable::from_index(i);
             self.priorities
                 .push_or_update(variable, core::convert::identity)
                 .expect("unexpected variable index out of bounds");

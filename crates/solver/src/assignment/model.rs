@@ -12,6 +12,7 @@ use crate::{
 use bounded::{
     bounded_bitmap,
     BoundedBitmap,
+    Index as _,
 };
 use core::{
     fmt,
@@ -139,12 +140,8 @@ impl<'a> Iterator for ModelIter<'a> {
     type Item = (Variable, Sign);
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|(index, assignment)| {
-            (
-                Variable::from_index(index)
-                    .expect("encountered unexpected invalid variable index"),
-                assignment,
-            )
-        })
+        self.iter
+            .next()
+            .map(|(index, assignment)| (Variable::from_index(index), assignment))
     }
 }

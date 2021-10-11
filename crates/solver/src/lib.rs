@@ -34,7 +34,10 @@ pub use crate::{
         LiteralChunkIter,
     },
 };
-use bounded::Bool;
+use bounded::{
+    Bool,
+    Index as _,
+};
 use cnf_parser::{
     Error as CnfError,
     Input,
@@ -50,9 +53,7 @@ pub enum Error {
     Assignment(AssignmentError),
     Bounded(bounded::OutOfBoundsAccess),
     Conflict,
-    InvalidLiteralChunkRange,
-    InvalidLiteralChunkStart,
-    InvalidLiteralChunkEnd,
+    InvalidLiteralChunk,
     TooManyVariablesInUse,
     InvalidDecisionId,
     InvalidDecisionStart,
@@ -196,8 +197,7 @@ impl Solver {
         self.assignment.register_new_variables(1);
         self.decider.register_new_variables(1);
         let next_id = self.len_variables();
-        let variable =
-            Variable::from_index(next_id).expect("registered too many variables");
+        let variable = Variable::from_index(next_id);
         self.len_variables += 1;
         variable
     }
@@ -224,10 +224,14 @@ impl Solver {
     ///
     /// If there are too many variables in use after this operation.
     pub fn new_literal_chunk(&mut self, amount: usize) -> LiteralChunk {
-        let old_len = self.len_variables();
-        let new_len = self.len_variables() + amount;
-        let chunk = LiteralChunk::new(old_len, new_len)
-            .expect("encountered unexpected invalid literal chunk");
+        let first_index = self.len_variables();
+        let chunk = LiteralChunk::new(first_index, amount).unwrap_or_else(|_| {
+            panic!(
+                "created invalid literal chunk for range ({}..{})",
+                first_index,
+                first_index + amount
+            )
+        });
         self.assignment.register_new_variables(amount);
         self.decider.register_new_variables(amount);
         self.len_variables += amount;

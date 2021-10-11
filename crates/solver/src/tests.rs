@@ -6,6 +6,7 @@ use crate::{
     Solver,
     Variable,
 };
+use bounded::Index as _;
 use std::{
     fs,
     path::Path,
@@ -214,9 +215,9 @@ fn test_cnf_input() {
         -10 -7 -2 0
     ";
     let mut solver = Solver::from_cnf(&mut &cnf_input[..]).unwrap();
-    let assumption_1 = Literal::new(Variable::from_index(0).unwrap(), Sign::POS);
-    let assumption_2 = Literal::new(Variable::from_index(6).unwrap(), Sign::POS);
-    let assumption_3 = Literal::new(Variable::from_index(5).unwrap(), Sign::POS);
+    let assumption_1 = Literal::new(Variable::from_index(0), Sign::POS);
+    let assumption_2 = Literal::new(Variable::from_index(6), Sign::POS);
+    let assumption_3 = Literal::new(Variable::from_index(5), Sign::POS);
     let result = solver.solve(vec![assumption_1, assumption_2, assumption_3]);
     assert_eq!(result.map(|res| res.is_sat()), Ok(true));
 }
