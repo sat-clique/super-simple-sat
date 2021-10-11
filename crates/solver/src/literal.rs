@@ -52,6 +52,11 @@ impl Sign {
     pub fn is_neg(self) -> bool {
         !self.is_pos()
     }
+
+    /// Returns `1` if the sign has positive polarity and otherwise `0`.
+    pub fn into_u8(self) -> u8 {
+        self.0 as u8
+    }
 }
 
 impl Bool for Sign {
