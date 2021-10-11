@@ -150,7 +150,7 @@ impl Not for Literal {
     }
 }
 
-/// A unique variable.
+/// A variable of the solver.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct Variable {
