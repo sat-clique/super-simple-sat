@@ -91,6 +91,11 @@ impl DecisionResult {
     }
 }
 
+/// The satisfiable or unsatisfiable solution to a SAT instance.
+///
+/// # Note
+///
+/// If the solution is satisfiable it also contains a satisfying assignment.
 #[derive(Debug)]
 pub enum SolveResult<'a> {
     Unsat,
@@ -111,6 +116,7 @@ impl<'a> SolveResult<'a> {
     }
 }
 
+/// The satisfiable solution of a solved SAT instance.
 #[derive(Debug)]
 pub struct SatResult<'a> {
     model: &'a Model,
@@ -123,6 +129,7 @@ impl<'a> Display for SatResult<'a> {
 }
 
 impl<'a> SatResult<'a> {
+    /// The satisfying assignment of the satisfiable solution.
     pub fn model(&self) -> &'a Model {
         self.model
     }
