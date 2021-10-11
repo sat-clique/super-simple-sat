@@ -160,7 +160,7 @@ impl Trail {
         self.decisions_and_implications
             .push(literal)
             .expect("encountered unexpected invalid variable");
-        assignment.assign(literal.variable(), literal.assignment());
+        assignment.assign(literal.variable(), literal.sign());
         Ok(())
     }
 

@@ -140,7 +140,7 @@ impl VariableAssignment {
     pub fn is_satisfied(&self, literal: Literal) -> Option<bool> {
         self.get(literal.variable())
             .map(Sign::into_bool)
-            .map(|assignment| literal.assignment().into_bool() == assignment)
+            .map(|assignment| literal.sign().into_bool() == assignment)
     }
 
     /// Returns `true` if the given literal is conflicting with the current assignment.

@@ -55,14 +55,14 @@ impl VariableWatchers {
         watcher: ClauseId,
     ) {
         let watcher = Watcher::new(blocker, watcher);
-        match watched.assignment() {
+        match watched.sign() {
             Sign::True => self.pos.push(watcher),
             Sign::False => self.neg.push(watcher),
         }
     }
 
     fn literal_watchers_mut(&mut self, literal: Literal) -> &mut Vec<Watcher> {
-        match literal.assignment() {
+        match literal.sign() {
             Sign::True => &mut self.pos,
             Sign::False => &mut self.neg,
         }

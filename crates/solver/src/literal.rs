@@ -79,7 +79,7 @@ impl Literal {
     }
 
     /// Returns the assignment and polarity of the literal.
-    pub fn assignment(self) -> Sign {
+    pub fn sign(self) -> Sign {
         match self.is_positive() {
             true => Sign::True,
             false => Sign::False,
