@@ -123,7 +123,7 @@ fn slice_cast_works() {
     let vs = slice_cast!(<i32, u32>(&us));
     assert_eq!(vs, us.map(|v| v as u32).as_ref());
 
-    let vs = slice_cast!(<u32, ReprU32>(&vs));
+    let vs = slice_cast!(<u32, ReprU32>(vs));
     assert_eq!(vs, us.map(|v| v as u32).map(ReprU32).as_ref());
 }
 
