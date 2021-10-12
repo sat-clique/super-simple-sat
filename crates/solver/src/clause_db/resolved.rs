@@ -57,17 +57,13 @@ impl<'a> ResolvedClause<'a> {
     /// Returns the header of the referenced clause.
     #[inline]
     pub fn header(&self) -> &'a ClauseHeader {
-        // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
-        unsafe { self.clause_words.get_unchecked(0) }.as_header()
+        self.clause_words[0].as_header()
     }
 
     /// Returns the literals of the referenced clause.
     #[inline]
     pub fn literals(&self) -> Literals<'a> {
-        Literals::new(ClauseWord::as_lits(
-            // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
-            unsafe { self.clause_words.get_unchecked(2..) },
-        ))
+        Literals::new(ClauseWord::as_lits(&self.clause_words[2..]))
     }
 }
 
@@ -111,8 +107,7 @@ impl<'a> Literals<'a> {
     /// have at least two literals.
     #[inline]
     pub fn first(self) -> &'a Literal {
-        // SAFETY: It is guaranteed that there are at least two literals in the slice.
-        unsafe { self.literals.get_unchecked(0) }
+        &self.literals[0]
     }
 
     /// Returns a shared reference to the second literal of the resolved clause.
@@ -123,8 +118,7 @@ impl<'a> Literals<'a> {
     /// have at least two literals.
     #[inline]
     pub fn second(self) -> &'a Literal {
-        // SAFETY: It is guaranteed that there are at least two literals in the slice.
-        unsafe { self.literals.get_unchecked(1) }
+        &self.literals[1]
     }
 
     /// Returns a shared reference to the literal slice.
@@ -171,23 +165,20 @@ impl<'a> ResolvedClauseMut<'a> {
     /// Returns a shared reference to the header of the referenced clause.
     #[inline]
     pub fn header(&self) -> &ClauseHeader {
-        // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
-        unsafe { self.clause_words.get_unchecked(0) }.as_header()
+        self.clause_words[0].as_header()
     }
 
     /// Returns an exclusive reference to the header of the referenced clause.
     #[inline]
     pub fn header_mut(&mut self) -> &mut ClauseHeader {
-        // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
-        unsafe { self.clause_words.get_unchecked_mut(0) }.as_header_mut()
+        self.clause_words[0].as_header_mut()
     }
 
     /// Returns a shared reference to the literals of the resolved clause.
     #[inline]
     pub fn literals(&self) -> Literals {
         Literals::new(ClauseWord::as_lits(
-            // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
-            unsafe { self.clause_words.get_unchecked(2..) },
+            &self.clause_words[2..]
         ))
     }
 
@@ -195,8 +186,7 @@ impl<'a> ResolvedClauseMut<'a> {
     #[inline]
     pub fn literals_mut(&mut self) -> LiteralsMut {
         LiteralsMut::new(ClauseWord::as_lits_mut(
-            // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
-            unsafe { self.clause_words.get_unchecked_mut(2..) },
+            &mut self.clause_words[2..]
         ))
     }
 }
@@ -257,8 +247,7 @@ impl<'a> LiteralsMut<'a> {
     /// have at least two literals.
     #[inline]
     pub fn first(&mut self) -> &mut Literal {
-        // SAFETY: It is guaranteed that there are at least two literals in the slice.
-        unsafe { self.literals.get_unchecked_mut(0) }
+        &mut self.literals[0]
     }
 
     /// Returns an exclusive reference to the second literal of the resolved clause.
@@ -268,9 +257,8 @@ impl<'a> LiteralsMut<'a> {
     /// This always yields a literal since all resolved clauses are guaranteed to
     /// have at least two literals.
     #[inline]
-    pub fn into_second(&mut self) -> &mut Literal {
-        // SAFETY: It is guaranteed that there are at least two literals in the slice.
-        unsafe { self.literals.get_unchecked_mut(1) }
+    pub fn second(&mut self) -> &mut Literal {
+        &mut self.literals[1]
     }
 
     /// Returns an exlusive reference to the literal slice.
