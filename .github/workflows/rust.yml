@@ -23,7 +23,10 @@ jobs:
 
   test:
     name: Test
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -34,6 +37,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
+          args: --release --workspace
 
   fmt:
     name: Formatting
@@ -51,6 +55,24 @@ jobs:
           command: fmt
           args: --all -- --check
 
+  doc:
+    name: Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rust-docs, rust-src
+      - uses: actions-rs/cargo@v1
+        env:
+          RUSTDOCFLAGS: '-D warnings'
+        with:
+          command: doc
+          args: --workspace --no-deps --document-private-items
+
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
@@ -65,7 +87,22 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: -- -D warnings
+          args: --workspace -- -D warnings
+
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: audit
+          args: --deny warnings
 
   miri:
     name: Miri
@@ -75,10 +112,35 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: nightly-2020-07-12
+          toolchain: nightly
           override: true
           components: miri
       - uses: actions-rs/cargo@v1
         with:
           command: miri
           args: test
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - name: Run cargo-tarpaulin
+        uses: actions-rs/tarpaulin@v0.1
+        with:
+          args: ''
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v1
+        with:
+          name: code-coverage-report
+          path: cobertura.xml
