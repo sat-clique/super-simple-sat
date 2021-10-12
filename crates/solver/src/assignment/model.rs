@@ -54,30 +54,27 @@ pub struct Model {
 
 impl Display for Model {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for (variable, assignment) in self {
-            let index = variable.into_index() + 1;
-            if f.alternate() {
-                writeln!(f, "model #var: {}", self.len())?;
-                let assignment = assignment.into_bool().to_string();
-                writeln!(f, " - var({:3}) = {}", index, assignment)?;
-            } else {
-                if assignment == Sign::NEG {
-                    write!(f, "-")?;
-                }
-                write!(f, "{}", index)?;
-                write!(f, " ")?;
+        write!(f, "[")?;
+        let mut literals = self
+            .into_iter()
+            .map(|(variable, sign)| Literal::new(variable, sign));
+        if f.alternate() {
+            writeln!(f)?;
+            for literal in literals {
+                writeln!(f, "  {: >6},", literal)?;
+            }
+        } else if let Some(first) = literals.next() {
+            write!(f, "{}", first)?;
+            for rest in literals {
+                write!(f, ", {}", rest)?;
             }
         }
+        write!(f, "]")?;
         Ok(())
     }
 }
 
 impl Model {
-    /// Returns the number of assigned variables in the model.
-    fn len(&self) -> usize {
-        self.assignment.len()
-    }
-
     /// Updates the model from the given assignment.
     ///
     /// # Errors
