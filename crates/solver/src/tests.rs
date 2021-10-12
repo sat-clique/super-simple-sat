@@ -94,7 +94,7 @@ fn solve_problem_with_single_unit_clause() {
 #[rustfmt::skip]
 fn solve_problem_with_non_contradictory_unit_clauses() {
     let mut solver = Solver::default();
-    let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(10).into_iter().collect::<Vec<_>>();
     solver.consume_clause([ vars[2]]);
     solver.consume_clause([ vars[4]]);
     solver.consume_clause([!vars[5]]);
@@ -105,7 +105,7 @@ fn solve_problem_with_non_contradictory_unit_clauses() {
 #[rustfmt::skip]
 fn solve_problem_with_contradictory_unit_clauses() {
     let mut solver = Solver::default();
-    let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(10).into_iter().collect::<Vec<_>>();
     solver.consume_clause([ vars[2]]);
     solver.consume_clause([ vars[4]]);
     solver.consume_clause([!vars[4]]);
@@ -116,7 +116,7 @@ fn solve_problem_with_contradictory_unit_clauses() {
 #[rustfmt::skip]
 fn test_solve_satisfiable_3sat_problem() {
     let mut solver = Solver::default();
-    let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(10).into_iter().collect::<Vec<_>>();
     solver.consume_clause([ vars[1],  vars[3],  vars[5]]);
     solver.consume_clause([!vars[1], !vars[7],  vars[5]]);
     solver.consume_clause([!vars[3], !vars[7], !vars[0]]);
@@ -129,7 +129,7 @@ fn test_solve_satisfiable_3sat_problem() {
 #[rustfmt::skip]
 fn test_minimal_unsatisfiable_2sat_problem() {
     let mut solver = Solver::default();
-    let vars = (0..2).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(2).into_iter().collect::<Vec<_>>();
     solver.consume_clause([ vars[0],  vars[1]]);
     solver.consume_clause([ vars[0], !vars[1]]);
     solver.consume_clause([!vars[0],  vars[1]]);
@@ -142,7 +142,7 @@ fn test_minimal_unsatisfiable_2sat_problem() {
 #[rustfmt::skip]
 fn test_unsatisfiable_2sat_problem() {
     let mut solver = Solver::default();
-    let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(10).into_iter().collect::<Vec<_>>();
     solver.consume_clause([!vars[1],  vars[3]]);
     solver.consume_clause([!vars[3],  vars[8]]);
     solver.consume_clause([!vars[8], !vars[1]]);
@@ -157,7 +157,7 @@ fn test_unsatisfiable_2sat_problem() {
 #[rustfmt::skip]
 fn test_solve_3sat_problem_with_satisfiable_assumptions() {
     let mut solver = Solver::default();
-    let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(10).into_iter().collect::<Vec<_>>();
     solver.consume_clause([ vars[1],  vars[3],  vars[5]]);
     solver.consume_clause([!vars[1], !vars[7],  vars[5]]);
     solver.consume_clause([!vars[3], !vars[7], !vars[0]]);
@@ -170,7 +170,7 @@ fn test_solve_3sat_problem_with_satisfiable_assumptions() {
 #[rustfmt::skip]
 fn test_solve_3sat_problem_with_unsatisfiable_assumptions() {
     let mut solver = Solver::default();
-    let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(10).into_iter().collect::<Vec<_>>();
     solver.consume_clause([ vars[1],  vars[3],  vars[5]]);
     solver.consume_clause([ vars[1], !vars[7], !vars[5]]);
     solver.consume_clause([!vars[3], !vars[7], !vars[0]]);
@@ -183,7 +183,7 @@ fn test_solve_3sat_problem_with_unsatisfiable_assumptions() {
 #[rustfmt::skip]
 fn test_get_forced_assignment() {
     let mut solver = Solver::default();
-    let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(10).into_iter().collect::<Vec<_>>();
     solver.consume_clause([ vars[1],  vars[3],  vars[5]]);
     solver.consume_clause([!vars[1], !vars[7],  vars[5]]);
     solver.consume_clause([!vars[3], !vars[7], !vars[0]]);
@@ -210,7 +210,7 @@ fn test_get_forced_assignment() {
 #[rustfmt::skip]
 fn test_minimal_unsatisfiable_4sat_problem() {
     let mut solver = Solver::default();
-    let vars = (0..4).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(4).into_iter().collect::<Vec<_>>();
     solver.consume_clause([ vars[0],  vars[1],  vars[2],  vars[3]]);
     solver.consume_clause([ vars[0],  vars[1],  vars[2], !vars[3]]);
     solver.consume_clause([ vars[0],  vars[1], !vars[2],  vars[3]]);
@@ -235,7 +235,7 @@ fn test_minimal_unsatisfiable_4sat_problem() {
 #[rustfmt::skip]
 fn test_minimal_satisfiable_4sat_problem() {
     let mut solver = Solver::default();
-    let vars = (0..4).map(|_| solver.new_literal()).collect::<Vec<_>>();
+    let vars = solver.new_literal_chunk(4).into_iter().collect::<Vec<_>>();
     // The below constraints are satisfied for an assignment of: -1 2 3 4
     solver.consume_clause([ vars[0],  vars[1],  vars[2],  vars[3]]);
     solver.consume_clause([ vars[0],  vars[1],  vars[2], !vars[3]]);
