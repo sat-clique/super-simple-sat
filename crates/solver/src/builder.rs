@@ -1,8 +1,6 @@
 use crate::{
-    ClauseSanitizer,
     Error,
     Literal,
-    SanitizedLiterals,
     Solver,
 };
 use cnf_parser::Output;
@@ -12,7 +10,6 @@ pub struct SolverBuilder {
     solver: Solver,
     num_variables: Option<usize>,
     current_clause: Vec<Literal>,
-    sanitizer: ClauseSanitizer,
 }
 
 impl SolverBuilder {
@@ -20,18 +17,7 @@ impl SolverBuilder {
         if self.num_variables.is_none() {
             return Err("missing problem line before clause inputs".into())
         }
-        match self.sanitizer.sanitize(self.current_clause.drain(..)) {
-            SanitizedLiterals::Literals(literals) => {
-                self.solver.consume_clause(literals)?;
-            }
-            SanitizedLiterals::UnitClause(unit) => {
-                self.solver.enqueue_assumption(unit)?;
-            }
-            SanitizedLiterals::TautologicalClause => (),
-            SanitizedLiterals::EmptyClause => {
-                return Err("encountered empty or self conflicting clause".into())
-            }
-        }
+        self.solver.consume_clause(self.current_clause.drain(..))?;
         Ok(())
     }
 

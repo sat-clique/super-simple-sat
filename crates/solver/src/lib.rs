@@ -147,6 +147,8 @@ pub struct Solver {
     assignment: Assignment,
     decider: Decider,
     last_model2: LastModel,
+    sanitizer: ClauseSanitizer,
+    encountered_empty_clause: bool,
 }
 
 impl Solver {
@@ -169,7 +171,7 @@ impl Solver {
     /// # Errors
     ///
     /// If the assumption conflicts with another root assumption.
-    pub fn enqueue_assumption(&mut self, assumption: Literal) -> Result<(), Error> {
+    fn enqueue_assumption(&mut self, assumption: Literal) -> Result<(), Error> {
         self.assignment
             .enqueue_assumption(assumption)
             .map_err(|_| Error::Conflict)
@@ -187,18 +189,24 @@ impl Solver {
         I: IntoIterator<IntoIter = T>,
         T: ExactSizeIterator<Item = Literal>,
     {
-        match self.clauses.push_get(literals) {
-            Ok(clause) => {
-                self.assignment.initialize_watchers(clause);
-                for literal in clause {
+        match self.sanitizer.sanitize(literals) {
+            SanitizedLiterals::Literals(literals) => {
+                let cref = self
+                    .clauses
+                    .push_get(literals)
+                    .expect("unexpectedly encountered non-long clause literals");
+                self.assignment.initialize_watchers(cref);
+                for literal in cref {
                     let variable = literal.variable();
                     self.decider.bump_priority_by(variable, 1);
                 }
             }
-            Err(unit_clause) => {
-                self.assignment
-                    .enqueue_assumption(unit_clause.literal)
-                    .map_err(|_| Error::Conflict)?;
+            SanitizedLiterals::UnitClause(unit) => {
+                self.enqueue_assumption(unit)?;
+            }
+            SanitizedLiterals::TautologicalClause => (),
+            SanitizedLiterals::EmptyClause => {
+                self.encountered_empty_clause = true;
             }
         }
         Ok(())
@@ -305,6 +313,10 @@ impl Solver {
     where
         L: IntoIterator<Item = Literal>,
     {
+        // If the set of clauses contain the empty clause: UNSAT
+        if self.encountered_empty_clause {
+            return Ok(SolveResult::Unsat)
+        }
         // If the set of clauses contain the empty clause: UNSAT
         if self.len_variables() == 0 {
             return Ok(SolveResult::sat(self.last_model2.get()))
