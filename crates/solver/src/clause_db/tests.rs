@@ -39,8 +39,8 @@ fn db_works() {
     assert_eq!(rc3.literals().as_slice(), &clause([4, 5, 6, 7]));
     assert_eq!(db.remove_clause(c1), ClauseRemoval::Removed(5));
     assert_eq!(db.remove_clause(c2), ClauseRemoval::Removed(5));
-    assert!(db.resolve(c1).is_none());
-    assert!(db.resolve(c2).is_none());
+    assert!(db.resolve(c1).is_some());
+    assert!(db.resolve(c2).is_some());
     assert!(db.resolve(c3).is_some());
     assert!(!db.is_empty());
     assert_eq!(db.remove_clause(c1), ClauseRemoval::AlreadyRemoved);
@@ -65,15 +65,15 @@ fn resolve_mut_works() {
     let c2 = db.alloc(clause([4, 5, 6]));
 
     // Resolve first clause as exclusive reference and change one literal.
-    let rc1 = db.resolve_mut(c1).unwrap();
-    let rc1_lits = rc1.literals().into_slice();
+    let mut rc1 = db.resolve_mut(c1).unwrap();
+    let rc1_lits = rc1.literals_mut().into_slice();
     assert_eq!(rc1_lits, &mut clause([1, 2, 3]));
     rc1_lits[0] = Literal::from(-1);
     assert_eq!(rc1_lits, &mut clause([-1, 2, 3]));
 
     // Resolve second clause as exclusive reference and flip all literals.
-    let rc2 = db.resolve_mut(c2).unwrap();
-    let rc2_lits = rc2.literals().into_slice();
+    let mut rc2 = db.resolve_mut(c2).unwrap();
+    let rc2_lits = rc2.literals_mut().into_slice();
     assert_eq!(rc2_lits, &mut clause([4, 5, 6]));
     for lit in &mut *rc2_lits {
         *lit = !*lit;

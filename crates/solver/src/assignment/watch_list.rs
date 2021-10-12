@@ -97,7 +97,7 @@ impl VariableWatchers {
             let result = clause_db
                 .resolve_mut(watcher)
                 .expect("encountered unexpected invalid clause ID")
-                .literals()
+                .literals_mut()
                 .propagate(literal, assignment);
             match result {
                 ClausePropagationResult::UnitUnderAssignment(unit_literal) => {

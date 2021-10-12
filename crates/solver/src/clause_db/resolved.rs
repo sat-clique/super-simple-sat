@@ -1,4 +1,7 @@
-use super::ClauseHeader;
+use super::{
+    ClauseHeader,
+    ClauseWord,
+};
 use crate::{
     assignment::PartialAssignment,
     Literal,
@@ -6,6 +9,7 @@ use crate::{
 use core::{
     fmt,
     fmt::{
+        Debug,
         Display,
         Formatter,
     },
@@ -17,34 +21,59 @@ use core::{
 };
 
 /// A resolved shared reference to a clause stored in the clause database.
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
+#[repr(transparent)]
 pub struct ResolvedClause<'a> {
-    header: &'a ClauseHeader,
-    literals: &'a [Literal],
+    clause_words: &'a [ClauseWord],
+}
+
+impl<'a> Debug for ResolvedClause<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        f.debug_struct("ResolvedClause")
+            .field("header", self.header())
+            .field("literals", &self.literals().as_slice())
+            .finish()
+    }
 }
 
 impl<'a> ResolvedClause<'a> {
     /// Creates a new reference to a clause stored in the clause database.
+    ///
+    /// # Panics (Debug)
+    ///
+    /// Panics if the clause slice does not contain at least 4 clause words.
     #[inline]
-    pub(super) fn new(header: &'a ClauseHeader, literals: &'a [Literal]) -> Self {
-        Self { header, literals }
+    pub(super) fn new(clause_words: &'a [ClauseWord]) -> Self {
+        debug_assert!(
+            clause_words.len() >= 4,
+            // Note: Since clauses stored in the clause database have at least 2 literals
+            //       every clause consists of at least 4 clause words.",
+            "encountered a clause with just {} instead of at least 4 clause words.",
+            clause_words.len(),
+        );
+        Self { clause_words }
     }
 
     /// Returns the header of the referenced clause.
     #[inline]
     pub fn header(&self) -> &'a ClauseHeader {
-        self.header
+        // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
+        unsafe { self.clause_words.get_unchecked(0) }.as_header()
     }
 
     /// Returns the literals of the referenced clause.
     #[inline]
     pub fn literals(&self) -> Literals<'a> {
-        Literals::new(self.literals)
+        Literals::new(ClauseWord::as_lits(
+            // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
+            unsafe { self.clause_words.get_unchecked(2..) },
+        ))
     }
 }
 
 /// A shared reference to the literals of a resolved clause.
 #[derive(Debug, Copy, Clone, PartialEq)]
+#[repr(transparent)]
 pub struct Literals<'a> {
     literals: &'a [Literal],
 }
@@ -82,7 +111,8 @@ impl<'a> Literals<'a> {
     /// have at least two literals.
     #[inline]
     pub fn first(self) -> &'a Literal {
-        &self.literals[0]
+        // SAFETY: It is guaranteed that there are at least two literals in the slice.
+        unsafe { self.literals.get_unchecked(0) }
     }
 
     /// Returns a shared reference to the second literal of the resolved clause.
@@ -93,7 +123,8 @@ impl<'a> Literals<'a> {
     /// have at least two literals.
     #[inline]
     pub fn second(self) -> &'a Literal {
-        &self.literals[1]
+        // SAFETY: It is guaranteed that there are at least two literals in the slice.
+        unsafe { self.literals.get_unchecked(1) }
     }
 
     /// Returns a shared reference to the literal slice.
@@ -118,34 +149,70 @@ impl<'a> Display for Literals<'a> {
 }
 
 /// A resolved exclusive reference to a clause stored in the clause database.
-#[derive(Debug)]
+#[repr(transparent)]
 pub struct ResolvedClauseMut<'a> {
-    header: &'a mut ClauseHeader,
-    literals: &'a mut [Literal],
+    clause_words: &'a mut [ClauseWord],
 }
 
 impl<'a> ResolvedClauseMut<'a> {
     /// Creates a new reference to a clause stored in the clause database.
     #[inline]
-    pub(super) fn new(header: &'a mut ClauseHeader, literals: &'a mut [Literal]) -> Self {
-        Self { header, literals }
+    pub(super) fn new(clause_words: &'a mut [ClauseWord]) -> Self {
+        debug_assert!(
+            clause_words.len() >= 4,
+            // Note: Since clauses stored in the clause database have at least 2 literals
+            //       every clause consists of at least 4 clause words.",
+            "encountered a clause with just {} instead of at least 4 clause words.",
+            clause_words.len(),
+        );
+        Self { clause_words }
     }
 
-    /// Returns the header of the referenced clause.
+    /// Returns a shared reference to the header of the referenced clause.
     #[inline]
-    pub fn header(self) -> &'a mut ClauseHeader {
-        self.header
+    pub fn header(&self) -> &ClauseHeader {
+        // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
+        unsafe { self.clause_words.get_unchecked(0) }.as_header()
     }
 
-    /// Returns the literals of the referenced clause.
+    /// Returns an exclusive reference to the header of the referenced clause.
     #[inline]
-    pub fn literals(self) -> LiteralsMut<'a> {
-        LiteralsMut::new(self.literals)
+    pub fn header_mut(&mut self) -> &mut ClauseHeader {
+        // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
+        unsafe { self.clause_words.get_unchecked_mut(0) }.as_header_mut()
+    }
+
+    /// Returns a shared reference to the literals of the resolved clause.
+    #[inline]
+    pub fn literals(&self) -> Literals {
+        Literals::new(ClauseWord::as_lits(
+            // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
+            unsafe { self.clause_words.get_unchecked(2..) },
+        ))
+    }
+
+    /// Returns an exclusive reference to the literals of the resolved clause.
+    #[inline]
+    pub fn literals_mut(&mut self) -> LiteralsMut {
+        LiteralsMut::new(ClauseWord::as_lits_mut(
+            // SAFETY: It is guaranteed that there are at least 4 clause words per clause.
+            unsafe { self.clause_words.get_unchecked_mut(2..) },
+        ))
+    }
+}
+
+impl<'a> Debug for ResolvedClauseMut<'a> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        f.debug_struct("ResolvedClauseMut")
+            .field("header", self.header())
+            .field("literals", &self.literals().as_slice())
+            .finish()
     }
 }
 
 /// A shared reference to the literals of a resolved clause.
 #[derive(Debug, PartialEq)]
+#[repr(transparent)]
 pub struct LiteralsMut<'a> {
     literals: &'a mut [Literal],
 }
