@@ -256,8 +256,9 @@ impl<'a> LiteralsMut<'a> {
     /// This always yields a literal since all resolved clauses are guaranteed to
     /// have at least two literals.
     #[inline]
-    pub fn into_first(self) -> &'a mut Literal {
-        &mut self.literals[0]
+    pub fn first(&mut self) -> &mut Literal {
+        // SAFETY: It is guaranteed that there are at least two literals in the slice.
+        unsafe { self.literals.get_unchecked_mut(0) }
     }
 
     /// Returns an exclusive reference to the second literal of the resolved clause.
@@ -267,8 +268,9 @@ impl<'a> LiteralsMut<'a> {
     /// This always yields a literal since all resolved clauses are guaranteed to
     /// have at least two literals.
     #[inline]
-    pub fn into_second(self) -> &'a mut Literal {
-        &mut self.literals[1]
+    pub fn into_second(&mut self) -> &mut Literal {
+        // SAFETY: It is guaranteed that there are at least two literals in the slice.
+        unsafe { self.literals.get_unchecked_mut(1) }
     }
 
     /// Returns an exlusive reference to the literal slice.
