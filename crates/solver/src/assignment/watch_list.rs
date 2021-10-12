@@ -1,8 +1,8 @@
 use super::{
     AssignmentError,
+    PartialAssignment,
     PropagationEnqueuer,
     PropagationResult,
-    PartialAssignment,
 };
 use crate::{
     clause_db::{
