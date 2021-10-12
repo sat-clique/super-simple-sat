@@ -17,7 +17,7 @@ impl SolverBuilder {
         if self.num_variables.is_none() {
             return Err("missing problem line before clause inputs".into())
         }
-        self.solver.consume_clause(self.current_clause.drain(..))?;
+        self.solver.consume_clause(self.current_clause.drain(..));
         Ok(())
     }
 

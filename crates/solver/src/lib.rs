@@ -149,6 +149,7 @@ pub struct Solver {
     last_model2: LastModel,
     sanitizer: ClauseSanitizer,
     encountered_empty_clause: bool,
+    hard_facts: Vec<Literal>,
 }
 
 impl Solver {
@@ -166,17 +167,6 @@ impl Solver {
         Ok(builder.finalize())
     }
 
-    /// Enqueues an assumption at the root level of the solver.
-    ///
-    /// # Errors
-    ///
-    /// If the assumption conflicts with another root assumption.
-    fn enqueue_assumption(&mut self, assumption: Literal) -> Result<(), Error> {
-        self.assignment
-            .enqueue_assumption(assumption)
-            .map_err(|_| Error::Conflict)
-    }
-
     /// Consumes the given clause.
     ///
     /// # Errors
@@ -184,7 +174,7 @@ impl Solver {
     /// If the clause is unit and is in conflict with the current assignment.
     /// This is mostly encountered upon consuming two conflicting unit clauses.
     /// In this case the clause will not be added as new constraint.
-    pub fn consume_clause<I, T>(&mut self, literals: I) -> Result<(), Error>
+    pub fn consume_clause<I, T>(&mut self, literals: I)
     where
         I: IntoIterator<IntoIter = T>,
         T: ExactSizeIterator<Item = Literal>,
@@ -202,14 +192,13 @@ impl Solver {
                 }
             }
             SanitizedLiterals::UnitClause(unit) => {
-                self.enqueue_assumption(unit)?;
+                self.hard_facts.push(unit);
             }
             SanitizedLiterals::TautologicalClause => (),
             SanitizedLiterals::EmptyClause => {
                 self.encountered_empty_clause = true;
             }
         }
-        Ok(())
     }
 
     /// Returns the next variable.
@@ -320,6 +309,17 @@ impl Solver {
         // If the set of clauses contain the empty clause: UNSAT
         if self.len_variables() == 0 {
             return Ok(SolveResult::sat(self.last_model2.get()))
+        }
+        // Propagate known hard facts (unit clauses).
+        for &hard_fact in &self.hard_facts {
+            match self.assignment.enqueue_assumption(hard_fact) {
+                Ok(()) => (),
+                Err(AssignmentError::AlreadyAssigned) => (),
+                Err(AssignmentError::Conflict) => return Ok(SolveResult::Unsat),
+                _unexpected_error => {
+                    panic!("encountered unexpected error while propagating hard facts")
+                }
+            }
         }
         // Propagate in case the set of clauses contained unit clauses.
         // Bail out if the instance is already in conflict with itself.
