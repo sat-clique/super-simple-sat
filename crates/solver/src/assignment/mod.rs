@@ -15,10 +15,13 @@ use self::{
     watch_list::WatchList,
 };
 use crate::{
-    clause_db::ClauseRef,
+    clause_db::{
+        ClauseRef,
+        ResolvedClause,
+    },
     decider::InformDecider,
     Bool,
-    ClauseDb,
+    ClauseDatabase,
     Literal,
     Sign,
     Variable,
@@ -204,12 +207,11 @@ impl Assignment {
     /// # Errors
     ///
     /// If the initialization has already taken place.
-    pub fn initialize_watchers(&mut self, clause: ClauseRef) {
-        let clause_id = clause.id();
-        let fst = clause.first();
-        let snd = clause.second();
-        self.watchers.register_for_lit(!fst, snd, clause_id);
-        self.watchers.register_for_lit(!snd, fst, clause_id);
+    pub fn initialize_watchers(&mut self, cref: ClauseRef, resolved: ResolvedClause) {
+        let fst = *resolved.literals().first();
+        let snd = *resolved.literals().second();
+        self.watchers.register_for_lit(!fst, snd, cref);
+        self.watchers.register_for_lit(!snd, fst, cref);
     }
 
     /// Returns a view into the assignment.
@@ -290,7 +292,7 @@ impl Assignment {
     /// Propagates the enqueued assumptions.
     pub fn propagate(
         &mut self,
-        clause_db: &mut ClauseDb,
+        clause_db: &mut ClauseDatabase,
         inform_decider: InformDecider,
     ) -> PropagationResult {
         let Self {

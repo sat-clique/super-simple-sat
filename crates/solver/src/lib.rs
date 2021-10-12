@@ -1,9 +1,9 @@
-#![forbid(unsafe_code)]
+// #![forbid(unsafe_code)]
 #![allow(clippy::len_without_is_empty)]
 
 mod assignment;
 mod builder;
-mod clause_db;
+pub mod clause_db;
 mod decider;
 mod literal;
 mod literal_chunk;
@@ -21,7 +21,7 @@ use crate::{
         PropagationResult,
     },
     builder::SolverBuilder,
-    clause_db::ClauseDb,
+    clause_db::ClauseDatabase,
     decider::Decider,
     sanitizer::{
         ClauseSanitizer,
@@ -140,10 +140,11 @@ impl<'a> SatResult<'a> {
     }
 }
 
+/// The solver instance.
 #[derive(Debug, Default, Clone)]
 pub struct Solver {
     len_variables: usize,
-    clauses: ClauseDb,
+    clauses: ClauseDatabase,
     assignment: Assignment,
     decider: Decider,
     last_model2: LastModel,
@@ -181,12 +182,10 @@ impl Solver {
     {
         match self.sanitizer.sanitize(literals) {
             SanitizedLiterals::Literals(literals) => {
-                let cref = self
-                    .clauses
-                    .push_get(literals)
-                    .expect("unexpectedly encountered non-long clause literals");
-                self.assignment.initialize_watchers(cref);
-                for literal in cref {
+                let cref = self.clauses.alloc(literals);
+                let resolved = self.clauses.resolve(cref).expect("just added the clause");
+                self.assignment.initialize_watchers(cref, resolved);
+                for literal in resolved.literals() {
                     let variable = literal.variable();
                     self.decider.bump_priority_by(variable, 1);
                 }
