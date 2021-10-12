@@ -157,7 +157,7 @@ impl Display for Literal {
 }
 
 /// A variable of the solver.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct Variable {
     value: u32,
