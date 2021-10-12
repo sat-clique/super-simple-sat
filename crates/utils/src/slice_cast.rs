@@ -103,7 +103,7 @@ macro_rules! slice_cast_mut {
             //         and `align_of`.
             unsafe {
                 ::core::slice::from_raw_parts_mut(
-                    from_slice.as_ptr() as *mut $into_type,
+                    from_slice.as_mut_ptr() as *mut $into_type,
                     from_slice.len(),
                 )
             }
