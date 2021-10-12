@@ -7,6 +7,7 @@ use crate::{
     Variable,
 };
 use bounded::Index as _;
+#[cfg(not(miri))]
 use std::{
     fs,
     path::Path,
@@ -227,6 +228,8 @@ fn test_cnf_input() {
 /// # Note
 ///
 /// The benchmarks are returned alphabetically sorted by their file names.
+#[cfg(not(miri))]
+
 fn collect_tests_in_path<P>(path: P) -> Vec<Vec<u8>>
 where
     P: AsRef<Path>,
