@@ -7,6 +7,7 @@ mod clause_db;
 mod decider;
 mod literal;
 mod literal_chunk;
+mod sanitizer;
 
 #[cfg(test)]
 mod tests;
@@ -22,6 +23,10 @@ use crate::{
     builder::SolverBuilder,
     clause_db::ClauseDb,
     decider::Decider,
+    sanitizer::{
+        ClauseSanitizer,
+        SanitizedLiterals,
+    },
 };
 pub use crate::{
     literal::{

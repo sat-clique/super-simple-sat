@@ -1,6 +1,5 @@
 mod clause_ref;
 mod db;
-mod sanitizer;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Error {
@@ -17,10 +16,5 @@ pub use self::{
         ClauseDb,
         ClauseDbIter,
         ClauseId,
-    },
-    sanitizer::{
-        ClauseSanitizer,
-        LiteralIter,
-        SanitizedLiterals,
     },
 };

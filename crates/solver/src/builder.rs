@@ -1,10 +1,8 @@
 use crate::{
-    clause_db::{
-        ClauseSanitizer,
-        SanitizedLiterals,
-    },
+    ClauseSanitizer,
     Error,
     Literal,
+    SanitizedLiterals,
     Solver,
 };
 use cnf_parser::Output;
