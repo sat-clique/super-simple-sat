@@ -23,3 +23,7 @@ criterion = "0.3"
 [[bench]]
 name = "solve"
 harness = false
+
+[[bench]]
+name = "clause_db"
+harness = false
