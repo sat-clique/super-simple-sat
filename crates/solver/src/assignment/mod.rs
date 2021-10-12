@@ -74,19 +74,19 @@ impl<'a> PropagationEnqueuer<'a> {
     pub fn push(
         &mut self,
         literal: Literal,
-        assignment: &mut VariableAssignment,
+        assignment: &mut PartialAssignment,
     ) -> Result<(), AssignmentError> {
         self.queue.push(literal, assignment)
     }
 }
 
-/// The actual variable assignment.
+/// The partial variable assignment.
 #[derive(Debug, Default, Clone)]
-pub struct VariableAssignment {
+pub struct PartialAssignment {
     assignment: BoundedMap<Variable, Sign>,
 }
 
-impl VariableAssignment {
+impl PartialAssignment {
     /// Returns the number of registered variables.
     pub fn len(&self) -> usize {
         self.assignment.capacity()
@@ -97,7 +97,7 @@ impl VariableAssignment {
         self.assignment.len()
     }
 
-    /// Returns `true` if the assignment is complete.
+    /// Returns `true` if the partial assignment is complete.
     pub fn is_complete(&self) -> bool {
         self.len() == self.len_assigned()
     }
@@ -197,7 +197,7 @@ impl VariableAssignment {
 #[derive(Debug, Default, Clone)]
 pub struct Assignment {
     trail: Trail,
-    assignments: VariableAssignment,
+    assignments: PartialAssignment,
     watchers: WatchList,
 }
 
@@ -215,7 +215,7 @@ impl Assignment {
     }
 
     /// Returns a view into the assignment.
-    pub fn variable_assignment(&self) -> &VariableAssignment {
+    pub fn variable_assignment(&self) -> &PartialAssignment {
         &self.assignments
     }
 
@@ -318,7 +318,7 @@ impl Assignment {
     }
 }
 
-impl<'a> IntoIterator for &'a VariableAssignment {
+impl<'a> IntoIterator for &'a PartialAssignment {
     type Item = (Variable, Sign);
     type IntoIter = Iter<'a>;
 
@@ -341,7 +341,7 @@ pub struct Iter<'a> {
 }
 
 impl<'a> Iter<'a> {
-    pub fn new(assignment: &'a VariableAssignment) -> Self {
+    pub fn new(assignment: &'a PartialAssignment) -> Self {
         Self {
             iter: assignment.iter(),
         }

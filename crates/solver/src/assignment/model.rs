@@ -1,7 +1,7 @@
 pub use super::{
     Assignment,
     AssignmentError,
-    VariableAssignment,
+    PartialAssignment,
 };
 use crate::{
     Bool,
@@ -33,7 +33,7 @@ impl LastModel {
     /// If the given assignment is not complete.
     pub fn update(
         &mut self,
-        assignment: &VariableAssignment,
+        assignment: &PartialAssignment,
     ) -> Result<(), AssignmentError> {
         self.last_model
             .update(assignment)
@@ -82,7 +82,7 @@ impl Model {
     /// If the given assignment is not complete.
     pub(crate) fn update(
         &mut self,
-        assignment: &VariableAssignment,
+        assignment: &PartialAssignment,
     ) -> Result<(), AssignmentError> {
         if !assignment.is_complete() {
             return Err(AssignmentError::UnexpectedIndeterminateAssignment)

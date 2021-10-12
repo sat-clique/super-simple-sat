@@ -1,6 +1,6 @@
 use super::{
     AssignmentError,
-    VariableAssignment,
+    PartialAssignment,
 };
 use crate::{
     decider::InformDecider,
@@ -150,7 +150,7 @@ impl Trail {
     pub fn push(
         &mut self,
         literal: Literal,
-        assignment: &mut VariableAssignment,
+        assignment: &mut PartialAssignment,
     ) -> Result<(), AssignmentError> {
         match assignment.is_conflicting(literal) {
             Some(true) => return Err(AssignmentError::Conflict),
@@ -168,7 +168,7 @@ impl Trail {
     pub fn pop_to_level(
         &mut self,
         level: DecisionLevel,
-        assignments: &mut VariableAssignment,
+        assignments: &mut PartialAssignment,
         mut inform_decider: InformDecider,
     ) {
         let level = DecisionLevel::from_index(level.into_index() - 1);

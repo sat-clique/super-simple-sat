@@ -2,7 +2,7 @@ use super::{
     AssignmentError,
     PropagationEnqueuer,
     PropagationResult,
-    VariableAssignment,
+    PartialAssignment,
 };
 use crate::{
     clause_db::{
@@ -78,7 +78,7 @@ impl VariableWatchers {
         &mut self,
         literal: Literal,
         clause_db: &mut ClauseDatabase,
-        assignment: &mut VariableAssignment,
+        assignment: &mut PartialAssignment,
         queue: &mut PropagationEnqueuer,
         mut watcher_enqueue: EnqueueWatcher,
     ) -> PropagationResult {
@@ -196,7 +196,7 @@ impl WatchList {
         &mut self,
         literal: Literal,
         clause_db: &mut ClauseDatabase,
-        assignment: &mut VariableAssignment,
+        assignment: &mut PartialAssignment,
         mut queue: PropagationEnqueuer<'_>,
     ) -> PropagationResult {
         let Self {

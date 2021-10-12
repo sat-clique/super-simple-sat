@@ -1,5 +1,5 @@
 use crate::{
-    assignment::VariableAssignment,
+    assignment::PartialAssignment,
     Variable,
 };
 use bounded::{
@@ -103,7 +103,7 @@ impl Decider {
     /// This removes the variable from the priority queue.
     pub fn next_unassigned(
         &mut self,
-        assignment: &VariableAssignment,
+        assignment: &PartialAssignment,
     ) -> Option<Variable> {
         loop {
             let next = self.priorities.pop().map(|(variable, _priority)| variable);
