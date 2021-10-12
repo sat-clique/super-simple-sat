@@ -99,7 +99,7 @@ impl PartialAssignment {
 
     /// Returns `true` if the partial assignment is complete.
     pub fn is_complete(&self) -> bool {
-        self.len() == self.len_assigned()
+        self.len_assigned() == self.len()
     }
 
     /// Returns an iterator yielding shared references to the variable assignments.
