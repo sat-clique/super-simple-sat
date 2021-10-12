@@ -8,7 +8,7 @@ use core::slice;
 type HashSet<T> = std::collections::HashSet<T, ahash::RandomState>;
 
 /// A clause sanitizer.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ClauseSanitizer {
     literals: Vec<Literal>,
     tautologies: HashSet<Variable>,
