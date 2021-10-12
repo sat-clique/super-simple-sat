@@ -8,7 +8,7 @@ use criterion::{
     Criterion,
 };
 use s3sat_solver::{
-    clause_db2::{
+    clause_db::{
         ClauseDatabase,
         ClauseRef,
     },

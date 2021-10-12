@@ -6,10 +6,10 @@ use super::{
 };
 use crate::{
     clause_db::{
-        ClauseId,
+        ClauseRef,
         PropagationResult as ClausePropagationResult,
     },
-    ClauseDb,
+    ClauseDatabase,
     Literal,
     Sign,
     Variable,
@@ -25,12 +25,12 @@ use bounded::BoundedArray;
 #[derive(Debug, Copy, Clone)]
 struct Watcher {
     blocker: Literal,
-    watcher: ClauseId,
+    watcher: ClauseRef,
 }
 
 impl Watcher {
     /// Creates a new watcher from the given blocker literal and watcher.
-    pub fn new(blocker: Literal, watcher: ClauseId) -> Self {
+    pub fn new(blocker: Literal, watcher: ClauseRef) -> Self {
         Self { blocker, watcher }
     }
 }
@@ -52,7 +52,7 @@ impl VariableWatchers {
         &mut self,
         watched: Literal,
         blocker: Literal,
-        watcher: ClauseId,
+        watcher: ClauseRef,
     ) {
         let watcher = Watcher::new(blocker, watcher);
         match watched.sign() {
@@ -77,7 +77,7 @@ impl VariableWatchers {
     fn propagate(
         &mut self,
         literal: Literal,
-        clause_db: &mut ClauseDb,
+        clause_db: &mut ClauseDatabase,
         assignment: &mut VariableAssignment,
         queue: &mut PropagationEnqueuer,
         mut watcher_enqueue: EnqueueWatcher,
@@ -97,6 +97,7 @@ impl VariableWatchers {
             let result = clause_db
                 .resolve_mut(watcher)
                 .expect("encountered unexpected invalid clause ID")
+                .literals()
                 .propagate(literal, assignment);
             match result {
                 ClausePropagationResult::UnitUnderAssignment(unit_literal) => {
@@ -130,7 +131,7 @@ struct DeferredWatcherInsert {
     /// The blocking literal.
     blocker: Literal,
     /// The clause that watches the literal.
-    watched_by: ClauseId,
+    watched_by: ClauseRef,
 }
 
 /// Wrapper around the deferred watcher insertions.
@@ -145,7 +146,7 @@ impl<'a> EnqueueWatcher<'a> {
     }
 
     /// Enqueues another new watched literal insertion into the queue.
-    pub fn enqueue(&mut self, watched: Literal, blocker: Literal, watcher: ClauseId) {
+    pub fn enqueue(&mut self, watched: Literal, blocker: Literal, watcher: ClauseRef) {
         self.queue.push(DeferredWatcherInsert {
             watched,
             blocker,
@@ -182,7 +183,7 @@ impl WatchList {
         &mut self,
         watched: Literal,
         blocker: Literal,
-        watcher: ClauseId,
+        watcher: ClauseRef,
     ) {
         self.watchers
             .get_mut(watched.variable())
@@ -194,7 +195,7 @@ impl WatchList {
     pub fn propagate(
         &mut self,
         literal: Literal,
-        clause_db: &mut ClauseDb,
+        clause_db: &mut ClauseDatabase,
         assignment: &mut VariableAssignment,
         mut queue: PropagationEnqueuer<'_>,
     ) -> PropagationResult {

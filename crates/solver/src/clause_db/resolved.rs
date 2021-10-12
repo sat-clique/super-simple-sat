@@ -1,5 +1,8 @@
 use super::ClauseHeader;
-use crate::Literal;
+use crate::{
+    assignment::VariableAssignment,
+    Literal,
+};
 use core::{
     fmt,
     fmt::{
@@ -14,7 +17,7 @@ use core::{
 };
 
 /// A resolved shared reference to a clause stored in the clause database.
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct ResolvedClause<'a> {
     header: &'a ClauseHeader,
     literals: &'a [Literal],
@@ -219,5 +222,50 @@ impl<'a> Display for LiteralsMut<'a> {
         }
         write!(f, "]")?;
         Ok(())
+    }
+}
+
+/// Result returned from clause local propagation.
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum PropagationResult {
+    /// The clause chose a new watched literal.
+    NewWatchedLiteral {
+        new_watched: Literal,
+        new_blocker: Literal,
+    },
+    /// The clause is now unit under the current assignment.
+    UnitUnderAssignment(Literal),
+}
+
+impl<'a> LiteralsMut<'a> {
+    /// Propagates the propagated literal to the clause literals.
+    ///
+    /// # Note
+    ///
+    /// This may change the positions of the clause literals
+    /// forcing the watched literals to be on the first two positions.
+    ///
+    /// Decides whether the clause is unit after the propagation.
+    pub fn propagate(
+        &mut self,
+        propagated_lit: Literal,
+        assignment: &VariableAssignment,
+    ) -> PropagationResult {
+        // Make sure the false literal is in the second [1] position.
+        if self.literals[0] == !propagated_lit {
+            self.literals.swap(0, 1);
+        }
+        // Look for new literal to watch:
+        for i in 2..self.literals.len() {
+            if assignment.is_satisfied(self.literals[i]).unwrap_or(true) {
+                self.literals.swap(1, i);
+                return PropagationResult::NewWatchedLiteral {
+                    new_watched: !self.literals[1],
+                    new_blocker: self.literals[0],
+                }
+            }
+        }
+        // Clause is unit under current assignment:
+        PropagationResult::UnitUnderAssignment(self.literals[0])
     }
 }
