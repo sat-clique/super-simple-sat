@@ -150,6 +150,12 @@ impl Not for Literal {
     }
 }
 
+impl Display for Literal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}{}", self.sign(), self.variable())
+    }
+}
+
 /// A variable of the solver.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)]
@@ -210,5 +216,11 @@ impl Index for Variable {
     #[inline]
     fn into_index(self) -> usize {
         self.value as usize
+    }
+}
+
+impl Display for Variable {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.into_index() + 1)
     }
 }
