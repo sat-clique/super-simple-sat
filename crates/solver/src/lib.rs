@@ -174,6 +174,15 @@ pub struct Solver {
     hard_facts: Vec<Literal>,
 }
 
+impl RegisterVariables for Solver {
+    fn register_variables(&mut self, additional: usize) {
+        self.assignment.register_variables(additional);
+        self.decider.register_variables(additional);
+        self.sanitizer.register_variables(additional);
+        self.len_variables += additional;
+    }
+}
+
 impl Solver {
     /// Returns the number of currently registered variables.
     fn len_variables(&self) -> usize {
@@ -226,12 +235,9 @@ impl Solver {
 
     /// Returns the next variable.
     fn new_variable(&mut self) -> Variable {
-        self.assignment.register_variables(1);
-        self.decider.register_variables(1);
         let next_id = self.len_variables();
-        let variable = Variable::from_index(next_id);
-        self.len_variables += 1;
-        variable
+        self.register_variables(1);
+        Variable::from_index(next_id)
     }
 
     /// Registers a new literal for the solver and returns it.
@@ -266,9 +272,7 @@ impl Solver {
                 first_index + amount
             )
         });
-        self.assignment.register_variables(amount);
-        self.decider.register_variables(amount);
-        self.len_variables += amount;
+        self.register_variables(amount);
         chunk
     }
 
