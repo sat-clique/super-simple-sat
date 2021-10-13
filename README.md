@@ -47,7 +47,7 @@ UNSAT
 
 ### As Library
 
-How to use the S3Sat solver from a given `.cnf` input:
+#### Example: `.cnf` Input
 
 ```rust
 let cnf_input = br"
@@ -58,25 +58,23 @@ let cnf_input = br"
     -10 -7 -2 0
 ";
 let mut solver = Solver::from_cnf(&mut &cnf_input[..]).unwrap();
-let result = solver.solve(vec![]);
-assert!(result);
+let result = solver.solve([]).unwrap();
+assert!(result.is_sat());
 ```
 
-How to use the S3Sat solver as a library:
+#### Example: Programmatically Specified Problem
 
 ```rust
-fn clause(lits: &[Literal]) -> Clause {
-    Clause::new(lits.into_iter().copied()).unwrap()
-}
-
 let mut solver = Solver::default();
-let vars = (0..10).map(|_| solver.new_literal()).collect::<Vec<_>>();
-solver.consume_clause(clause(&[ vars[1],  vars[3],  vars[5]]));
-solver.consume_clause(clause(&[!vars[1], !vars[7],  vars[5]]));
-solver.consume_clause(clause(&[!vars[3], !vars[7], !vars[0]]));
-solver.consume_clause(clause(&[!vars[9], !vars[6], !vars[1]]));
-let result = solver.solve(vec![]);
-assert!(result);
+let v = solver.new_literal_chunk(10)
+  .into_iter()
+  .collect::<Vec<_>>();
+solver.consume_clause([ v[1],  v[3],  v[5]]);
+solver.consume_clause([!v[1], !v[7],  v[5]]);
+solver.consume_clause([!v[3], !v[7], !v[0]]);
+solver.consume_clause([!v[9], !v[6], !v[1]]);
+let result = solver.solve([]).unwrap();
+assert!(result.is_sat());
 ```
 
 ## Development
