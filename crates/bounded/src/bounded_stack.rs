@@ -131,30 +131,16 @@ impl<T> BoundedStack<T> {
         self.stack.iter_mut()
     }
 
-    /// Ensures that the given index is valid for the bounded array.
-    ///
-    /// # Errors
-    ///
-    /// If the given index is out of bounds.
-    fn ensure_valid_index(&self, index: usize) -> Result<usize, OutOfBoundsAccess> {
-        if index >= self.len() {
-            return Err(OutOfBoundsAccess)
-        }
-        Ok(index)
-    }
-
     /// Returns a shared reference to the element at the given index.
     #[inline]
-    pub fn get(&self, index: usize) -> Result<&T, OutOfBoundsAccess> {
-        self.ensure_valid_index(index)
-            .map(move |index| &self.stack[index])
+    pub fn get(&self, index: usize) -> Option<&T> {
+        self.stack.get(index)
     }
 
     /// Returns an exclusive reference to the element at the given index.
     #[inline]
-    pub fn get_mut(&mut self, index: usize) -> Result<&mut T, OutOfBoundsAccess> {
-        self.ensure_valid_index(index)
-            .map(move |index| &mut self.stack[index])
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        self.stack.get_mut(index)
     }
 }
 
