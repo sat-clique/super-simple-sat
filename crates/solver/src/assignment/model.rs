@@ -55,9 +55,7 @@ pub struct Model {
 impl Display for Model {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
-        let mut literals = self
-            .into_iter()
-            .map(|(variable, sign)| Literal::new(variable, sign));
+        let mut literals = self.into_iter();
         if f.alternate() {
             writeln!(f)?;
             for literal in literals {
@@ -113,7 +111,7 @@ impl Model {
 }
 
 impl<'a> IntoIterator for &'a Model {
-    type Item = (Variable, Sign);
+    type Item = Literal;
     type IntoIter = ModelIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -134,11 +132,11 @@ impl<'a> ModelIter<'a> {
 }
 
 impl<'a> Iterator for ModelIter<'a> {
-    type Item = (Variable, Sign);
+    type Item = Literal;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter
-            .next()
-            .map(|(index, assignment)| (Variable::from_index(index), assignment))
+        self.iter.next().map(|(index, assignment)| {
+            Literal::new(Variable::from_index(index), assignment)
+        })
     }
 }
