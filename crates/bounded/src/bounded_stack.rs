@@ -10,9 +10,20 @@ use core::{
 };
 
 /// A stack that is bound to a given maximum size.
+///
+/// # Note
+///
+/// This is useful to prevent accidental heap memory allocations.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BoundedStack<T> {
+    /// Stores the current capacity of the bounded stack.
+    ///
+    /// # Note
+    ///
+    /// We cannot re-use the capacity of the underlying vector
+    /// since it cannot be relied upon.
     capacity: usize,
+    /// The underlying unbounded stack.
     stack: Vec<T>,
 }
 
