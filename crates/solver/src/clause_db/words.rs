@@ -158,6 +158,8 @@ pub union ClauseWord {
     lit: Literal,
 }
 
+/// Implementation block that allows for the unsafe casting operations.
+#[allow(unsafe_code)]
 impl ClauseWord {
     /// Interprets the clause word as the clause header.
     pub fn as_header(&self) -> &ClauseHeader {

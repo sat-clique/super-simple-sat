@@ -1,4 +1,4 @@
-// #![forbid(unsafe_code)]
+#![deny(unsafe_code)]
 #![allow(clippy::len_without_is_empty)]
 
 mod assignment;
