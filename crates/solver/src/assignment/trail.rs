@@ -151,7 +151,7 @@ impl Trail {
         assignment: &mut PartialAssignment,
     ) -> Result<(), AssignmentError> {
         match assignment.is_conflicting(literal) {
-            Some(true) => return Err(AssignmentError::Conflict),
+            Some(true) => return Err(AssignmentError::ConflictingAssignment),
             Some(false) => return Err(AssignmentError::AlreadyAssigned),
             None => (),
         }

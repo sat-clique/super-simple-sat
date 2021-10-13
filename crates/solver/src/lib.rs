@@ -321,7 +321,9 @@ impl Solver {
         for &hard_fact in &self.hard_facts {
             match self.assignment.enqueue_assumption(hard_fact) {
                 Ok(()) | Err(AssignmentError::AlreadyAssigned) => (),
-                Err(AssignmentError::Conflict) => return PropagationResult::Conflict,
+                Err(AssignmentError::ConflictingAssignment) => {
+                    return PropagationResult::Conflict
+                }
                 _unexpected_error => {
                     panic!("encountered unexpected error while propagating hard facts")
                 }
@@ -336,7 +338,7 @@ impl Solver {
         L: IntoIterator<Item = Literal>,
     {
         for assumption in assumptions {
-            if let Err(AssignmentError::Conflict) =
+            if let Err(AssignmentError::ConflictingAssignment) =
                 self.assignment.enqueue_assumption(assumption)
             {
                 return PropagationResult::Conflict
@@ -391,7 +393,9 @@ impl Solver {
     /// Tries to find a valid assignment for the given literal decision.
     fn solve_for_decision(&mut self, decision: Literal) -> DecisionResult {
         match self.assignment.enqueue_assumption(decision) {
-            Err(AssignmentError::Conflict) => return DecisionResult::Conflict,
+            Err(AssignmentError::ConflictingAssignment) => {
+                return DecisionResult::Conflict
+            }
             Err(AssignmentError::AlreadyAssigned) => {
                 panic!(
                     "decision heuristic proposed already assigned variable for propagation: {:?}",

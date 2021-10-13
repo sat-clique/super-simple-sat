@@ -45,8 +45,8 @@ pub enum AssignmentError {
     InvalidVariable,
     /// When trying to assign a variable that has already been assigned.
     AlreadyAssigned,
-    /// When trying to assign a conflict.
-    Conflict,
+    /// When trying to make a conflicting assignment.
+    ConflictingAssignment,
 }
 
 impl Display for AssignmentError {
@@ -59,7 +59,7 @@ impl Display for AssignmentError {
                 write!(f, "the variable for the assignment is invalid")
             }
             Self::AlreadyAssigned => write!(f, "the variable has already been assigned"),
-            Self::Conflict => {
+            Self::ConflictingAssignment => {
                 write!(f, "the assignment is in conflict with existing assignment")
             }
         }
@@ -69,7 +69,7 @@ impl Display for AssignmentError {
 impl AssignmentError {
     /// Returns `true` if the assignment error was caused by a conflict.
     pub fn is_conflict(&self) -> bool {
-        matches!(self, Self::Conflict)
+        matches!(self, Self::ConflictingAssignment)
     }
 }
 

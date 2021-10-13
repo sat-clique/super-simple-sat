@@ -103,7 +103,7 @@ impl VariableWatchers {
             match result {
                 ClausePropagationResult::UnitUnderAssignment(unit_literal) => {
                     let enqueue_result = queue.push(unit_literal, assignment);
-                    if let Err(AssignmentError::Conflict) = enqueue_result {
+                    if let Err(AssignmentError::ConflictingAssignment) = enqueue_result {
                         seen_conflict = true;
                     }
                     true
