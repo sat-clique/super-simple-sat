@@ -1,7 +1,7 @@
 use super::{
     AssignmentError,
+    EnqueueLiteral,
     PartialAssignment,
-    PropagationEnqueuer,
     PropagationResult,
 };
 use crate::{
@@ -75,14 +75,17 @@ impl VariableWatchers {
     ///
     /// Returns a propagation result that either tells that the propagation
     /// yielded a consistent assignemnt or a conflict.
-    fn propagate(
+    fn propagate<Q>(
         &mut self,
         literal: Literal,
         clause_db: &mut ClauseDatabase,
         assignment: &mut PartialAssignment,
-        queue: &mut PropagationEnqueuer,
+        queue: &mut Q,
         mut watcher_enqueue: EnqueueWatcher,
-    ) -> PropagationResult {
+    ) -> PropagationResult
+    where
+        Q: EnqueueLiteral,
+    {
         let mut seen_conflict = false;
         let watchers = self.literal_watchers_mut(literal);
         watchers.retain(|&watcher| {
@@ -102,7 +105,7 @@ impl VariableWatchers {
                 .propagate(literal, assignment);
             match result {
                 ClausePropagationResult::UnitUnderAssignment(unit_literal) => {
-                    let enqueue_result = queue.push(unit_literal, assignment);
+                    let enqueue_result = queue.enqueue_literal(unit_literal, assignment);
                     if let Err(AssignmentError::ConflictingAssignment) = enqueue_result {
                         seen_conflict = true;
                     }
@@ -190,13 +193,16 @@ impl WatchList {
     }
 
     /// Propagates the literal assignment to the watching clauses.
-    pub fn propagate(
+    pub fn propagate<Q>(
         &mut self,
         literal: Literal,
         clause_db: &mut ClauseDatabase,
         assignment: &mut PartialAssignment,
-        mut queue: PropagationEnqueuer<'_>,
-    ) -> PropagationResult {
+        queue: &mut Q,
+    ) -> PropagationResult
+    where
+        Q: EnqueueLiteral,
+    {
         let Self {
             watchers,
             deferred_inserts,
@@ -208,7 +214,7 @@ impl WatchList {
                 literal,
                 clause_db,
                 assignment,
-                &mut queue,
+                queue,
                 EnqueueWatcher::new(deferred_inserts),
             );
         for deferred in deferred_inserts.drain(..) {

@@ -87,6 +87,44 @@ impl TrailLimits {
     }
 }
 
+/// Enqueue a literal to the propagation queue.
+///
+/// # Note
+///
+/// Implemented by the trail to update it about to-be-propagated literals.
+pub trait EnqueueLiteral {
+    /// Enqueues a new literal to the propagation queue.
+    ///
+    /// # Errors
+    ///
+    /// - If the enqueued literal has already been satisfied.
+    /// - If the enqueued literal is in conflict with the current assignment.
+    ///   This also clears the propagation queue.
+    fn enqueue_literal(
+        &mut self,
+        literal: Literal,
+        assignment: &mut PartialAssignment,
+    ) -> Result<(), AssignmentError>;
+}
+
+impl EnqueueLiteral for Trail {
+    #[inline]
+    fn enqueue_literal(
+        &mut self,
+        literal: Literal,
+        assignment: &mut PartialAssignment,
+    ) -> Result<(), AssignmentError> {
+        match assignment.is_conflicting(literal) {
+            Some(true) => return Err(AssignmentError::ConflictingAssignment),
+            Some(false) => return Err(AssignmentError::AlreadyAssigned),
+            None => (),
+        }
+        self.decisions_and_implications.push(literal);
+        assignment.assign(literal.variable(), literal.sign());
+        Ok(())
+    }
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct Trail {
     propagate_head: usize,
@@ -135,29 +173,6 @@ impl Trail {
         let popped = self.decisions_and_implications[self.propagate_head];
         self.propagate_head += 1;
         Some(popped)
-    }
-
-    /// Pushes a new literal to the trail.
-    ///
-    /// This does not yet propagate the pushed literal.
-    ///
-    /// # Errors
-    ///
-    /// - If the pushed literal is in conflict with the current assignment.
-    /// - If the literal has already been assigned.
-    pub fn push(
-        &mut self,
-        literal: Literal,
-        assignment: &mut PartialAssignment,
-    ) -> Result<(), AssignmentError> {
-        match assignment.is_conflicting(literal) {
-            Some(true) => return Err(AssignmentError::ConflictingAssignment),
-            Some(false) => return Err(AssignmentError::AlreadyAssigned),
-            None => (),
-        }
-        self.decisions_and_implications.push(literal);
-        assignment.assign(literal.variable(), literal.sign());
-        Ok(())
     }
 
     /// Backjumps the trail to the given decision level.

@@ -14,6 +14,7 @@ pub use self::{
 use self::{
     trail::{
         DecisionLevel,
+        EnqueueLiteral,
         Trail,
     },
     watch_list::WatchList,
@@ -63,34 +64,6 @@ impl Display for AssignmentError {
                 write!(f, "the assignment is in conflict with existing assignment")
             }
         }
-    }
-}
-
-/// Allows to enqueue new literals into the propagation queue.
-#[derive(Debug)]
-pub struct PropagationEnqueuer<'a> {
-    queue: &'a mut Trail,
-}
-
-impl<'a> PropagationEnqueuer<'a> {
-    /// Returns a new wrapper around the given propagation queue.
-    fn new(queue: &'a mut Trail) -> Self {
-        Self { queue }
-    }
-
-    /// Enqueues a new literal to the propagation queue.
-    ///
-    /// # Errors
-    ///
-    /// - If the literal has already been satisfied.
-    /// - If the literal is in conflict with the current assignment. This will
-    ///   also clear the propagation queue.
-    pub fn push(
-        &mut self,
-        literal: Literal,
-        assignment: &mut PartialAssignment,
-    ) -> Result<(), AssignmentError> {
-        self.queue.push(literal, assignment)
     }
 }
 
@@ -156,7 +129,8 @@ impl Assignment {
         &mut self,
         assumption: Literal,
     ) -> Result<(), AssignmentError> {
-        self.trail.push(assumption, &mut self.assignments)
+        self.trail
+            .enqueue_literal(assumption, &mut self.assignments)
     }
 }
 
@@ -210,12 +184,8 @@ impl Assignment {
         } = self;
         let level = trail.current_decision_level();
         while let Some(propagation_literal) = trail.pop_enqueued() {
-            let result = watchers.propagate(
-                propagation_literal,
-                clause_db,
-                assignments,
-                PropagationEnqueuer::new(trail),
-            );
+            let result =
+                watchers.propagate(propagation_literal, clause_db, assignments, trail);
             if result.is_conflict() {
                 trail.pop_to_level(level, assignments, decider);
                 return result
