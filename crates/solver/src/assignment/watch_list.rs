@@ -108,7 +108,8 @@ impl VariableWatchers {
                 .propagate(literal, assignment);
             match result {
                 ClausePropagationResult::UnitUnderAssignment(unit_literal) => {
-                    let enqueue_result = propagation_queue.enqueue_literal(unit_literal, assignment);
+                    let enqueue_result =
+                        propagation_queue.enqueue_literal(unit_literal, assignment);
                     if let Err(AssignmentError::ConflictingAssignment) = enqueue_result {
                         seen_conflict = true;
                     }
@@ -227,11 +228,8 @@ impl WatchList {
     where
         Q: EnqueueLiteral,
     {
-        let Self {
-            watchers,
-            watcher_queue,
-        } = self;
-        let result = watchers
+        let result = self
+            .watchers
             .get_mut(literal.variable())
             .expect("encountered unexpected invalid propagation literal")
             .propagate(
@@ -239,10 +237,10 @@ impl WatchList {
                 clause_db,
                 assignment,
                 propagation_queue,
-                watcher_queue,
+                &mut self.watcher_queue,
             );
-        for watcher in watcher_queue {
-            watchers
+        for watcher in &mut self.watcher_queue {
+            self.watchers
                 .get_mut(watcher.watched.variable())
                 .expect("encountered unexpected invalid variable")
                 .register_for_lit(watcher.watched, watcher.blocker, watcher.watched_by);
