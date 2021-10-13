@@ -159,44 +159,68 @@ pub union ClauseWord {
 }
 
 /// Implementation block that allows for the unsafe casting operations.
-#[allow(unsafe_code)]
 impl ClauseWord {
     /// Interprets the clause word as the clause header.
-    pub fn as_header(&self) -> &ClauseHeader {
+    ///
+    /// # Safety
+    ///
+    /// The caller guarantees that calls to this method only happen
+    /// on clause words that have been allocated as clause headers.
+    #[allow(unsafe_code)]
+    pub unsafe fn as_header(&self) -> &ClauseHeader {
         // SAFETY: All clause word variants `ClauseHeader`, `ClauseLength` and `Literal`
         //         are based on the `u32` Rust primitive type.
         //         Casting between them does not invalidate internal state.
-        //         The clause database guarantees to perform only valid casts.
         unsafe { &self.header }
     }
 
     /// Interprets the clause word reference as an exclusive reference to the clause header.
-    pub fn as_header_mut(&mut self) -> &mut ClauseHeader {
+    ///
+    /// # Safety
+    ///
+    /// The caller guarantees that calls to this method only happen
+    /// on clause words that have been allocated as clause headers.
+    #[allow(unsafe_code)]
+    pub unsafe fn as_header_mut(&mut self) -> &mut ClauseHeader {
         // SAFETY: All clause word variants `ClauseHeader`, `ClauseLength` and `Literal`
         //         are based on the `u32` Rust primitive type.
         //         Casting between them does not invalidate internal state.
-        //         The clause database guarantees to perform only valid casts.
         unsafe { &mut self.header }
     }
 
     /// Interprets the clause word as the clause length.
-    pub fn as_len(self) -> usize {
+    ///
+    /// # Safety
+    ///
+    /// The caller guarantees that calls to this method only happen
+    /// on clause words that have been allocated as clause lengths.
+    #[allow(unsafe_code)]
+    pub unsafe fn as_len(self) -> usize {
         // SAFETY: All clause word variants `ClauseHeader`, `ClauseLength` and `Literal`
         //         are based on the `u32` Rust primitive type.
         //         Casting between them does not invalidate internal state.
-        //         The clause database guarantees to perform only valid casts.
         unsafe { self.len }.value() as usize
     }
-}
 
-impl ClauseWord {
     /// Interprets the slice of words as slice of literals.
-    pub fn as_lits(words: &[Self]) -> &[Literal] {
+    ///
+    /// # Safety
+    ///
+    /// The caller guarantees that calls to this method only happen
+    /// on clause words that have been allocated as clause literals.
+    #[allow(unsafe_code)]
+    pub unsafe fn as_lits(words: &[Self]) -> &[Literal] {
         slice_cast!(<ClauseWord, Literal>(words))
     }
 
     /// Interprets the slice of words as slice of literals.
-    pub fn as_lits_mut(words: &mut [Self]) -> &mut [Literal] {
+    ///
+    /// # Safety
+    ///
+    /// The caller guarantees that calls to this method only happen
+    /// on clause words that have been allocated as clause literals.
+    #[allow(unsafe_code)]
+    pub unsafe fn as_lits_mut(words: &mut [Self]) -> &mut [Literal] {
         slice_cast_mut!(<ClauseWord, Literal>(words))
     }
 }

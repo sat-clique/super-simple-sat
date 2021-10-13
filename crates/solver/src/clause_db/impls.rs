@@ -64,17 +64,24 @@ impl ClauseDatabase {
     }
 
     /// Returns a shared reference to the clause words if the clause reference was valid.
+    #[allow(unsafe_code)]
     fn clause_words(words: &[ClauseWord], cref: ClauseRef) -> Option<ResolvedClause> {
         let index = cref.into_u32() as usize;
         words
             .get(index + 1)
             .copied()
-            .map(ClauseWord::as_len)
+            .map(|word| {
+                // SAFETY: While it is not guaranteed that the clause word at
+                //         this point refers to the clause length we do a bounds
+                //         check later that protects against invalid accesses.
+                unsafe { word.as_len() }
+            })
             .and_then(|len| words.get(index..(index + len + 2)))
             .map(ResolvedClause::new)
     }
 
     /// Returns an exclusive reference to the clause words if the clause reference was valid.
+    #[allow(unsafe_code)]
     fn clause_words_mut(
         words: &mut [ClauseWord],
         cref: ClauseRef,
@@ -83,7 +90,12 @@ impl ClauseDatabase {
         words
             .get(index + 1)
             .copied()
-            .map(ClauseWord::as_len)
+            .map(|word| {
+                // SAFETY: While it is not guaranteed that the clause word at
+                //         this point refers to the clause length we do a bounds
+                //         check later that protects against invalid accesses.
+                unsafe { word.as_len() }
+            })
             .and_then(|len| words.get_mut(index..(index + len + 2)))
             .map(ResolvedClauseMut::new)
     }
@@ -132,6 +144,7 @@ impl ClauseDatabase {
     ///   reference and the second parameter informs about its replacement.
     /// - After this operation the amount of free clause words in the clause
     ///   database will be equal to zero.
+    #[allow(unsafe_code)]
     pub fn gc<F>(&mut self, mut report: F) -> usize
     where
         F: FnMut(ClauseRef, ClauseRef),
@@ -144,8 +157,8 @@ impl ClauseDatabase {
             if current == words.len() {
                 break
             }
-            let header = words[current].as_header();
-            let len = words[current + 1].as_len();
+            let header = unsafe { words[current].as_header() };
+            let len = unsafe { words[current + 1].as_len() };
             let clause_len = len + 2;
             if !header.is_deleted() {
                 if alive != current {

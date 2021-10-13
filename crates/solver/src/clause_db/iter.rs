@@ -24,12 +24,14 @@ pub struct ClauseDatabaseIter<'a> {
 impl<'a> Iterator for ClauseDatabaseIter<'a> {
     type Item = ResolvedClause<'a>;
 
+    #[allow(unsafe_code)]
     fn next(&mut self) -> Option<Self::Item> {
         let words = &mut self.remaining_words;
         if words.is_empty() {
             return None
         }
-        let len = words[1].as_len();
+        // SAFETY: It is guaranteed that the clause word at this point is the clause length.
+        let len = unsafe { words[1].as_len() };
         let (clause_words, remaining_words) = words.split_at(len + 2);
         *words = remaining_words;
         Some(ResolvedClause::new(clause_words))

@@ -56,14 +56,20 @@ impl<'a> ResolvedClause<'a> {
 
     /// Returns the header of the referenced clause.
     #[inline]
+    #[allow(unsafe_code)]
     pub fn header(&self) -> &'a ClauseHeader {
-        self.clause_words[0].as_header()
+        // SAFETY: At this point it is guaranteed that the first word
+        //         of the clause words is the clause header.
+        unsafe { self.clause_words[0].as_header() }
     }
 
     /// Returns the literals of the referenced clause.
     #[inline]
+    #[allow(unsafe_code)]
     pub fn literals(&self) -> Literals<'a> {
-        Literals::new(ClauseWord::as_lits(&self.clause_words[2..]))
+        // SAFETY: At this point it is guaranteed that the clause words
+        //         after the first two are the clause literals.
+        unsafe { Literals::new(ClauseWord::as_lits(&self.clause_words[2..])) }
     }
 }
 
@@ -164,30 +170,38 @@ impl<'a> ResolvedClauseMut<'a> {
 
     /// Returns a shared reference to the header of the referenced clause.
     #[inline]
+    #[allow(unsafe_code)]
     pub fn header(&self) -> &ClauseHeader {
-        self.clause_words[0].as_header()
+        // SAFETY: At this point it is guaranteed that the first word
+        //         of the clause words is the clause header.
+        unsafe { self.clause_words[0].as_header() }
     }
 
     /// Returns an exclusive reference to the header of the referenced clause.
     #[inline]
+    #[allow(unsafe_code)]
     pub fn header_mut(&mut self) -> &mut ClauseHeader {
-        self.clause_words[0].as_header_mut()
+        // SAFETY: At this point it is guaranteed that the first word
+        //         of the clause words is the clause header.
+        unsafe { self.clause_words[0].as_header_mut() }
     }
 
     /// Returns a shared reference to the literals of the resolved clause.
     #[inline]
+    #[allow(unsafe_code)]
     pub fn literals(&self) -> Literals {
-        Literals::new(ClauseWord::as_lits(
-            &self.clause_words[2..]
-        ))
+        // SAFETY: At this point it is guaranteed that the clause words
+        //         after the first two are the clause literals.
+        unsafe { Literals::new(ClauseWord::as_lits(&self.clause_words[2..])) }
     }
 
     /// Returns an exclusive reference to the literals of the resolved clause.
     #[inline]
+    #[allow(unsafe_code)]
     pub fn literals_mut(&mut self) -> LiteralsMut {
-        LiteralsMut::new(ClauseWord::as_lits_mut(
-            &mut self.clause_words[2..]
-        ))
+        // SAFETY: At this point it is guaranteed that the clause words
+        //         after the first two are the clause literals.
+        unsafe { LiteralsMut::new(ClauseWord::as_lits_mut(&mut self.clause_words[2..])) }
     }
 }
 
