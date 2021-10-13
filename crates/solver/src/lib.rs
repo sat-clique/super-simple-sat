@@ -203,6 +203,13 @@ impl Solver {
     {
         match self.sanitizer.sanitize(literals) {
             SanitizedLiterals::Literals(literals) => {
+                for var in literals.as_slice().iter().copied().map(Literal::variable) {
+                    assert!(
+                        var.into_index() < self.len_variables,
+                        "encountered unregistered variable {}",
+                        var
+                    )
+                }
                 let cref = self.clauses.alloc(literals);
                 let resolved = self.clauses.resolve(cref).expect("just added the clause");
                 self.assignment.initialize_watchers(cref, resolved);
