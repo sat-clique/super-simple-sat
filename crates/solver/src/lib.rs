@@ -180,12 +180,6 @@ impl Solver {
     }
 
     /// Consumes the given clause.
-    ///
-    /// # Errors
-    ///
-    /// If the clause is unit and is in conflict with the current assignment.
-    /// This is mostly encountered upon consuming two conflicting unit clauses.
-    /// In this case the clause will not be added as new constraint.
     pub fn consume_clause<I>(&mut self, literals: I)
     where
         I: IntoIterator,
@@ -223,11 +217,13 @@ impl Solver {
 
     /// Registers a new literal for the solver and returns it.
     ///
+    /// # Note
+    ///
     /// The returned literal has positive polarity.
     ///
-    /// # Errors
+    /// # Panics
     ///
-    /// If there are too many variables in use after this operation.
+    /// If more variables have been registered than supported by the solver limits.
     pub fn new_literal(&mut self) -> Literal {
         Literal::new(self.new_variable(), Sign::POS)
     }
@@ -236,12 +232,12 @@ impl Solver {
     ///
     /// # Note
     ///
-    /// The new literals are returned as a chunk which serves the purpose of
-    /// efficiently accessing them.
+    /// - The returned literals have positive polarity.
+    /// - The returned literal chunk acts as an efficient iterator over the new literals.
     ///
     /// # Panics
     ///
-    /// If there are too many variables in use after this operation.
+    /// If more variables have been registered than supported by the solver limits.
     pub fn new_literal_chunk(&mut self, amount: usize) -> LiteralChunk {
         let first_index = self.len_variables();
         let chunk = LiteralChunk::new(first_index, amount).unwrap_or_else(|_| {
@@ -308,6 +304,7 @@ impl Solver {
         }
     }
 
+    /// Starts solving the given SAT instance.
     pub fn solve<L>(&mut self, assumptions: L) -> Result<SolveResult, Error>
     where
         L: IntoIterator<Item = Literal>,
