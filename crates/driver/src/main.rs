@@ -1,3 +1,5 @@
+#![forbid(unsafe_code)]
+
 use solver::{
     SolveResult,
     Solver,
