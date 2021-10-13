@@ -1,7 +1,9 @@
 use crate::{
+    literal::RegisterVariables,
     Literal,
     Variable,
 };
+use bounded::Index;
 use core::slice;
 
 /// A slightly faster hash set due to usage of `ahash` hasher.
@@ -12,6 +14,13 @@ type HashSet<T> = std::collections::HashSet<T, ahash::RandomState>;
 pub struct ClauseSanitizer {
     literals: Vec<Literal>,
     tautologies: HashSet<Variable>,
+    registered_variables: usize,
+}
+
+impl RegisterVariables for ClauseSanitizer {
+    fn register_variables(&mut self, additional: usize) {
+        self.registered_variables += additional;
+    }
 }
 
 impl ClauseSanitizer {
@@ -33,6 +42,11 @@ impl ClauseSanitizer {
         self.literals.clear();
         self.tautologies.clear();
         self.literals.extend(literals);
+        for lit in &self.literals {
+            if lit.variable().into_index() >= self.registered_variables {
+                return SanitizedLiterals::InvalidLiteral(*lit)
+            }
+        }
         self.literals.sort_unstable();
         let tautologies = &mut self.tautologies;
         self.literals.dedup_by(|l, r| {
@@ -69,6 +83,8 @@ pub enum SanitizedLiterals<'a> {
     UnitClause(Literal),
     /// The sanitized inputs is yielded by the literal iterator.
     Literals(LiteralIter<'a>),
+    /// An invalid literal has been found.
+    InvalidLiteral(Literal),
 }
 
 impl SanitizedLiterals<'_> {
@@ -76,7 +92,9 @@ impl SanitizedLiterals<'_> {
     #[cfg(test)]
     pub fn literals(&self) -> LiteralIter {
         match self {
-            Self::EmptyClause | Self::TautologicalClause => LiteralIter::default(),
+            Self::EmptyClause | Self::TautologicalClause | Self::InvalidLiteral(_) => {
+                LiteralIter::default()
+            }
             Self::UnitClause(unit) => LiteralIter::from(unit),
             Self::Literals(literals) => literals.clone(),
         }
@@ -150,6 +168,7 @@ mod tests {
     #[test]
     fn sanitation_works() {
         let mut sanitizer = ClauseSanitizer::default();
+        sanitizer.register_variables(10);
         assert_eq!(sanitizer.sanitize([]), SanitizedLiterals::EmptyClause);
         assert_eq!(
             sanitizer.sanitize(clause([1])),
