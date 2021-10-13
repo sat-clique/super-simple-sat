@@ -193,12 +193,12 @@ impl Variable {
 
     /// Returns `true` if the given index is a valid variable index.
     #[inline]
-    pub(crate) fn is_valid_index(index: usize) -> bool {
+    pub(crate) const fn is_valid_index(index: usize) -> bool {
         index <= Self::MAX_INDEX
     }
 
     /// Returns back the index as `u32` if it is a valid value for a literal.
-    fn filter_valid_index(index: usize) -> Option<u32> {
+    const fn filter_valid_index(index: usize) -> Option<u32> {
         if Self::is_valid_index(index) {
             return Some(index as u32)
         }
