@@ -312,42 +312,6 @@ impl Solver {
         }
     }
 
-    /// Propagates the hard facts (unit clauses) of the SAT instance.
-    fn propagate_hard_facts(&mut self) -> PropagationResult {
-        for &hard_fact in &self.hard_facts {
-            match self.assignment.enqueue_assumption(hard_fact) {
-                Ok(()) | Err(AssignmentError::AlreadyAssigned) => (),
-                Err(AssignmentError::Conflict) => return PropagationResult::Conflict,
-                _unexpected_error => {
-                    panic!("encountered unexpected error while propagating hard facts")
-                }
-            }
-        }
-        PropagationResult::Consistent
-    }
-
-    /// Propagates the given assumptions.
-    fn propagate_assumptions<L>(&mut self, assumptions: L) -> PropagationResult
-    where
-        L: IntoIterator<Item = Literal>,
-    {
-        for assumption in assumptions {
-            if let Err(AssignmentError::Conflict) =
-                self.assignment.enqueue_assumption(assumption)
-            {
-                return PropagationResult::Conflict
-            }
-        }
-        if self
-            .assignment
-            .propagate(&mut self.clauses, self.decider.informer())
-            .is_conflict()
-        {
-            return PropagationResult::Conflict
-        }
-        PropagationResult::Consistent
-    }
-
     /// Starts solving the given SAT instance.
     pub fn solve<L>(&mut self, assumptions: L) -> Result<SolveResult, Error>
     where
@@ -393,5 +357,41 @@ impl Solver {
             }
         };
         Ok(result)
+    }
+
+    /// Propagates the hard facts (unit clauses) of the SAT instance.
+    fn propagate_hard_facts(&mut self) -> PropagationResult {
+        for &hard_fact in &self.hard_facts {
+            match self.assignment.enqueue_assumption(hard_fact) {
+                Ok(()) | Err(AssignmentError::AlreadyAssigned) => (),
+                Err(AssignmentError::Conflict) => return PropagationResult::Conflict,
+                _unexpected_error => {
+                    panic!("encountered unexpected error while propagating hard facts")
+                }
+            }
+        }
+        PropagationResult::Consistent
+    }
+
+    /// Propagates the given assumptions.
+    fn propagate_assumptions<L>(&mut self, assumptions: L) -> PropagationResult
+    where
+        L: IntoIterator<Item = Literal>,
+    {
+        for assumption in assumptions {
+            if let Err(AssignmentError::Conflict) =
+                self.assignment.enqueue_assumption(assumption)
+            {
+                return PropagationResult::Conflict
+            }
+        }
+        if self
+            .assignment
+            .propagate(&mut self.clauses, self.decider.informer())
+            .is_conflict()
+        {
+            return PropagationResult::Conflict
+        }
+        PropagationResult::Consistent
     }
 }
