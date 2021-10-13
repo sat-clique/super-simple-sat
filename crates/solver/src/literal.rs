@@ -235,3 +235,65 @@ pub trait RegisterVariables {
     /// If the implementer cannot afford to registered the given amount of new variables.
     fn register_variables(&mut self, additional: usize);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    mod sign {
+        use super::*;
+
+        #[test]
+        fn not_works() {
+            assert_eq!(!Sign::POS, Sign::NEG);
+            assert_eq!(!Sign::NEG, Sign::POS);
+            assert_eq!(!!Sign::POS, Sign::POS);
+            assert_eq!(!!Sign::NEG, Sign::NEG);
+        }
+
+        #[test]
+        fn into_u8_works() {
+            assert_eq!(Sign::POS.into_u8(), 1);
+            assert_eq!(Sign::NEG.into_u8(), 0);
+        }
+
+        #[test]
+        fn is_pos_works() {
+            assert_eq!(Sign::POS.is_pos(), true);
+            assert_eq!(Sign::NEG.is_pos(), false);
+        }
+
+        #[test]
+        fn is_neg_works() {
+            assert_eq!(Sign::POS.is_neg(), false);
+            assert_eq!(Sign::NEG.is_neg(), true);
+        }
+    }
+
+    mod literal {
+        use super::*;
+
+        #[test]
+        fn sign_works() {
+            let v = Variable::from_index(0);
+            assert_eq!(Literal::new(v, Sign::POS).sign(), Sign::POS);
+            assert_eq!(Literal::new(v, Sign::NEG).sign(), Sign::NEG);
+        }
+
+        #[test]
+        fn not_works() {
+            let l1 = Literal::new(Variable::from_index(0), Sign::POS);
+            let l2 = !l1;
+            assert_ne!(l1.sign(), l2.sign());
+            let l3 = !l2;
+            assert_eq!(l1.sign(), l3.sign());
+        }
+
+        #[test]
+        fn variable_works() {
+            let v = Variable::from_index(42);
+            assert_eq!(Literal::new(v, Sign::POS).variable(), v);
+            assert_eq!(Literal::new(v, Sign::NEG).variable(), v);
+        }
+    }
+}
