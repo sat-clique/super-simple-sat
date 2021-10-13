@@ -212,19 +212,17 @@ pub enum ClauseRemoval {
 
 impl Debug for ClauseDatabase {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        struct DebugClauses<'a> {
-            db: &'a ClauseDatabase,
-        }
+        struct DebugClauses<'a>(&'a ClauseDatabase);
 
         impl Debug for DebugClauses<'_> {
             fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-                f.debug_list().entries(self.db).finish()
+                f.debug_list().entries(self.0).finish()
             }
         }
 
         let mut db = f.debug_struct("ClauseDatabase");
         db.field("len", &self.words.len());
-        db.field("clauses", &DebugClauses { db: self });
+        db.field("clauses", &DebugClauses(self));
         db.finish()
     }
 }
