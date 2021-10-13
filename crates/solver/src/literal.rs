@@ -43,17 +43,17 @@ impl Sign {
     pub const NEG: Self = Self(false);
 
     /// Returns `true` if the sign has positive polarity.
-    pub fn is_pos(self) -> bool {
+    pub const fn is_pos(self) -> bool {
         self.0
     }
 
     /// Returns `true` if the sign has negative polarity.
-    pub fn is_neg(self) -> bool {
+    pub const fn is_neg(self) -> bool {
         !self.is_pos()
     }
 
     /// Returns `1` if the sign has positive polarity and otherwise `0`.
-    pub fn into_u8(self) -> u8 {
+    pub const fn into_u8(self) -> u8 {
         self.0 as u8
     }
 }
