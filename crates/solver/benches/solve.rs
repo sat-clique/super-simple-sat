@@ -144,9 +144,10 @@ fn bench_3sat_v150_c645_sat(c: &mut Criterion) {
     let mut g = c.benchmark_group("Solver::solve");
     g.sample_size(10);
     g.sampling_mode(criterion::SamplingMode::Flat);
-    for (n, input) in collect_benchmarks_in_path("../../cnf/uf150-645/sat/")
-        .into_iter()
-        .enumerate()
+    for (n, input) in
+        collect_benchmarks_in_path("../../benchmarks/random-k-sat/3-sat/150v-645c/sat/")
+            .into_iter()
+            .enumerate()
     {
         let solver = Solver::from_cnf(&mut &input[..]).unwrap();
         let param =
@@ -168,9 +169,10 @@ fn bench_3sat_v150_c645_unsat(c: &mut Criterion) {
     let mut g = c.benchmark_group("Solver::solve");
     g.sample_size(10);
     g.sampling_mode(criterion::SamplingMode::Flat);
-    for (n, input) in collect_benchmarks_in_path("../../cnf/uf150-645/unsat/")
-        .into_iter()
-        .enumerate()
+    for (n, input) in
+        collect_benchmarks_in_path("../../benchmarks/random-k-sat/3-sat/150v-645c/unsat/")
+            .into_iter()
+            .enumerate()
     {
         let solver = Solver::from_cnf(&mut &input[..]).unwrap();
         let param =
