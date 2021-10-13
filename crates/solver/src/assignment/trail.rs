@@ -3,7 +3,7 @@ use super::{
     PartialAssignment,
 };
 use crate::{
-    decider::InformDecider,
+    decider::RestoreVariable,
     Literal,
     RegisterVariables,
     Variable,
@@ -161,12 +161,14 @@ impl Trail {
     }
 
     /// Backjumps the trail to the given decision level.
-    pub fn pop_to_level(
+    pub fn pop_to_level<D>(
         &mut self,
         level: DecisionLevel,
         assignments: &mut PartialAssignment,
-        mut inform_decider: InformDecider,
-    ) {
+        decider: &mut D,
+    ) where
+        D: RestoreVariable,
+    {
         let level = DecisionLevel::from_index(level.into_index() - 1);
         let limit = self.limits.pop_to_level(level);
         self.propagate_head = limit.into_index();
@@ -174,7 +176,7 @@ impl Trail {
             .pop_to(limit.into_index(), |popped| {
                 let variable = popped.variable();
                 assignments.unassign(variable);
-                inform_decider.restore_variable(variable)
+                decider.restore_variable(variable)
             });
     }
 }

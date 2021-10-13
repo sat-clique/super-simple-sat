@@ -346,7 +346,7 @@ impl Solver {
         }
         if self
             .assignment
-            .propagate(&mut self.clauses, self.decider.informer())
+            .propagate(&mut self.clauses, &mut self.decider)
             .is_conflict()
         {
             return PropagationResult::Conflict
@@ -383,8 +383,7 @@ impl Solver {
                 {
                     return DecisionResult::Sat
                 }
-                self.assignment
-                    .pop_decision_level(level, self.decider.informer());
+                self.assignment.pop_decision_level(level, &mut self.decider);
                 DecisionResult::Conflict
             }
         }
@@ -409,7 +408,7 @@ impl Solver {
         }
         let propagation_result = self
             .assignment
-            .propagate(&mut self.clauses, self.decider.informer());
+            .propagate(&mut self.clauses, &mut self.decider);
         match propagation_result {
             PropagationResult::Conflict => DecisionResult::Conflict,
             PropagationResult::Consistent => self.decide_and_propagate(),

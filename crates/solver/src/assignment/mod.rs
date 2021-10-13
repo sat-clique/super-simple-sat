@@ -23,7 +23,7 @@ use crate::{
         ClauseRef,
         ResolvedClause,
     },
-    decider::InformDecider,
+    decider::RestoreVariable,
     ClauseDatabase,
     Literal,
     RegisterVariables,
@@ -136,13 +136,12 @@ impl Assignment {
     }
 
     /// Resets the assignment to the given decision level.
-    pub fn reset_to_level(
-        &mut self,
-        level: DecisionLevel,
-        inform_decider: InformDecider,
-    ) {
+    pub fn reset_to_level<D>(&mut self, level: DecisionLevel, decider: &mut D)
+    where
+        D: RestoreVariable,
+    {
         self.trail
-            .pop_to_level(level, &mut self.assignments, inform_decider)
+            .pop_to_level(level, &mut self.assignments, decider)
     }
 
     /// Enqueues a propagation literal.
@@ -186,21 +185,23 @@ impl Assignment {
     /// Pops the decision level to the given level.
     ///
     /// This also unassigned all variables assigned in the given decision level.
-    pub fn pop_decision_level(
-        &mut self,
-        level: DecisionLevel,
-        inform_decider: InformDecider,
-    ) {
+    pub fn pop_decision_level<D>(&mut self, level: DecisionLevel, decider: &mut D)
+    where
+        D: RestoreVariable,
+    {
         self.trail
-            .pop_to_level(level, &mut self.assignments, inform_decider)
+            .pop_to_level(level, &mut self.assignments, decider)
     }
 
     /// Propagates the enqueued assumptions.
-    pub fn propagate(
+    pub fn propagate<D>(
         &mut self,
         clause_db: &mut ClauseDatabase,
-        inform_decider: InformDecider,
-    ) -> PropagationResult {
+        decider: &mut D,
+    ) -> PropagationResult
+    where
+        D: RestoreVariable,
+    {
         let Self {
             watchers,
             assignments,
@@ -216,7 +217,7 @@ impl Assignment {
                 PropagationEnqueuer::new(trail),
             );
             if result.is_conflict() {
-                trail.pop_to_level(level, assignments, inform_decider);
+                trail.pop_to_level(level, assignments, decider);
                 return result
             }
         }

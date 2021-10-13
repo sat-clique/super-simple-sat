@@ -7,7 +7,10 @@ use bounded::{
     BoundedHeap,
     Index as _,
 };
-use core::ops::Add;
+use core::{
+    convert::identity,
+    ops::Add,
+};
 
 /// The priority of a variable used for branching decisions.
 #[derive(Debug, Default, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -21,37 +24,30 @@ impl Add<u64> for Priority {
     }
 }
 
-/// Wrapper around the decider in order to inform it about propagation results.
-///
-/// This provides an encapsulated interface to the decider that provide access
-/// only to the parts that informs it about the variable priorities and which
-/// variables are still in need for propagation.
+/// Restores the variable for the decision heuristic with its original priority.
 ///
 /// # Note
 ///
-/// Currently mainly needed to inform the branching heuristic upon backtracking.
-#[derive(Debug)]
-pub struct InformDecider<'a> {
-    /// The wrapped decider.
-    decider: &'a mut Decider,
-}
-
-impl<'a> InformDecider<'a> {
-    /// Wraps the given decider.
-    fn new(decider: &'a mut Decider) -> Self {
-        Self { decider }
-    }
-
-    /// Restores the given variable and adds it back to the priority queue with
-    /// its original weight.
+/// Implemented by the decision heuristic in order to be informed during backtracking.
+pub trait RestoreVariable {
+    /// Restores the variable for the decision heuristic with its original priority.
     ///
-    /// Does nothing if the variable is already in the queue.
+    /// # Note
+    ///
+    /// Does nothing if the variable is already restored.
     ///
     /// # Panics
     ///
-    /// If the given variable index is out of bounds.
-    pub fn restore_variable(&mut self, variable: Variable) {
-        self.decider.restore_variable(variable)
+    /// Implementers may panic if the variable has not been registered.
+    fn restore_variable(&mut self, variable: Variable);
+}
+
+impl RestoreVariable for Decider {
+    #[inline]
+    fn restore_variable(&mut self, variable: Variable) {
+        self.priorities
+            .push_or_update(variable, identity)
+            .unwrap_or_else(|_| panic!("encountered invalid variable {}", variable));
     }
 }
 
@@ -70,7 +66,7 @@ impl RegisterVariables for Decider {
         for i in self.len_variables()..total_variables {
             let variable = Variable::from_index(i);
             self.priorities
-                .push_or_update(variable, core::convert::identity)
+                .push_or_update(variable, identity)
                 .expect("unexpected variable index out of bounds");
         }
         self.len_variables += additional;
@@ -78,12 +74,6 @@ impl RegisterVariables for Decider {
 }
 
 impl Decider {
-    /// Creates a wrapper around the decider to allow to inform the decider
-    /// about unit propagation results.
-    pub fn informer(&mut self) -> InformDecider {
-        InformDecider::new(self)
-    }
-
     /// Returns the number of registered variables.
     fn len_variables(&self) -> usize {
         self.len_variables
@@ -114,19 +104,5 @@ impl Decider {
                 None => return None,
             }
         }
-    }
-
-    /// Restores the given variable and adds it back to the priority queue with
-    /// its original weight.
-    ///
-    /// Does nothing if the variable is already in the queue.
-    ///
-    /// # Panics
-    ///
-    /// If the given variable index is out of bounds.
-    pub fn restore_variable(&mut self, variable: Variable) {
-        self.priorities
-            .push_or_update(variable, core::convert::identity)
-            .expect("encountered unexpected out of bounds variable");
     }
 }
