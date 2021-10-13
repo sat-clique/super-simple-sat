@@ -1,7 +1,7 @@
+use super::PartialAssignment;
 pub use super::{
     Assignment,
     AssignmentError,
-    PartialAssignment,
 };
 use crate::{
     Bool,
