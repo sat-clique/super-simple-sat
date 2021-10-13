@@ -290,7 +290,7 @@ impl Solver {
         let _constraints_level = self.assignment.bump_decision_level();
 
         // Start solving using recursive DPLL style.
-        let result = match self.decide_and_propagate()? {
+        let result = match self.decide_and_propagate() {
             DecisionResult::Conflict => SolveResult::Unsat,
             DecisionResult::Sat => {
                 let result = SolveResult::sat(self.last_model.get());
@@ -346,7 +346,7 @@ impl Solver {
     ///
     /// Returns SAT if all literals already are assigned OR
     /// if a valid assignment has been found.
-    fn decide_and_propagate(&mut self) -> Result<DecisionResult, Error> {
+    fn decide_and_propagate(&mut self) -> DecisionResult {
         let next_variable = self
             .decider
             .next_unassigned(self.assignment.variable_assignment());
@@ -355,27 +355,27 @@ impl Solver {
                 self.last_model
                     .update(self.assignment.variable_assignment())
                     .expect("encountered unexpected indeterminate variable assignment");
-                Ok(DecisionResult::Sat)
+                DecisionResult::Sat
             }
             Some(unassigned_variable) => {
                 let level = self.assignment.bump_decision_level();
                 let decision = Literal::new(unassigned_variable, Sign::POS);
-                if self.solve_for_decision(decision)?.is_sat()
-                    || self.solve_for_decision(!decision)?.is_sat()
+                if self.solve_for_decision(decision).is_sat()
+                    || self.solve_for_decision(!decision).is_sat()
                 {
-                    return Ok(DecisionResult::Sat)
+                    return DecisionResult::Sat
                 }
                 self.assignment
                     .pop_decision_level(level, self.decider.informer());
-                Ok(DecisionResult::Conflict)
+                DecisionResult::Conflict
             }
         }
     }
 
     /// Tries to find a valid assignment for the given literal decision.
-    fn solve_for_decision(&mut self, decision: Literal) -> Result<DecisionResult, Error> {
+    fn solve_for_decision(&mut self, decision: Literal) -> DecisionResult {
         match self.assignment.enqueue_assumption(decision) {
-            Err(AssignmentError::Conflict) => return Ok(DecisionResult::Conflict),
+            Err(AssignmentError::Conflict) => return DecisionResult::Conflict,
             Err(AssignmentError::AlreadyAssigned) => {
                 panic!(
                     "decision heuristic proposed already assigned variable for propagation: {:?}",
@@ -391,7 +391,7 @@ impl Solver {
             .assignment
             .propagate(&mut self.clauses, self.decider.informer());
         match propagation_result {
-            PropagationResult::Conflict => Ok(DecisionResult::Conflict),
+            PropagationResult::Conflict => DecisionResult::Conflict,
             PropagationResult::Consistent => self.decide_and_propagate(),
         }
     }
