@@ -163,16 +163,28 @@ pub union ClauseWord {
 impl ClauseWord {
     /// Interprets the clause word as the clause header.
     pub fn as_header(&self) -> &ClauseHeader {
+        // SAFETY: All clause word variants `ClauseHeader`, `ClauseLength` and `Literal`
+        //         are based on the `u32` Rust primitive type.
+        //         Casting between them does not invalidate internal state.
+        //         The clause database guarantees to perform only valid casts.
         unsafe { &self.header }
     }
 
     /// Interprets the clause word reference as an exclusive reference to the clause header.
     pub fn as_header_mut(&mut self) -> &mut ClauseHeader {
+        // SAFETY: All clause word variants `ClauseHeader`, `ClauseLength` and `Literal`
+        //         are based on the `u32` Rust primitive type.
+        //         Casting between them does not invalidate internal state.
+        //         The clause database guarantees to perform only valid casts.
         unsafe { &mut self.header }
     }
 
     /// Interprets the clause word as the clause length.
     pub fn as_len(self) -> usize {
+        // SAFETY: All clause word variants `ClauseHeader`, `ClauseLength` and `Literal`
+        //         are based on the `u32` Rust primitive type.
+        //         Casting between them does not invalidate internal state.
+        //         The clause database guarantees to perform only valid casts.
         unsafe { self.len }.value() as usize
     }
 }
