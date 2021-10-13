@@ -225,3 +225,13 @@ impl Display for Variable {
         write!(f, "{}", self.into_index() + 1)
     }
 }
+
+/// Trait implemented by solver facilities that need to be informed about additional variables.
+pub trait RegisterVariables {
+    /// Informs the implementer about an amount of new variables for the solver to use.
+    ///
+    /// # Panics
+    ///
+    /// If the implementer cannot afford to registered the given amount of new variables.
+    fn register_variables(&mut self, additional: usize);
+}

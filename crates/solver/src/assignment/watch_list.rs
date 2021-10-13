@@ -11,6 +11,7 @@ use crate::{
     },
     ClauseDatabase,
     Literal,
+    RegisterVariables,
     Sign,
     Variable,
 };
@@ -162,20 +163,17 @@ pub struct WatchList {
     watchers: BoundedArray<Variable, VariableWatchers>,
 }
 
+impl RegisterVariables for WatchList {
+    fn register_variables(&mut self, additional: usize) {
+        let total_variables = self.len_variables() + additional;
+        self.watchers.resize_with(total_variables, Default::default);
+    }
+}
+
 impl WatchList {
     /// Returns the current number of registered variables.
     fn len_variables(&self) -> usize {
         self.watchers.len()
-    }
-
-    /// Registers the given number of additional variables.
-    ///
-    /// # Errors
-    ///
-    /// If the number of total variables is out of supported bounds.
-    pub fn register_new_variables(&mut self, new_variables: usize) {
-        let total_variables = self.len_variables() + new_variables;
-        self.watchers.resize_with(total_variables, Default::default);
     }
 
     /// Registers the clause identifier for the given literal.

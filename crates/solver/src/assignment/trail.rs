@@ -5,6 +5,7 @@ use super::{
 use crate::{
     decider::InformDecider,
     Literal,
+    RegisterVariables,
     Variable,
 };
 use bounded::{
@@ -93,21 +94,18 @@ pub struct Trail {
     limits: TrailLimits,
 }
 
+impl RegisterVariables for Trail {
+    fn register_variables(&mut self, additional: usize) {
+        let total_variables = self.len_variables() + additional;
+        self.decisions_and_implications
+            .resize_capacity(total_variables);
+    }
+}
+
 impl Trail {
     /// Returns the current number of variables.
     fn len_variables(&self) -> usize {
         self.decisions_and_implications.capacity()
-    }
-
-    /// Registers the given number of additional variables.
-    ///
-    /// # Errors
-    ///
-    /// If the number of total variables is out of supported bounds.
-    pub fn register_new_variables(&mut self, new_variables: usize) {
-        let total_variables = self.len_variables() + new_variables;
-        self.decisions_and_implications
-            .resize_capacity(total_variables);
     }
 
     /// Pushes a new decision level and returns it.

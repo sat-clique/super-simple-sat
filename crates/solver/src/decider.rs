@@ -1,5 +1,6 @@
 use crate::{
     assignment::PartialAssignment,
+    literal::RegisterVariables,
     Variable,
 };
 use bounded::{
@@ -62,6 +63,20 @@ pub struct Decider {
     _activity_delta: u64,
 }
 
+impl RegisterVariables for Decider {
+    fn register_variables(&mut self, additional: usize) {
+        let total_variables = self.len_variables() + additional;
+        self.priorities.resize_capacity(total_variables);
+        for i in self.len_variables()..total_variables {
+            let variable = Variable::from_index(i);
+            self.priorities
+                .push_or_update(variable, core::convert::identity)
+                .expect("unexpected variable index out of bounds");
+        }
+        self.len_variables += additional;
+    }
+}
+
 impl Decider {
     /// Creates a wrapper around the decider to allow to inform the decider
     /// about unit propagation results.
@@ -72,23 +87,6 @@ impl Decider {
     /// Returns the number of registered variables.
     fn len_variables(&self) -> usize {
         self.len_variables
-    }
-
-    /// Registers the given amount of new variables.
-    ///
-    /// # Panics
-    ///
-    /// If too many variables have been registered in total.
-    pub fn register_new_variables(&mut self, new_variables: usize) {
-        let total_variables = self.len_variables() + new_variables;
-        self.priorities.resize_capacity(total_variables);
-        for i in self.len_variables()..total_variables {
-            let variable = Variable::from_index(i);
-            self.priorities
-                .push_or_update(variable, core::convert::identity)
-                .expect("unexpected variable index out of bounds");
-        }
-        self.len_variables += new_variables;
     }
 
     /// Bumps the priority of the given variable by a given amount.

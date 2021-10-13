@@ -24,6 +24,7 @@ use crate::{
     builder::SolverBuilder,
     clause_db::ClauseDatabase,
     decider::Decider,
+    literal::RegisterVariables,
     sanitizer::{
         ClauseSanitizer,
         SanitizedLiterals,
@@ -222,8 +223,8 @@ impl Solver {
 
     /// Returns the next variable.
     fn new_variable(&mut self) -> Variable {
-        self.assignment.register_new_variables(1);
-        self.decider.register_new_variables(1);
+        self.assignment.register_variables(1);
+        self.decider.register_variables(1);
         let next_id = self.len_variables();
         let variable = Variable::from_index(next_id);
         self.len_variables += 1;
@@ -262,8 +263,8 @@ impl Solver {
                 first_index + amount
             )
         });
-        self.assignment.register_new_variables(amount);
-        self.decider.register_new_variables(amount);
+        self.assignment.register_variables(amount);
+        self.decider.register_variables(amount);
         self.len_variables += amount;
         chunk
     }

@@ -23,6 +23,7 @@ use crate::{
     Bool,
     ClauseDatabase,
     Literal,
+    RegisterVariables,
     Sign,
     Variable,
 };
@@ -105,6 +106,13 @@ pub struct PartialAssignment {
     assignment: BoundedMap<Variable, Sign>,
 }
 
+impl RegisterVariables for PartialAssignment {
+    fn register_variables(&mut self, additional: usize) {
+        let new_len = self.len() + additional;
+        self.assignment.resize_capacity(new_len);
+    }
+}
+
 impl PartialAssignment {
     /// Returns the number of registered variables.
     pub fn len(&self) -> usize {
@@ -128,16 +136,6 @@ impl PartialAssignment {
     /// Variables that have not been assigned, yet will not be yielded.
     pub fn iter(&self) -> bounded_map::Iter<Variable, Sign> {
         self.assignment.iter()
-    }
-
-    /// Registers the given number of additional variables.
-    ///
-    /// # Errors
-    ///
-    /// If the number of total variables is out of supported bounds.
-    pub fn register_new_variables(&mut self, new_variables: usize) {
-        let new_len = self.len() + new_variables;
-        self.assignment.resize_capacity(new_len);
     }
 
     /// Returns the assignment for the given variable.
@@ -220,6 +218,14 @@ pub struct Assignment {
     watchers: WatchList,
 }
 
+impl RegisterVariables for Assignment {
+    fn register_variables(&mut self, additional: usize) {
+        self.trail.register_variables(additional);
+        self.assignments.register_variables(additional);
+        self.watchers.register_variables(additional);
+    }
+}
+
 impl Assignment {
     /// Initializes the watchers of the assignment given the clause database.
     ///
@@ -236,17 +242,6 @@ impl Assignment {
     /// Returns a view into the assignment.
     pub fn variable_assignment(&self) -> &PartialAssignment {
         &self.assignments
-    }
-
-    /// Registers the given number of additional variables.
-    ///
-    /// # Panics
-    ///
-    /// If the number of total variables is out of supported bounds.
-    pub fn register_new_variables(&mut self, new_variables: usize) {
-        self.trail.register_new_variables(new_variables);
-        self.assignments.register_new_variables(new_variables);
-        self.watchers.register_new_variables(new_variables);
     }
 
     /// Resets the assignment to the given decision level.
