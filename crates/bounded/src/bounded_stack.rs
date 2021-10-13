@@ -212,3 +212,21 @@ where
         &mut self.stack[index]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn resize_capacity_works() {
+        let mut stack = <BoundedStack<i32>>::default();
+        stack.resize_capacity(5);
+        assert_eq!(stack.capacity(), 5);
+        stack.resize_capacity(10);
+        assert_eq!(stack.capacity(), 10);
+        stack.push(1);
+        assert_eq!(stack.len(), 1);
+        stack.resize_capacity(15);
+        assert_eq!(stack.capacity(), 15);
+    }
+}
