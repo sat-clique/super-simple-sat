@@ -117,7 +117,7 @@ impl Literal {
     /// Returns the assignment and polarity of the literal.
     #[inline]
     pub fn sign(self) -> Sign {
-        Sign((self.value & 1) == 0)
+        Sign((self.value & 1) != 0)
     }
 }
 
