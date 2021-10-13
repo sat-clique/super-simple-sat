@@ -276,6 +276,16 @@ impl Solver {
         }
     }
 
+    /// Decides the next literal and propagates it.
+    ///
+    /// This recursively checks for a valid assignment for both
+    /// positive and negative assignments of the decided literal.
+    /// Returns a conflict if both assignments has led to a conflict.
+    ///
+    /// # Note
+    ///
+    /// Returns SAT if all literals already are assigned OR
+    /// if a valid assignment has been found.
     fn decide_and_propagate(&mut self) -> Result<DecisionResult, Error> {
         let next_variable = self
             .decider
