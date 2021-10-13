@@ -34,9 +34,11 @@ impl<T> BoundedStack<T> {
     /// and will bail out errors if used with higher indices.
     #[inline]
     pub fn resize_capacity(&mut self, new_cap: usize) {
-        let additional = new_cap - self.capacity();
-        self.stack.reserve(additional);
-        self.capacity += additional;
+        assert!(new_cap >= self.capacity());
+        let additional_capacity = new_cap - self.capacity();
+        self.capacity += additional_capacity;
+        self.stack.reserve_exact(self.capacity() - self.len());
+        assert_eq!(self.capacity(), new_cap);
     }
 
     /// Returns the length of the bounded stack.
