@@ -161,6 +161,7 @@ impl Assignment {
     }
 }
 
+/// The result of a propagation after a decision has been made.
 #[derive(Debug, Copy, Clone)]
 pub enum PropagationResult {
     /// Propagation led to a consistent assignment.
