@@ -157,9 +157,7 @@ impl Trail {
             Some(false) => return Err(AssignmentError::AlreadyAssigned),
             None => (),
         }
-        self.decisions_and_implications
-            .push(literal)
-            .expect("encountered unexpected invalid variable");
+        self.decisions_and_implications.push(literal);
         assignment.assign(literal.variable(), literal.sign());
         Ok(())
     }
