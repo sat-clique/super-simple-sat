@@ -81,6 +81,7 @@ impl Bool for Sign {
 impl Not for Sign {
     type Output = Self;
 
+    #[inline]
     fn not(self) -> Self::Output {
         Self(!self.0)
     }
