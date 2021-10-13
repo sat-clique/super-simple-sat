@@ -118,20 +118,18 @@ impl<T> BoundedStack<T> {
     #[inline]
     pub fn pop_to<F>(&mut self, new_len: usize, mut observer: F)
     where
-        F: FnMut(&T),
+        F: FnMut(T),
     {
         assert!(
             new_len <= self.len(),
-            "tried to pop the stack to a length greater than the current one. \
-             current length is {} but new length is {}",
+            "tried to pop a bounded stack with len {} to len {}",
             self.len(),
             new_len,
         );
-        let popped_amount = self.len() - new_len;
-        for popped in self.iter().rev().take(popped_amount) {
+        for popped in self.stack.drain(new_len..).rev() {
             observer(popped);
         }
-        self.stack.truncate(new_len);
+        debug_assert_eq!(self.len(), new_len);
     }
 
     /// Returns an iterator yielding shared references to the values of the bounded stack.
