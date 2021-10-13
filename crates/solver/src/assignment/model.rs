@@ -85,7 +85,7 @@ impl Model {
         assignment: &PartialAssignment,
     ) -> Result<(), AssignmentError> {
         if !assignment.is_complete() {
-            return Err(AssignmentError::UnexpectedIndeterminateAssignment)
+            return Err(AssignmentError::IndeterminateAssignment)
         }
         self.assignment.resize_to_len(assignment.len());
         for (variable, var_assignment) in assignment {

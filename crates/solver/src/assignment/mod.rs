@@ -43,7 +43,7 @@ use core::{
 #[derive(Debug, PartialEq, Eq)]
 pub enum AssignmentError {
     /// When trying to create a model from an indeterminate assignment.
-    UnexpectedIndeterminateAssignment,
+    IndeterminateAssignment,
     /// Variable invalid for the current assignment.
     InvalidVariable,
     /// When trying to assign a variable that has already been assigned.
@@ -55,7 +55,7 @@ pub enum AssignmentError {
 impl Display for AssignmentError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::UnexpectedIndeterminateAssignment => {
+            Self::IndeterminateAssignment => {
                 write!(f, "cannot create a model from an indeterminate assignment")
             }
             Self::InvalidVariable => write!(f, "the variable is invalid or unknown"),
