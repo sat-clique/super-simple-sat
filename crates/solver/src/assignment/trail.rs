@@ -125,6 +125,7 @@ impl EnqueueLiteral for Trail {
     }
 }
 
+/// The decision trail of the solver.
 #[derive(Debug, Default, Clone)]
 pub struct Trail {
     propagate_head: usize,
