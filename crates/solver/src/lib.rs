@@ -148,7 +148,7 @@ pub struct Solver {
     clauses: ClauseDatabase,
     assignment: Assignment,
     decider: Decider,
-    last_model2: LastModel,
+    last_model: LastModel,
     sanitizer: ClauseSanitizer,
     encountered_empty_clause: bool,
     hard_facts: Vec<Literal>,
@@ -274,7 +274,7 @@ impl Solver {
             .next_unassigned(self.assignment.variable_assignment());
         match next_variable {
             None => {
-                self.last_model2
+                self.last_model
                     .update(self.assignment.variable_assignment())
                     .expect("encountered unexpected indeterminate variable assignment");
                 Ok(DecisionResult::Sat)
@@ -308,7 +308,7 @@ impl Solver {
         }
         // If the set of clauses contain the empty clause: UNSAT
         if self.len_variables() == 0 {
-            return Ok(SolveResult::sat(self.last_model2.get()))
+            return Ok(SolveResult::sat(self.last_model.get()))
         }
         // Propagate known hard facts (unit clauses).
         for &hard_fact in &self.hard_facts {
@@ -352,7 +352,7 @@ impl Solver {
         let result = match self.decide_and_propagate()? {
             DecisionResult::Conflict => SolveResult::Unsat,
             DecisionResult::Sat => {
-                let result = SolveResult::sat(self.last_model2.get());
+                let result = SolveResult::sat(self.last_model.get());
                 result
             }
         };
