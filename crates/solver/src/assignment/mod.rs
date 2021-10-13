@@ -227,7 +227,7 @@ impl Assignment {
 }
 
 impl<'a> IntoIterator for &'a Assignment {
-    type Item = (Variable, Sign);
+    type Item = Literal;
     type IntoIter = AssignmentIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
@@ -235,6 +235,14 @@ impl<'a> IntoIterator for &'a Assignment {
     }
 }
 
+/// Iterator over the assignments of all variables.
+///
+/// # Note
+///
+/// This effectively returns every literal in order.
+/// The literal has positive polarity if the variable
+/// has been assigned to true and otherwise negative
+/// polarity.
 pub struct AssignmentIter<'a> {
     iter: bounded_map::Iter<'a, Variable, Sign>,
 }
@@ -248,11 +256,11 @@ impl<'a> AssignmentIter<'a> {
 }
 
 impl<'a> Iterator for AssignmentIter<'a> {
-    type Item = (Variable, Sign);
+    type Item = Literal;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter
             .next()
-            .map(|(variable, assignment)| (variable, *assignment))
+            .map(|(variable, assignment)| Literal::new(variable, *assignment))
     }
 }

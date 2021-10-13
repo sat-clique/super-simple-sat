@@ -88,9 +88,9 @@ impl Model {
             return Err(AssignmentError::IndeterminateAssignment)
         }
         self.assignment.resize_to_len(assignment.len());
-        for (variable, var_assignment) in assignment {
+        for assiged in assignment {
             self.assignment
-                .set(variable, var_assignment)
+                .set(assiged.variable(), assiged.sign())
                 .expect("unexpected invalid variable");
         }
         Ok(())
