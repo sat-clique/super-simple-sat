@@ -327,9 +327,10 @@ where
 #[test]
 #[cfg(not(miri))]
 fn test_3sat_v100_c430_sat() {
-    for (n, input) in collect_tests_in_path("../../cnf/uf100-430/sat/")
-        .into_iter()
-        .enumerate()
+    for (n, input) in
+        collect_tests_in_path("../../benchmarks/random-k-sat/3-sat/100v-430c/sat/")
+            .into_iter()
+            .enumerate()
     {
         let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
         let result = solver.solve(vec![]);
@@ -345,9 +346,10 @@ fn test_3sat_v100_c430_sat() {
 #[test]
 #[cfg(not(miri))]
 fn test_3sat_v100_c430_unsat() {
-    for (n, input) in collect_tests_in_path("../../cnf/uf100-430/unsat/")
-        .into_iter()
-        .enumerate()
+    for (n, input) in
+        collect_tests_in_path("../../benchmarks/random-k-sat/3-sat/100v-430c/unsat/")
+            .into_iter()
+            .enumerate()
     {
         let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
         assert_eq!(
@@ -362,9 +364,10 @@ fn test_3sat_v100_c430_unsat() {
 #[test]
 #[cfg(not(miri))]
 fn test_3sat_v150_c645_sat() {
-    for (n, input) in collect_tests_in_path("../../cnf/uf150-645/sat/")
-        .into_iter()
-        .enumerate()
+    for (n, input) in
+        collect_tests_in_path("../../benchmarks/random-k-sat/3-sat/150v-645c/sat/")
+            .into_iter()
+            .enumerate()
     {
         let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
         let result = solver.solve(vec![]);
@@ -380,9 +383,10 @@ fn test_3sat_v150_c645_sat() {
 #[test]
 #[cfg(not(miri))]
 fn test_3sat_v150_c645_unsat() {
-    for (n, input) in collect_tests_in_path("../../cnf/uf150-645/unsat/")
-        .into_iter()
-        .enumerate()
+    for (n, input) in
+        collect_tests_in_path("../../benchmarks/random-k-sat/3-sat/150v-645c/unsat/")
+            .into_iter()
+            .enumerate()
     {
         let mut solver = Solver::from_cnf(&mut &input[..]).unwrap();
         assert_eq!(
