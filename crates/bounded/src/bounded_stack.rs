@@ -1,8 +1,12 @@
 use super::OutOfBoundsAccess;
 use alloc::vec::Vec;
 use core::{
-    ops,
+    ops::{
+        Index,
+        IndexMut,
+    },
     slice,
+    slice::SliceIndex,
 };
 
 /// A stack that is bound to a given maximum size.
@@ -174,29 +178,24 @@ impl<'a, T> IntoIterator for &'a mut BoundedStack<T> {
     }
 }
 
-impl<T> ops::Index<usize> for BoundedStack<T> {
-    type Output = T;
+impl<T, I> Index<I> for BoundedStack<T>
+where
+    I: SliceIndex<[T]>,
+{
+    type Output = I::Output;
 
-    /// Returns a shared reference to the value for the given index if any.
-    ///
-    /// # Panics
-    ///
-    /// Returns an error if the index is out of bounds.
     #[inline]
-    fn index(&self, index: usize) -> &Self::Output {
-        self.get(index).expect("encountered out of bounds index")
+    fn index(&self, index: I) -> &Self::Output {
+        &self.stack[index]
     }
 }
 
-impl<T> ops::IndexMut<usize> for BoundedStack<T> {
-    /// Returns an exclusive reference to the value for the given index if any.
-    ///
-    /// # Panics
-    ///
-    /// Returns an error if the index is out of bounds.
+impl<T, I> IndexMut<I> for BoundedStack<T>
+where
+    I: SliceIndex<[T]>,
+{
     #[inline]
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        self.get_mut(index)
-            .expect("encountered out of bounds index")
+    fn index_mut(&mut self, index: I) -> &mut Self::Output {
+        &mut self.stack[index]
     }
 }
