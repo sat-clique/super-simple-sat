@@ -299,19 +299,15 @@ impl Solver {
             }
             Some(unassigned_variable) => {
                 let level = self.assignment.bump_decision_level();
-                if self
-                    .solve_for_decision(Literal::new(unassigned_variable, Sign::POS))?
-                    .is_sat()
-                    || self
-                        .solve_for_decision(Literal::new(unassigned_variable, Sign::NEG))?
-                        .is_sat()
+                let decision = Literal::new(unassigned_variable, Sign::POS);
+                if self.solve_for_decision(decision)?.is_sat()
+                    || self.solve_for_decision(!decision)?.is_sat()
                 {
-                    Ok(DecisionResult::Sat)
-                } else {
-                    self.assignment
-                        .pop_decision_level(level, self.decider.informer());
-                    Ok(DecisionResult::Conflict)
+                    return Ok(DecisionResult::Sat)
                 }
+                self.assignment
+                    .pop_decision_level(level, self.decider.informer());
+                Ok(DecisionResult::Conflict)
             }
         }
     }
