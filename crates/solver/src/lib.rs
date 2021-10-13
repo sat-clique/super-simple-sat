@@ -1,7 +1,6 @@
 #![deny(unsafe_code)]
 #![warn(unsafe_op_in_unsafe_fn)]
 #![allow(clippy::len_without_is_empty)]
-#![warn(clippy::missing_safety_doc)]
 
 mod assignment;
 mod builder;
