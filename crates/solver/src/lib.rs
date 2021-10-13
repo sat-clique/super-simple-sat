@@ -251,7 +251,10 @@ impl Solver {
         match self.assignment.enqueue_assumption(decision) {
             Err(AssignmentError::Conflict) => return Ok(DecisionResult::Conflict),
             Err(AssignmentError::AlreadyAssigned) => {
-                panic!("decision heuristic unexpectedly proposed already assigned variable for propagation")
+                panic!(
+                    "decision heuristic proposed already assigned variable for propagation: {:?}",
+                    decision,
+                )
             }
             Err(_) => panic!("encountered unexpected or unknown enqueue error"),
             Ok(_) => (),
