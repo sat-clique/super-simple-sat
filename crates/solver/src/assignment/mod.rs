@@ -53,11 +53,15 @@ impl Display for AssignmentError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::IndeterminateAssignment => {
-                write!(f, "cannot create a model from an indeterminate assignment")
+                write!(f, "indeterminate assignment found when complete assignment was expected")
             }
-            Self::InvalidVariable => write!(f, "the variable is invalid or unknown"),
+            Self::InvalidVariable => {
+                write!(f, "the variable for the assignment is invalid")
+            }
             Self::AlreadyAssigned => write!(f, "the variable has already been assigned"),
-            Self::Conflict => write!(f, "the assignment caused a conflict"),
+            Self::Conflict => {
+                write!(f, "the assignment is in conflict with existing assignment")
+            }
         }
     }
 }
