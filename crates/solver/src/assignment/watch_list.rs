@@ -16,6 +16,7 @@ use crate::{
     Variable,
 };
 use bounded::BoundedArray;
+use std::vec::Drain;
 
 /// Registered watcher for a single literal with a blocker literal.
 ///
@@ -75,16 +76,17 @@ impl VariableWatchers {
     ///
     /// Returns a propagation result that either tells that the propagation
     /// yielded a consistent assignemnt or a conflict.
-    fn propagate<Q>(
+    fn propagate<Q, W>(
         &mut self,
         literal: Literal,
         clause_db: &mut ClauseDatabase,
         assignment: &mut PartialAssignment,
-        queue: &mut Q,
-        mut watcher_enqueue: EnqueueWatcher,
+        propagation_queue: &mut Q,
+        watcher_queue: &mut W,
     ) -> PropagationResult
     where
         Q: EnqueueLiteral,
+        W: EnqueueWatcher,
     {
         let mut seen_conflict = false;
         let watchers = self.literal_watchers_mut(literal);
@@ -105,7 +107,7 @@ impl VariableWatchers {
                 .propagate(literal, assignment);
             match result {
                 ClausePropagationResult::UnitUnderAssignment(unit_literal) => {
-                    let enqueue_result = queue.enqueue_literal(unit_literal, assignment);
+                    let enqueue_result = propagation_queue.enqueue_literal(unit_literal, assignment);
                     if let Err(AssignmentError::ConflictingAssignment) = enqueue_result {
                         seen_conflict = true;
                     }
@@ -115,7 +117,7 @@ impl VariableWatchers {
                     new_watched,
                     new_blocker,
                 } => {
-                    watcher_enqueue.enqueue(new_watched, new_blocker, watcher);
+                    watcher_queue.enqueue_watcher(new_watched, new_blocker, watcher);
                     false
                 }
             }
@@ -129,7 +131,7 @@ impl VariableWatchers {
 
 /// A deferred insertion to the watch list after propagation of a single literal.
 #[derive(Debug, Copy, Clone)]
-struct DeferredWatcherInsert {
+pub struct DeferredWatcherInsert {
     /// The new literal to watch.
     watched: Literal,
     /// The blocking literal.
@@ -138,19 +140,30 @@ struct DeferredWatcherInsert {
     watched_by: ClauseRef,
 }
 
-/// Wrapper around the deferred watcher insertions.
-struct EnqueueWatcher<'a> {
-    queue: &'a mut Vec<DeferredWatcherInsert>,
+/// Enqueues a watched literal insertion into the queue.
+///
+/// # Note
+///
+/// Used for deferred watcher inserts.
+pub trait EnqueueWatcher {
+    /// Enqueues a watched literal insertion into the queue.
+    fn enqueue_watcher(&mut self, watched: Literal, blocker: Literal, watcher: ClauseRef);
 }
 
-impl<'a> EnqueueWatcher<'a> {
-    /// Creates a new enqueue watcher for the given queue.
-    fn new(queue: &'a mut Vec<DeferredWatcherInsert>) -> Self {
-        Self { queue }
-    }
+/// A queue for deferred watcher inserts.
+#[derive(Debug, Default, Clone)]
+pub struct DeferredWatcherQueue {
+    queue: Vec<DeferredWatcherInsert>,
+}
 
-    /// Enqueues another new watched literal insertion into the queue.
-    pub fn enqueue(&mut self, watched: Literal, blocker: Literal, watcher: ClauseRef) {
+impl EnqueueWatcher for DeferredWatcherQueue {
+    #[inline]
+    fn enqueue_watcher(
+        &mut self,
+        watched: Literal,
+        blocker: Literal,
+        watcher: ClauseRef,
+    ) {
         self.queue.push(DeferredWatcherInsert {
             watched,
             blocker,
@@ -159,10 +172,20 @@ impl<'a> EnqueueWatcher<'a> {
     }
 }
 
+impl<'a> IntoIterator for &'a mut DeferredWatcherQueue {
+    type Item = DeferredWatcherInsert;
+    type IntoIter = Drain<'a, DeferredWatcherInsert>;
+
+    #[inline]
+    fn into_iter(self) -> Self::IntoIter {
+        self.queue.drain(..)
+    }
+}
+
 /// The watch list monitoring which clauses are watching which literals.
 #[derive(Debug, Default, Clone)]
 pub struct WatchList {
-    deferred_inserts: Vec<DeferredWatcherInsert>,
+    watcher_queue: DeferredWatcherQueue,
     watchers: BoundedArray<Variable, VariableWatchers>,
 }
 
@@ -198,14 +221,14 @@ impl WatchList {
         literal: Literal,
         clause_db: &mut ClauseDatabase,
         assignment: &mut PartialAssignment,
-        queue: &mut Q,
+        propagation_queue: &mut Q,
     ) -> PropagationResult
     where
         Q: EnqueueLiteral,
     {
         let Self {
             watchers,
-            deferred_inserts,
+            watcher_queue,
         } = self;
         let result = watchers
             .get_mut(literal.variable())
@@ -214,18 +237,14 @@ impl WatchList {
                 literal,
                 clause_db,
                 assignment,
-                queue,
-                EnqueueWatcher::new(deferred_inserts),
+                propagation_queue,
+                watcher_queue,
             );
-        for deferred in deferred_inserts.drain(..) {
+        for watcher in watcher_queue {
             watchers
-                .get_mut(deferred.watched.variable())
+                .get_mut(watcher.watched.variable())
                 .expect("encountered unexpected invalid variable")
-                .register_for_lit(
-                    deferred.watched,
-                    deferred.blocker,
-                    deferred.watched_by,
-                );
+                .register_for_lit(watcher.watched, watcher.blocker, watcher.watched_by);
         }
         result
     }
