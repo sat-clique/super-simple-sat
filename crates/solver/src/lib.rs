@@ -205,6 +205,10 @@ impl Solver {
     }
 
     /// Consumes the given clause.
+    ///
+    /// # Panics
+    ///
+    /// If any of the literals has not been registered.
     pub fn consume_clause<I>(&mut self, literals: I)
     where
         I: IntoIterator,
