@@ -157,9 +157,17 @@ impl ClauseDatabase {
             if current == words.len() {
                 break
             }
+            // SAFETY: The `current` index always points to the start of a clause.
+            //         Therefore `words[current]` always refers to the clause header.
             let header = unsafe { words[current].as_header() };
-            let len = unsafe { words[current + 1].as_len() };
-            let clause_len = len + 2;
+            // SAFETY: The `current` index always points to the start of a clause.
+            //         Therefore `words[current+1]` always refers to the clause length.
+            //
+            // # Note
+            //
+            // The length denotes the amount of literals.
+            // Since a clause is also made up of header and length words we need to add 2.
+            let clause_len = 2 + unsafe { words[current + 1].as_len() };
             if !header.is_deleted() {
                 if alive != current {
                     for n in 0..clause_len {
