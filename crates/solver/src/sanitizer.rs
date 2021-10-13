@@ -107,13 +107,6 @@ pub struct LiteralIter<'a> {
     literals: slice::Iter<'a, Literal>,
 }
 
-impl<'a> LiteralIter<'a> {
-    /// Returns a slice over the sanitized literals.
-    pub fn as_slice(&self) -> &'a [Literal] {
-        self.literals.as_slice()
-    }
-}
-
 impl<'a> Default for LiteralIter<'a> {
     fn default() -> Self {
         LiteralIter {
