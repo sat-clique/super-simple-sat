@@ -81,12 +81,27 @@ impl<T> BoundedStack<T> {
     ///
     /// If the bounded stack is full already.
     #[inline]
-    pub fn push(&mut self, new_value: T) -> Result<(), OutOfBoundsAccess> {
+    pub fn try_push(&mut self, new_value: T) -> Result<(), OutOfBoundsAccess> {
         if self.len() == self.capacity() {
             return Err(OutOfBoundsAccess)
         }
         self.stack.push(new_value);
         Ok(())
+    }
+
+    /// Pushes the value to the bounded stack.
+    ///
+    /// # Panics
+    ///
+    /// If the bounded stack is full already.
+    #[inline]
+    pub fn push(&mut self, new_value: T) {
+        self.try_push(new_value).unwrap_or_else(|_| {
+            panic!(
+                "pushed more elements to bounded stack than its capacity of {}",
+                self.capacity()
+            )
+        })
     }
 
     /// Pops the last value from the bounded stack if any.
