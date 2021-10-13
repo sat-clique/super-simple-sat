@@ -39,7 +39,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --release --workspace
+          args: --release --workspace --no-fail-fast
 
   fmt:
     name: Formatting
@@ -140,7 +140,7 @@ jobs:
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
         with:
-          args: '--release'
+          args: '--release --no-fail-fast'
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1.0.2
         with:
