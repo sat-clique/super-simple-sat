@@ -85,13 +85,17 @@ impl From<&'static str> for Error {
     }
 }
 
+/// The result of a decision followed by propagation.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum DecisionResult {
+    /// The decision caused a conflict.
     Conflict,
+    /// The decision resulted in a satisfying assignment.
     Sat,
 }
 
 impl DecisionResult {
+    /// Returns `true` if the decision result yielded a satisfying assignment.
     pub fn is_sat(&self) -> bool {
         matches!(self, Self::Sat)
     }
@@ -104,7 +108,9 @@ impl DecisionResult {
 /// If the solution is satisfiable it also contains a satisfying assignment.
 #[derive(Debug)]
 pub enum SolveResult<'a> {
+    /// The SAT instance is unsatisfiable.
     Unsat,
+    /// The SAT instance is satisfiable with the given satisfying assignment.
     Sat(SatResult<'a>),
 }
 
@@ -113,10 +119,12 @@ impl<'a> SolveResult<'a> {
         Self::Sat(SatResult { model })
     }
 
+    /// Returns `true` if the SAT instance was determined to be satisfiable.
     pub fn is_sat(&self) -> bool {
         matches!(self, SolveResult::Sat(_))
     }
 
+    /// Returns `true` if the SAT instance was determined to be unsatisfiable.
     pub fn is_unsat(&self) -> bool {
         !self.is_sat()
     }
@@ -125,6 +133,7 @@ impl<'a> SolveResult<'a> {
 /// The satisfiable solution of a solved SAT instance.
 #[derive(Debug)]
 pub struct SatResult<'a> {
+    /// The underlying complete variable assignment.
     model: &'a Model,
 }
 
@@ -170,6 +179,12 @@ impl Solver {
         self.len_variables
     }
 
+    /// Consumes the `.cnf` input and feeds it to the returned solver.
+    ///
+    /// # Errors
+    ///
+    /// - If the input is no valid `.cnf` format.
+    /// - If the input encodes an invalid CNF formula.
     pub fn from_cnf<I>(input: &mut I) -> Result<Self, CnfError<Error>>
     where
         I: Input,
