@@ -31,8 +31,8 @@ impl<'a> Iterator for ClauseDatabaseIter<'a> {
             return None
         }
         // SAFETY: It is guaranteed that the clause word at this point is the clause length.
-        let len = unsafe { words[1].as_len() };
-        let (clause_words, remaining_words) = words.split_at(len + 2);
+        let len = unsafe { words[1].as_len_words() };
+        let (clause_words, remaining_words) = words.split_at(len);
         *words = remaining_words;
         Some(ResolvedClause::new(clause_words))
     }

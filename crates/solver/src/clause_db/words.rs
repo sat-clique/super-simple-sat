@@ -188,18 +188,21 @@ impl ClauseWord {
         unsafe { &mut self.header }
     }
 
-    /// Interprets the clause word as the clause length.
+    /// Interprets the clause word as the clause length in words.
     ///
     /// # Safety
     ///
     /// The caller guarantees that calls to this method only happen
     /// on clause words that have been allocated as clause lengths.
     #[allow(unsafe_code)]
-    pub unsafe fn as_len(self) -> usize {
+    pub unsafe fn as_len_words(self) -> usize {
         // SAFETY: All clause word variants `ClauseHeader`, `ClauseLength` and `Literal`
         //         are based on the `u32` Rust primitive type.
         //         Casting between them does not invalidate internal state.
-        unsafe { self.len }.value() as usize
+        //
+        // The clause lengths denotes the length of the literals of the clause.
+        // Since a clause is also made up of header and length words we need to add 2.
+        unsafe { self.len }.value() as usize + 2
     }
 
     /// Interprets the slice of words as slice of literals.
