@@ -175,7 +175,9 @@ impl ClauseWord {
     pub fn as_len(self) -> usize {
         unsafe { self.len }.value() as usize
     }
+}
 
+impl ClauseWord {
     /// Interprets the slice of words as slice of literals.
     pub fn as_lits(words: &[Self]) -> &[Literal] {
         slice_cast!(<ClauseWord, Literal>(words))
