@@ -66,13 +66,6 @@ impl Display for AssignmentError {
     }
 }
 
-impl AssignmentError {
-    /// Returns `true` if the assignment error was caused by a conflict.
-    pub fn is_conflict(&self) -> bool {
-        matches!(self, Self::ConflictingAssignment)
-    }
-}
-
 /// Allows to enqueue new literals into the propagation queue.
 #[derive(Debug)]
 pub struct PropagationEnqueuer<'a> {
