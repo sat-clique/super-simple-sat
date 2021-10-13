@@ -228,18 +228,18 @@ impl Assignment {
 
 impl<'a> IntoIterator for &'a Assignment {
     type Item = (Variable, Sign);
-    type IntoIter = Iter<'a>;
+    type IntoIter = AssignmentIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Iter::new(&self.assignments)
+        AssignmentIter::new(&self.assignments)
     }
 }
 
-pub struct Iter<'a> {
+pub struct AssignmentIter<'a> {
     iter: bounded_map::Iter<'a, Variable, Sign>,
 }
 
-impl<'a> Iter<'a> {
+impl<'a> AssignmentIter<'a> {
     pub fn new(assignment: &'a PartialAssignment) -> Self {
         Self {
             iter: assignment.iter(),
@@ -247,7 +247,7 @@ impl<'a> Iter<'a> {
     }
 }
 
-impl<'a> Iterator for Iter<'a> {
+impl<'a> Iterator for AssignmentIter<'a> {
     type Item = (Variable, Sign);
 
     fn next(&mut self) -> Option<Self::Item> {

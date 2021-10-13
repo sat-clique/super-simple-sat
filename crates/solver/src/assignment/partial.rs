@@ -1,4 +1,4 @@
-use super::Iter;
+use super::AssignmentIter;
 use crate::{
     Literal,
     RegisterVariables,
@@ -117,9 +117,9 @@ impl PartialAssignment {
 
 impl<'a> IntoIterator for &'a PartialAssignment {
     type Item = (Variable, Sign);
-    type IntoIter = Iter<'a>;
+    type IntoIter = AssignmentIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Iter::new(self)
+        AssignmentIter::new(self)
     }
 }
