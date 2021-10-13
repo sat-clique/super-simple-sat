@@ -63,6 +63,7 @@ impl VariableWatchers {
         }
     }
 
+    /// Returns the respective watchers for the literal polarity.
     fn literal_watchers_mut(&mut self, literal: Literal) -> &mut Vec<Watcher> {
         match literal.sign() {
             Sign::POS => &mut self.pos,
