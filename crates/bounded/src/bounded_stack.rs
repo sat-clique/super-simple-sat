@@ -28,6 +28,7 @@ pub struct BoundedStack<T> {
 }
 
 impl<T> Default for BoundedStack<T> {
+    #[inline]
     fn default() -> Self {
         Self {
             capacity: 0,
