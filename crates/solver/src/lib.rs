@@ -144,13 +144,23 @@ impl<'a> SatResult<'a> {
 /// The solver instance.
 #[derive(Debug, Default, Clone)]
 pub struct Solver {
+    /// The number of registered variables.
     len_variables: usize,
+    /// The clause database that stores all information about clauses.
     clauses: ClauseDatabase,
+    /// The partial assignment of variables.
     assignment: Assignment,
+    /// The decision heuristic.
     decider: Decider,
+    /// The last full assignment found by the solver upon SAT.
     last_model: LastModel,
+    /// Sanitizes clauses before being fed to the solver.
     sanitizer: ClauseSanitizer,
+    /// Yields `true` if `consume_clause` encountered the empty clause.
     encountered_empty_clause: bool,
+    /// Unit clauses that have been fed to `consume_clause`.
+    ///
+    /// They are immediately propagated when calling `solve`.
     hard_facts: Vec<Literal>,
 }
 
