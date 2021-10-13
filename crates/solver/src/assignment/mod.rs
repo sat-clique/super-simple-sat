@@ -30,7 +30,13 @@ use bounded::{
     bounded_map,
     BoundedMap,
 };
-use core::ops::Not;
+use core::{
+    fmt::{
+        self,
+        Display,
+    },
+    ops::Not,
+};
 
 /// Errors that may be encountered when operating on the assignment.
 #[derive(Debug, PartialEq, Eq)]
@@ -43,6 +49,19 @@ pub enum AssignmentError {
     AlreadyAssigned,
     /// When trying to assign a conflict.
     Conflict,
+}
+
+impl Display for AssignmentError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::UnexpectedIndeterminateAssignment => {
+                write!(f, "cannot create a model from an indeterminate assignment")
+            }
+            Self::InvalidVariable => write!(f, "the variable is invalid or unknown"),
+            Self::AlreadyAssigned => write!(f, "the variable has already been assigned"),
+            Self::Conflict => write!(f, "the assignment caused a conflict"),
+        }
+    }
 }
 
 impl AssignmentError {

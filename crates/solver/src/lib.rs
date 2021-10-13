@@ -262,7 +262,9 @@ impl Solver {
                     decision,
                 )
             }
-            Err(_) => panic!("encountered unexpected or unknown enqueue error"),
+            Err(error) => {
+                panic!("encountered unexpected or unknown enqueue error: {}", error)
+            }
             Ok(_) => (),
         }
         let propagation_result = self
