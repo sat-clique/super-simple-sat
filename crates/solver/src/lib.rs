@@ -304,6 +304,42 @@ impl Solver {
         }
     }
 
+    /// Propagates the hard facts (unit clauses) of the SAT instance.
+    fn propagate_hard_facts(&mut self) -> PropagationResult {
+        for &hard_fact in &self.hard_facts {
+            match self.assignment.enqueue_assumption(hard_fact) {
+                Ok(()) | Err(AssignmentError::AlreadyAssigned) => (),
+                Err(AssignmentError::Conflict) => return PropagationResult::Conflict,
+                _unexpected_error => {
+                    panic!("encountered unexpected error while propagating hard facts")
+                }
+            }
+        }
+        PropagationResult::Consistent
+    }
+
+    /// Propagates the given assumptions.
+    fn propagate_assumptions<L>(&mut self, assumptions: L) -> PropagationResult
+    where
+        L: IntoIterator<Item = Literal>,
+    {
+        for assumption in assumptions {
+            if let Err(AssignmentError::Conflict) =
+                self.assignment.enqueue_assumption(assumption)
+            {
+                return PropagationResult::Conflict
+            }
+        }
+        if self
+            .assignment
+            .propagate(&mut self.clauses, self.decider.informer())
+            .is_conflict()
+        {
+            return PropagationResult::Conflict
+        }
+        PropagationResult::Consistent
+    }
+
     /// Starts solving the given SAT instance.
     pub fn solve<L>(&mut self, assumptions: L) -> Result<SolveResult, Error>
     where
@@ -313,49 +349,34 @@ impl Solver {
         if self.encountered_empty_clause {
             return Ok(SolveResult::Unsat)
         }
+
         // If the set of clauses contain the empty clause: UNSAT
         if self.len_variables() == 0 {
             return Ok(SolveResult::sat(self.last_model.get()))
         }
-        // Propagate known hard facts (unit clauses).
-        for &hard_fact in &self.hard_facts {
-            match self.assignment.enqueue_assumption(hard_fact) {
-                Ok(()) => (),
-                Err(AssignmentError::AlreadyAssigned) => (),
-                Err(AssignmentError::Conflict) => return Ok(SolveResult::Unsat),
-                _unexpected_error => {
-                    panic!("encountered unexpected error while propagating hard facts")
-                }
-            }
-        }
-        // Propagate in case the set of clauses contained unit clauses.
-        // Bail out if the instance is already in conflict with itself.
+
+        // Raise decision level before propagating the hard problem facts.
         let _root_level = self.assignment.bump_decision_level();
-        if self
-            .assignment
-            .propagate(&mut self.clauses, self.decider.informer())
-            .is_conflict()
-        {
+
+        // Propagate known hard facts (unit clauses).
+        if self.propagate_hard_facts().is_conflict() {
             return Ok(SolveResult::Unsat)
         }
-        // Enqueue assumptions and propagate them afterwards.
-        // Bail out if the provided assumptions are in conflict with the instance.
+
+        // Raise decision level before propagating the given assumptions.
         let _assumptions_level = self.assignment.bump_decision_level();
-        for assumption in assumptions {
-            if let Err(AssignmentError::Conflict) =
-                self.assignment.enqueue_assumption(assumption)
-            {
-                return Ok(SolveResult::Unsat)
-            }
-        }
-        if self
-            .assignment
-            .propagate(&mut self.clauses, self.decider.informer())
-            .is_conflict()
-        {
+
+        // Enqueue and propagate given assumptions.
+        //
+        // Bail out if the provided assumptions are in conflict with the instance.
+        if self.propagate_assumptions(assumptions).is_conflict() {
             return Ok(SolveResult::Unsat)
         }
+
+        // Raise decision level before propagating the decisions.
         let _constraints_level = self.assignment.bump_decision_level();
+
+        // Start solving using recursive DPLL style.
         let result = match self.decide_and_propagate()? {
             DecisionResult::Conflict => SolveResult::Unsat,
             DecisionResult::Sat => {
