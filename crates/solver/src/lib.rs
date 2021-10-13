@@ -372,6 +372,7 @@ impl Solver {
         }
     }
 
+    /// Tries to find a valid assignment for the given literal decision.
     fn solve_for_decision(&mut self, decision: Literal) -> Result<DecisionResult, Error> {
         match self.assignment.enqueue_assumption(decision) {
             Err(AssignmentError::Conflict) => return Ok(DecisionResult::Conflict),
