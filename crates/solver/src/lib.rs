@@ -217,7 +217,9 @@ impl Solver {
         match self.sanitizer.sanitize(literals) {
             SanitizedLiterals::Literals(literals) => {
                 let cref = self.clauses.alloc(literals);
-                let resolved = self.clauses.resolve(cref).expect("just added the clause");
+                let resolved = self.clauses.resolve(cref).unwrap_or_else(|| {
+                    panic!("failed to resolve recently allocated clause: {:?}", cref)
+                });
                 self.assignment.initialize_watchers(cref, resolved);
                 for literal in resolved.literals() {
                     let variable = literal.variable();
