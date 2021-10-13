@@ -144,7 +144,6 @@ impl ClauseDatabase {
     ///   reference and the second parameter informs about its replacement.
     /// - After this operation the amount of free clause words in the clause
     ///   database will be equal to zero.
-    #[allow(unsafe_code)]
     pub fn gc<F>(&mut self, mut report: F) -> usize
     where
         F: FnMut(ClauseRef, ClauseRef),
@@ -157,10 +156,13 @@ impl ClauseDatabase {
             if current == words.len() {
                 break
             }
-            let header = unsafe { words[current].as_header() };
-            let len = unsafe { words[current + 1].as_len() };
-            let clause_len = len + 2;
-            if !header.is_deleted() {
+            // The above condition asserts that `current` can be cast to `u32` since
+            // there cannot be more than `u32::MAX` clause words in the clause database.
+            let cref = ClauseRef(current as u32);
+            let clause = Self::clause_words(words, cref)
+                .unwrap_or_else(|| panic!("missing clause at {:?}", cref));
+            let clause_len = clause.literals().len() + 2;
+            if !clause.header().is_deleted() {
                 if alive != current {
                     for n in 0..clause_len {
                         // We cannot use `copy_from_slice` since slices might overlap.
