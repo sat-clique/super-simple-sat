@@ -176,10 +176,10 @@ impl Solver {
     /// If the clause is unit and is in conflict with the current assignment.
     /// This is mostly encountered upon consuming two conflicting unit clauses.
     /// In this case the clause will not be added as new constraint.
-    pub fn consume_clause<I, T>(&mut self, literals: I)
+    pub fn consume_clause<I>(&mut self, literals: I)
     where
-        I: IntoIterator<IntoIter = T>,
-        T: ExactSizeIterator<Item = Literal>,
+        I: IntoIterator,
+        I::IntoIter: ExactSizeIterator<Item = Literal>,
     {
         match self.sanitizer.sanitize(literals) {
             SanitizedLiterals::Literals(literals) => {

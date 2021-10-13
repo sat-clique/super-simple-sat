@@ -31,10 +31,10 @@ impl ClauseDatabase {
     /// - If the newly allocated clause has less than 2 literals.
     /// - If the newly allocated clause has more literals than allowed.
     /// - If the resulting clause reference would be out of valid bounds.
-    pub fn alloc<I, T>(&mut self, literals: I) -> ClauseRef
+    pub fn alloc<I>(&mut self, literals: I) -> ClauseRef
     where
-        I: IntoIterator<IntoIter = T>,
-        T: ExactSizeIterator<Item = Literal>,
+        I: IntoIterator,
+        I::IntoIter: ExactSizeIterator<Item = Literal>,
     {
         let literals = literals.into_iter();
         let len = literals.len();
