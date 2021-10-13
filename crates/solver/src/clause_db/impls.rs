@@ -212,7 +212,7 @@ pub enum ClauseRemoval {
 
 impl Debug for ClauseDatabase {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        pub struct DebugClauses<'a> {
+        struct DebugClauses<'a> {
             db: &'a ClauseDatabase,
         }
 
