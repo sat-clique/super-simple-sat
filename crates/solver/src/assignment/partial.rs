@@ -1,3 +1,4 @@
+use super::Iter;
 use crate::{
     Literal,
     RegisterVariables,
@@ -111,5 +112,14 @@ impl PartialAssignment {
             .take(variable)
             .expect("encountered unexpected invalid variable");
         assert!(old_assignment.is_some());
+    }
+}
+
+impl<'a> IntoIterator for &'a PartialAssignment {
+    type Item = (Variable, Sign);
+    type IntoIter = Iter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter::new(self)
     }
 }

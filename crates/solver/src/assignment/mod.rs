@@ -226,15 +226,6 @@ impl Assignment {
     }
 }
 
-impl<'a> IntoIterator for &'a PartialAssignment {
-    type Item = (Variable, Sign);
-    type IntoIter = Iter<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        Iter::new(self)
-    }
-}
-
 impl<'a> IntoIterator for &'a Assignment {
     type Item = (Variable, Sign);
     type IntoIter = Iter<'a>;
