@@ -8,7 +8,7 @@ Heavily inspired by
 
 - [PyCSCL's trivial SAT solver][trivial-sat-solver] and [JamSAT solver][jamsat-solver]
   by Felix Kutzner
-- [Candy solver][candy-solver] by Markus Iser (udopia)
+- [Candy solver][candy-solver] by Ashlin Iser (udopia)
 
 Thanks to their authors for the inspiration!
 
