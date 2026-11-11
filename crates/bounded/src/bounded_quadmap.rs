@@ -6,11 +6,12 @@ use crate::Index;
 use core::marker::PhantomData;
 
 /// A quad that represents one of 4 different states.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 #[allow(non_camel_case_types)]
 pub enum quad {
     /// Both bits are `0`.
+    #[default]
     B00 = 0b00,
     /// Least-significant bit is `1`, other is `0`.
     B01 = 0b01,
@@ -18,12 +19,6 @@ pub enum quad {
     B10 = 0b10,
     /// Both bits are `1`.
     B11 = 0b11,
-}
-
-impl Default for quad {
-    fn default() -> Self {
-        Self::B00
-    }
 }
 
 /// Types that can convert to and from a [`quad`].

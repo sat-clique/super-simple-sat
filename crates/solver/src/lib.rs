@@ -283,7 +283,7 @@ impl Solver {
     }
 
     /// Starts solving the given SAT instance.
-    pub fn solve<L>(&mut self, assumptions: L) -> Result<SolveResult, Error>
+    pub fn solve<L>(&mut self, assumptions: L) -> Result<SolveResult<'_>, Error>
     where
         L: IntoIterator<Item = Literal>,
     {

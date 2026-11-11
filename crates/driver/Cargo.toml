@@ -13,4 +13,4 @@ categories = ["cli"]
 
 [dependencies]
 solver = { version = "0.1.0", path = "../solver/", package = "s3sat-solver" }
-structopt = "0.3"
+clap = { version = "4", features = ["derive"] }

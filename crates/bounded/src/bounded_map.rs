@@ -166,13 +166,13 @@ where
 
     /// Returns an iterator yielding shared references to the key and value pairs.
     #[inline]
-    pub fn iter(&self) -> Iter<K, V> {
+    pub fn iter(&self) -> Iter<'_, K, V> {
         Iter::new(self)
     }
 
     /// Returns an iterator yielding exclusive references to the key and value pairs.
     #[inline]
-    pub fn iter_mut(&mut self) -> IterMut<K, V> {
+    pub fn iter_mut(&mut self) -> IterMut<'_, K, V> {
         IterMut::new(self)
     }
 }

@@ -113,13 +113,13 @@ where
 impl<Idx, T> BoundedArray<Idx, T> {
     /// Returns an iterator yielding shared references over the array values.
     #[inline]
-    pub fn iter(&self) -> core::slice::Iter<T> {
+    pub fn iter(&self) -> core::slice::Iter<'_, T> {
         self.values.iter()
     }
 
     /// Returns an iterator yielding exclusive references over the array values.
     #[inline]
-    pub fn iter_mut(&mut self) -> core::slice::IterMut<T> {
+    pub fn iter_mut(&mut self) -> core::slice::IterMut<'_, T> {
         self.values.iter_mut()
     }
 }

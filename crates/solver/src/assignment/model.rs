@@ -1,8 +1,5 @@
+pub use super::AssignmentError;
 use super::PartialAssignment;
-pub use super::{
-    Assignment,
-    AssignmentError,
-};
 use crate::{
     Bool,
     Literal,

@@ -46,7 +46,7 @@ impl PartialAssignment {
     /// # Note
     ///
     /// Variables that have not been assigned, yet will not be yielded.
-    pub fn iter(&self) -> bounded_map::Iter<Variable, Sign> {
+    pub fn iter(&self) -> bounded_map::Iter<'_, Variable, Sign> {
         self.assignment.iter()
     }
 

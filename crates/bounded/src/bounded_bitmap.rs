@@ -210,7 +210,7 @@ where
         Ok(())
     }
 
-    pub fn iter(&self) -> Iter<Idx, T> {
+    pub fn iter(&self) -> Iter<'_, Idx, T> {
         Iter::new(self)
     }
 }

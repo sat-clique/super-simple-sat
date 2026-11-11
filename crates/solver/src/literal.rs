@@ -125,7 +125,7 @@ impl From<i32> for Literal {
     #[inline]
     fn from(x: i32) -> Self {
         debug_assert!(x != 0);
-        let var = x.abs() as u32 - 1;
+        let var = x.unsigned_abs() - 1;
         let sign = (x < 0) as u32;
         Literal {
             value: (var << 1) + sign,

@@ -7,7 +7,6 @@ pub use self::{
     model::{
         LastModel,
         Model,
-        ModelIter,
     },
     partial::PartialAssignment,
 };

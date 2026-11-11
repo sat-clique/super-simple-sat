@@ -18,7 +18,7 @@ cnf-parser = "0.1"
 ahash = "0.7"
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = "0.5"
 
 [[bench]]
 name = "solve"

@@ -94,14 +94,12 @@ impl Decider {
         assignment: &PartialAssignment,
     ) -> Option<Variable> {
         loop {
-            let next = self.priorities.pop().map(|(variable, _priority)| variable);
-            match next {
-                Some(next) => {
-                    if assignment.get(next).is_none() {
-                        return Some(next)
-                    }
-                }
-                None => return None,
+            let next = self
+                .priorities
+                .pop()
+                .map(|(variable, _priority)| variable)?;
+            if assignment.get(next).is_none() {
+                return Some(next)
             }
         }
     }

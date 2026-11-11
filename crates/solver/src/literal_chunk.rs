@@ -96,9 +96,8 @@ impl Iterator for LiteralChunkIter {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        self.chunk.get(self.current).map(|literal| {
+        self.chunk.get(self.current).inspect(|_| {
             self.current += 1;
-            literal
         })
     }
 }

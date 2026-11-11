@@ -30,7 +30,7 @@ impl ClauseSanitizer {
     ///
     /// This removes duplicate literals as well as literals where both polarities occur.
     /// Furthermore this signals empty clauses as well as tautological clauses.
-    pub fn sanitize<I, T>(&mut self, literals: I) -> SanitizedLiterals
+    pub fn sanitize<I, T>(&mut self, literals: I) -> SanitizedLiterals<'_>
     where
         I: IntoIterator<IntoIter = T>,
         T: ExactSizeIterator<Item = Literal>,

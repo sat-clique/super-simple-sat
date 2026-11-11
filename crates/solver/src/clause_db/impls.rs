@@ -65,7 +65,7 @@ impl ClauseDatabase {
 
     /// Returns a shared reference to the clause words if the clause reference was valid.
     #[allow(unsafe_code)]
-    fn clause_words(words: &[ClauseWord], cref: ClauseRef) -> Option<ResolvedClause> {
+    fn clause_words(words: &[ClauseWord], cref: ClauseRef) -> Option<ResolvedClause<'_>> {
         let index = cref.into_u32() as usize;
         words
             .get(index + 1)
@@ -85,7 +85,7 @@ impl ClauseDatabase {
     fn clause_words_mut(
         words: &mut [ClauseWord],
         cref: ClauseRef,
-    ) -> Option<ResolvedClauseMut> {
+    ) -> Option<ResolvedClauseMut<'_>> {
         let index = cref.into_u32() as usize;
         words
             .get(index + 1)
@@ -101,12 +101,12 @@ impl ClauseDatabase {
     }
 
     /// Resolves the unresolved clause to a shared reference if it is valid.
-    pub fn resolve(&self, cref: ClauseRef) -> Option<ResolvedClause> {
+    pub fn resolve(&self, cref: ClauseRef) -> Option<ResolvedClause<'_>> {
         Self::clause_words(&self.words, cref)
     }
 
     /// Resolves the unresolved clause to an exclusive reference if it is valid.
-    pub fn resolve_mut(&mut self, cref: ClauseRef) -> Option<ResolvedClauseMut> {
+    pub fn resolve_mut(&mut self, cref: ClauseRef) -> Option<ResolvedClauseMut<'_>> {
         Self::clause_words_mut(&mut self.words, cref)
     }
 

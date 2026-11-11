@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+use clap::Parser;
 use solver::{
     SolveResult,
     Solver,
@@ -8,16 +9,15 @@ use std::{
     fs,
     path::PathBuf,
 };
-use structopt::StructOpt;
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 struct Opt {
-    #[structopt(name = "input .cnf file", parse(from_os_str))]
+    #[arg(value_name = "input .cnf file")]
     input: PathBuf,
 }
 
 fn main() {
-    let opt = Opt::from_args();
+    let opt = Opt::parse();
     let cnf_contents =
         fs::read(opt.input).expect("couldn't read provided input .cnf file");
     let mut solver = Solver::from_cnf(&mut &cnf_contents[..])
